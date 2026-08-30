@@ -495,17 +495,29 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
 
 @app.route("/")
+@app.route("/index.html")
 def index():
+    # Se esiste index.html nella radice, serviamolo per coerenza con GitHub Pages
+    root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    index_path = os.path.join(root_dir, "index.html")
+    if os.path.exists(index_path):
+        with open(index_path, "r", encoding="utf-8") as f:
+            return f.read()
     data = get_dashboard_data()
     return render_template_string(HTML_TEMPLATE, data=data)
 
 
 @app.route("/manifest.json")
 def manifest():
+    root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    manifest_path = os.path.join(root_dir, "manifest.json")
+    if os.path.exists(manifest_path):
+        with open(manifest_path, "r", encoding="utf-8") as f:
+            return app.response_class(f.read(), mimetype="application/json")
     return jsonify({
         "name": "AI Market Predictor",
         "short_name": "Predictor",
-        "start_url": "/",
+        "start_url": "./index.html",
         "display": "standalone",
         "background_color": "#0f172a",
         "theme_color": "#121826",
@@ -517,6 +529,24 @@ def manifest():
             }
         ]
     })
+
+
+@app.route("/sw.js")
+def service_worker():
+    root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    sw_path = os.path.join(root_dir, "sw.js")
+    if os.path.exists(sw_path):
+        with open(sw_path, "r", encoding="utf-8") as f:
+            return app.response_class(f.read(), mimetype="application/javascript")
+    return "", 404
+
+
+@app.route("/data/<path:filename>")
+def serve_data_files(filename):
+    from flask import send_from_directory
+    root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    data_dir = os.path.join(root_dir, "data")
+    return send_from_directory(data_dir, filename)
 
 
 @app.route("/api/predict", methods=["POST"])
