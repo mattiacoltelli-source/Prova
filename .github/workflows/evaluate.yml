@@ -1,0 +1,61 @@
+name: Valuta previsioni scadute
+
+on:
+  schedule:
+    - cron: "0 22 * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Esegue la valutazione senza scrivere su data/ (test sicuro)"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: evaluate-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    env:
+      TWELVE_DATA_KEY: ${{ secrets.TWELVE_DATA_KEY }}
+      FINNHUB_KEY: ${{ secrets.FINNHUB_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install -r requirements.txt
+
+      - name: Determina modalità run
+        id: mode
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "dry_run=${{ github.event.inputs.dry_run }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "dry_run=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Valuta previsioni scadute e rigenera il report
+        run: |
+          ARGS=""
+          if [ "${{ steps.mode.outputs.dry_run }}" = "true" ]; then ARGS="--dry-run"; fi
+          python -m src.evaluate_run $ARGS
+
+      - name: Commit e push
+        if: steps.mode.outputs.dry_run != 'true'
+        run: |
+          git config user.name "predictive-agent-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/ REPORT.md
+          if git diff --cached --quiet; then
+            echo "Nessuna modifica da committare."
+          else
+            git commit -m "Valutazione automatica $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            git push
+          fi
