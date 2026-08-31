@@ -1,0 +1,21 @@
+{
+  "global_accuracy_pct": 0.0,
+  "total_evaluated": 0,
+  "total_pending": 0,
+  "assets": {
+    "SPY": {
+      "accuracy_pct": 0.0,
+      "total_evaluated": 0,
+      "evaluated": [],
+      "predictions": [],
+      "chart_points": []
+    },
+    "AAPL": {
+      "accuracy_pct": 0.0,
+      "total_evaluated": 0,
+      "evaluated": [],
+      "predictions": [],
+      "chart_points": []
+    }
+  }
+}
