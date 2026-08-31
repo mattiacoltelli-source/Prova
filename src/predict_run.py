@@ -11,7 +11,7 @@ import datetime as dt
 import sys
 import uuid
 
-from . import budget, config, predictor, storage, volatility
+from . import budget, config, predictor, storage, technical_indicators, volatility
 from .data_sources import fundamentals, macro, news, prices
 
 
@@ -46,6 +46,9 @@ def run(dry_run: bool, force: bool) -> None:
         fundamentals_data = fundamentals.fetch_fundamentals(asset)
         macro_data = macro.fetch_macro_snapshot() if _macro_key_present() else {}
 
+        closes = [b["close"] for b in bars] if bars else []
+        tech_indicators = technical_indicators.compute_all_indicators(closes) if closes else None
+
         for horizon in config.HORIZONS:
             try:
                 threshold_pct = volatility.compute_threshold_pct(bars, horizon)
@@ -60,7 +63,7 @@ def run(dry_run: bool, force: bool) -> None:
             try:
                 pred = predictor.generate_prediction(
                     asset, horizon.code, price, price_asof, threshold_pct,
-                    news_items, fundamentals_data, macro_data,
+                    news_items, fundamentals_data, macro_data, tech_indicators,
                 )
             except Exception as exc:  # noqa: BLE001
                 print(f"[{asset}/{horizon.code}] skipped_model_error: {exc}")

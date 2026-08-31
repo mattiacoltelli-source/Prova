@@ -26,6 +26,7 @@ def build_prompt(
     news: list[dict],
     fundamentals: dict | None,
     macro: dict,
+    technical_indicators: dict | None = None,
 ) -> str:
     news_block = (
         "\n".join(f"- ({n['published_at']}) {n['headline']}" for n in news[:8])
@@ -35,7 +36,16 @@ def build_prompt(
     fundamentals_block = json.dumps(fundamentals["metrics"], indent=2) if fundamentals else "Non disponibili."
     macro_block = "\n".join(f"- {k}: {v['value']} (al {v['date']})" for k, v in macro.items()) or "Non disponibili."
 
-    return f"""Sei un analista quantitativo che deve emettere una previsione REALE e verificabile
+    tech_str = "Non disponibili."
+    if technical_indicators:
+        tech_lines = []
+        for k, v in technical_indicators.items():
+            if v is not None:
+                tech_lines.append(f"- {k}: {v}")
+        if tech_lines:
+            tech_str = "\n".join(tech_lines)
+
+    return f"""Sei un analista quantitativo esperto. Devi emettere una previsione REALE, argomentata e verificabile
 sulla direzione del prezzo di {asset}, con orizzonte {horizon_code} da adesso.
 
 Prezzo attuale: {price} (rilevato: {price_asof})
@@ -43,6 +53,9 @@ Banda neutra (FLAT) calcolata sulla volatilità storica recente: +/- {threshold_
   → prevedi UP se ti aspetti una variazione superiore a +{threshold_pct}%
   → prevedi DOWN se ti aspetti una variazione inferiore a -{threshold_pct}%
   → prevedi FLAT se ti aspetti una variazione entro questa banda
+
+Indicatori Tecnici Quantitativi:
+{tech_str}
 
 News recenti:
 {news_block}
@@ -53,8 +66,14 @@ Fondamentali/dati ETF disponibili:
 Contesto macro:
 {macro_block}
 
+Linee guida di analisi Chain-of-Thought:
+1. Valuta il Trend e il Momentum Tecnico (RSI, MACD, Medie Mobili, Bollinger Bands).
+2. Pesa il Sentiment delle news recenti e il contesto Macroeconomico.
+3. Se gli indicatori sono discordanti o indicano un fattore di incertezza elevato, mantieni una confidenza moderata o seleziona FLAT.
+4. Assegna un livello di confidenza elevato (>70%) solo in caso di forte e chiara convergenza di segnali tecnici e fondamentali.
+
 Rispondi ESCLUSIVAMENTE con un oggetto JSON valido, nessun altro testo, con questa forma esatta:
-{{"predicted_class": "UP|DOWN|FLAT", "confidence": <intero 0-100>, "reasoning_short": "<massimo 3 frasi>"}}
+{{"predicted_class": "UP|DOWN|FLAT", "confidence": <intero 0-100>, "reasoning_short": "<3 frasi con sintesi del ragionamento Chain-of-Thought>"}}
 """
 
 
@@ -101,7 +120,10 @@ def generate_prediction(
     news: list[dict],
     fundamentals: dict | None,
     macro: dict,
+    technical_indicators: dict | None = None,
 ) -> dict:
-    prompt = build_prompt(asset, horizon_code, price, price_asof, threshold_pct, news, fundamentals, macro)
+    prompt = build_prompt(
+        asset, horizon_code, price, price_asof, threshold_pct, news, fundamentals, macro, technical_indicators
+    )
     raw = call_model(prompt)
     return parse_prediction(raw)
