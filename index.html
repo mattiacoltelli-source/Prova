@@ -299,6 +299,61 @@
         </div>
     </div>
 
+    <!-- Backtesting Engine Section -->
+    <div class="backtest-section" style="background-color: var(--card-bg); border: 1px solid var(--card-border); border-radius: 14px; padding: 16px; margin-bottom: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid var(--card-border); padding-bottom: 8px;">
+            <h2 style="font-size: 1.1rem; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                📈 Backtesting Engine (AI Quant vs Buy &amp; Hold — 2 Anni)
+            </h2>
+            <button class="refresh-btn" onclick="loadBacktestData(true)" style="font-size: 0.8rem; padding: 6px 10px;">🔄 Esegui Backtest</button>
+        </div>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">
+            Simulazione quantitativa sugli ultimi 2 anni per confrontare il rendimento e il rischio della strategia AI rispetto alla tenuta del titolo (Buy &amp; Hold).
+        </p>
+
+        <div style="position: relative; height: 240px; margin-bottom: 16px;">
+            <canvas id="chart-backtest"></canvas>
+        </div>
+
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Asset</th>
+                        <th>Rendimento AI Quant</th>
+                        <th>Rendimento Buy &amp; Hold</th>
+                        <th>Win Rate AI</th>
+                        <th>Max Drawdown AI</th>
+                        <th>Max DD Buy &amp; Hold</th>
+                    </tr>
+                </thead>
+                <tbody id="backtest-table-body">
+                    <tr><td colspan="6" style="text-align:center; color: var(--text-muted);">Caricamento simulazione backtest...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Collapsible Indicators Info Card -->
+    <details class="indicators-card" style="background-color: var(--card-bg); border: 1px solid var(--card-border); border-radius: 14px; padding: 14px 16px; margin-bottom: 20px; cursor: pointer;">
+        <summary style="font-size: 0.95rem; font-weight: 700; color: var(--text-main); outline: none; list-style: none; display: flex; justify-content: space-between; align-items: center;">
+            <span>📊 Indicatori Tecnici, Dati Analizzati &amp; Modello</span>
+            <span style="font-size: 0.8rem; color: var(--accent-blue);">ℹ️ Dettagli Analisi ▾</span>
+        </summary>
+        <div style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.6; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin-top: 12px; border-top: 1px solid var(--card-border); padding-top: 12px;">
+            <div>
+                <p><strong style="color: var(--accent-blue);">• Indicatori Tecnici:</strong> RSI-14, MACD (12,26,9), SMA 50/200 e Bande di Bollinger (20, 2σ).</p>
+                <p><strong style="color: var(--accent-blue);">• Regime di Mercato (VIX):</strong> Filtro sulla volatilità di contesto per evitare falsi segnali in mercati laterali.</p>
+                <p><strong style="color: var(--accent-blue);">• Calendario Eventi Macro/Earnings:</strong> Ponderazione del rischio prima di decisioni Fed/CPI o trimestrali.</p>
+            </div>
+            <div>
+                <p><strong style="color: var(--accent-blue);">• Multi-Sampling Ensemble:</strong> Consensus a voto di maggioranza (3 chiamate AI) per eliminare incertezza.</p>
+                <p><strong style="color: var(--accent-blue);">• News &amp; Fondamentali:</strong> Headliner news ed estratto bilanci SEC EDGAR/XBRL.</p>
+                <p><strong style="color: var(--accent-blue);">• Soglie Adattive:</strong> Calibrazione dinamica UP/DOWN/FLAT sulla volatilità storica dell'asset.</p>
+            </div>
+        </div>
+    </details>
+
     <div class="grid-two-assets">
         <!-- SPY Asset Card -->
         <div class="asset-card">
@@ -698,7 +753,101 @@
             });
         }
 
+        let backtestChart = null;
+
+        async function loadBacktestData(forceRefresh = false) {
+            try {
+                let res;
+                if (forceRefresh) {
+                    showToast('Esecuzione simulazione Backtest in corso...');
+                    res = await fetch('/api/backtest', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({horizon_days: 1}) });
+                } else {
+                    res = await fetch('/api/backtest');
+                }
+
+                if (!res.ok) return;
+                const json = await res.json();
+                if (json.status === 'ok' && json.data) {
+                    renderBacktestResults(json.data);
+                }
+            } catch (err) {
+                console.log('Backtest API non disponibile staticamente su GH-Pages o in attesa di calcolo.');
+            }
+        }
+
+        function renderBacktestResults(data) {
+            const tableBody = document.getElementById('backtest-table-body');
+            const assets = Object.keys(data);
+
+            if (!assets.length) {
+                tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; color: var(--text-muted);">Nessun dato di backtest disponibile.</td></tr>';
+                return;
+            }
+
+            tableBody.innerHTML = assets.map(asset => {
+                const item = data[asset];
+                const aiGreen = item.ai_total_return_pct >= 0 ? 'color: var(--accent-green); font-weight: bold;' : 'color: var(--accent-red); font-weight: bold;';
+                const bhGreen = item.buy_hold_total_return_pct >= 0 ? 'color: var(--accent-green);' : 'color: var(--accent-red);';
+                return `
+                    <tr>
+                        <td><strong>${asset}</strong></td>
+                        <td style="${aiGreen}">${item.ai_total_return_pct > 0 ? '+' : ''}${item.ai_total_return_pct}%</td>
+                        <td style="${bhGreen}">${item.buy_hold_total_return_pct > 0 ? '+' : ''}${item.buy_hold_total_return_pct}%</td>
+                        <td><strong style="color: var(--accent-blue);">${item.win_rate_pct}%</strong> (${item.total_trades} op.)</td>
+                        <td style="color: var(--accent-yellow);">${item.ai_max_drawdown_pct}%</td>
+                        <td style="color: var(--text-muted);">${item.buy_hold_max_drawdown_pct}%</td>
+                    </tr>
+                `;
+            }).join('');
+
+            const refAsset = data['SPY'] || data[assets[0]];
+            if (refAsset && refAsset.equity_curve) {
+                const labels = refAsset.equity_curve.map(pt => pt.date);
+                const aiEquity = refAsset.equity_curve.map(pt => pt.ai_equity);
+                const bhEquity = refAsset.equity_curve.map(pt => pt.buy_hold_equity);
+
+                const ctx = document.getElementById('chart-backtest').getContext('2d');
+                if (backtestChart) backtestChart.destroy();
+
+                backtestChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: 'Strategia AI Quant ($)',
+                                data: aiEquity,
+                                borderColor: '#10b981',
+                                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                                fill: true,
+                                tension: 0.1
+                            },
+                            {
+                                label: 'Benchmark Buy & Hold ($)',
+                                data: bhEquity,
+                                borderColor: '#3b82f6',
+                                borderDash: [4, 4],
+                                tension: 0.1
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { labels: { color: '#94a3b8', font: { size: 11 } } }
+                        },
+                        scales: {
+                            x: { ticks: { color: '#94a3b8', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                            y: { ticks: { color: '#94a3b8', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                        }
+                    }
+                });
+            }
+        }
+
         loadDashboardData();
+        loadBacktestData();
     </script>
 </body>
 </html>
