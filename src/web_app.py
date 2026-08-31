@@ -14,7 +14,7 @@ from flask import Flask, jsonify, render_template_string, request
 # Aggiungi cartella radice al path per import di src
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from src import config, evaluate_run, predict_run, report, storage
+from src import backtest, config, evaluate_run, predict_run, report, storage
 
 app = Flask(__name__)
 
@@ -334,6 +334,27 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         </div>
     </div>
 
+    <!-- Collapsible Indicators Info Card -->
+    <details class="indicators-card" style="background-color: var(--card-bg); border: 1px solid var(--card-border); border-radius: 14px; padding: 14px 16px; margin-bottom: 20px; cursor: pointer;">
+        <summary style="font-size: 0.95rem; font-weight: 700; color: var(--text-main); outline: none; list-style: none; display: flex; justify-content: space-between; align-items: center;">
+            <span>📊 Indicatori Tecnici, Regime &amp; Modello di Previsione</span>
+            <span style="font-size: 0.8rem; color: var(--accent-blue);">ℹ️ Info &amp; Legenda ▾</span>
+        </summary>
+        <div style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.6; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin-top: 12px; border-top: 1px solid var(--card-border); padding-top: 12px;">
+            <div>
+                <p><strong style="color: var(--accent-blue);">• RSI-14:</strong> Momentum di ipercomprato (&gt;70) e ipervenduto (&lt;30).</p>
+                <p><strong style="color: var(--accent-blue);">• MACD (12, 26, 9):</strong> Incroci tra EMA rapida, lenta e Signal line.</p>
+                <p><strong style="color: var(--accent-blue);">• SMA 50 &amp; 200:</strong> Trend di medio/lungo termine e livelli chiave di supporto.</p>
+                <p><strong style="color: var(--accent-blue);">• Bande di Bollinger (20, 2σ):</strong> Volatilità relativa e espansione.</p>
+            </div>
+            <div>
+                <p><strong style="color: var(--accent-blue);">• Regime di Mercato (VIX):</strong> Filtro sulla volatilità di contesto per evitare falsi segnali in mercati laterali.</p>
+                <p><strong style="color: var(--accent-blue);">• Impatto Eventi Macro/Earnings:</strong> Ponderazione del rischio prima di decisioni Fed/CPI o trimestrali.</p>
+                <p><strong style="color: var(--accent-blue);">• Multi-Sampling Ensemble:</strong> Consensus a voto di maggioranza (3 chiamate AI) per eliminare incertezza.</p>
+            </div>
+        </div>
+    </details>
+
     <div class="actions-panel">
         <button class="btn-action" onclick="runAction('/api/predict')">
             ⚡ Nuova Predizione
@@ -563,6 +584,19 @@ def api_evaluate():
     try:
         evaluate_run.run(dry_run=False)
         return jsonify({"status": "ok", "message": "Valutazione completata con successo!"})
+    except Exception as exc:  # noqa: BLE001
+        return jsonify({"status": "error", "message": str(exc)}), 500
+
+
+@app.route("/api/backtest", methods=["GET", "POST"])
+def api_backtest():
+    try:
+        if request.method == "POST":
+            horizon = int(request.json.get("horizon_days", 1)) if request.is_json and request.json else 1
+            res = backtest.run_full_backtest(horizon_days=horizon)
+        else:
+            res = backtest.load_backtest_cache()
+        return jsonify({"status": "ok", "data": res})
     except Exception as exc:  # noqa: BLE001
         return jsonify({"status": "error", "message": str(exc)}), 500
 

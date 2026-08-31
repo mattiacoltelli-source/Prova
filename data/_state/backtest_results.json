@@ -1,0 +1,4874 @@
+{
+  "SPY": {
+    "asset": "SPY",
+    "horizon_days": 1,
+    "ai_total_return_pct": -5.21,
+    "buy_hold_total_return_pct": 12.9,
+    "ai_max_drawdown_pct": 13.17,
+    "buy_hold_max_drawdown_pct": 9.13,
+    "win_rate_pct": 43.0,
+    "total_trades": 114,
+    "equity_curve": [
+      {
+        "date": "2025-11-10",
+        "ai_equity": 100.0,
+        "buy_hold_equity": 100.0,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-11-11",
+        "ai_equity": 100.0,
+        "buy_hold_equity": 100.23,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-11-12",
+        "ai_equity": 100.0,
+        "buy_hold_equity": 100.28,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-11-13",
+        "ai_equity": 100.0,
+        "buy_hold_equity": 98.62,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-11-14",
+        "ai_equity": 100.0,
+        "buy_hold_equity": 98.6,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-11-17",
+        "ai_equity": 100.0,
+        "buy_hold_equity": 97.69,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-11-18",
+        "ai_equity": 100.84,
+        "buy_hold_equity": 96.87,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2025-11-19",
+        "ai_equity": 100.45,
+        "buy_hold_equity": 97.24,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2025-11-20",
+        "ai_equity": 101.98,
+        "buy_hold_equity": 95.76,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2025-11-21",
+        "ai_equity": 100.97,
+        "buy_hold_equity": 96.71,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2025-11-24",
+        "ai_equity": 99.48,
+        "buy_hold_equity": 98.13,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2025-11-25",
+        "ai_equity": 99.48,
+        "buy_hold_equity": 99.06,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-11-26",
+        "ai_equity": 99.48,
+        "buy_hold_equity": 99.74,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-11-28",
+        "ai_equity": 99.48,
+        "buy_hold_equity": 100.29,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-12-01",
+        "ai_equity": 99.03,
+        "buy_hold_equity": 99.83,
+        "signal": "UP"
+      },
+      {
+        "date": "2025-12-02",
+        "ai_equity": 99.21,
+        "buy_hold_equity": 100.01,
+        "signal": "UP"
+      },
+      {
+        "date": "2025-12-03",
+        "ai_equity": 99.55,
+        "buy_hold_equity": 100.36,
+        "signal": "UP"
+      },
+      {
+        "date": "2025-12-04",
+        "ai_equity": 99.62,
+        "buy_hold_equity": 100.43,
+        "signal": "UP"
+      },
+      {
+        "date": "2025-12-05",
+        "ai_equity": 99.81,
+        "buy_hold_equity": 100.62,
+        "signal": "UP"
+      },
+      {
+        "date": "2025-12-08",
+        "ai_equity": 99.51,
+        "buy_hold_equity": 100.32,
+        "signal": "UP"
+      },
+      {
+        "date": "2025-12-09",
+        "ai_equity": 99.43,
+        "buy_hold_equity": 100.23,
+        "signal": "UP"
+      },
+      {
+        "date": "2025-12-10",
+        "ai_equity": 100.09,
+        "buy_hold_equity": 100.9,
+        "signal": "UP"
+      },
+      {
+        "date": "2025-12-11",
+        "ai_equity": 100.32,
+        "buy_hold_equity": 101.13,
+        "signal": "UP"
+      },
+      {
+        "date": "2025-12-12",
+        "ai_equity": 99.24,
+        "buy_hold_equity": 100.05,
+        "signal": "UP"
+      },
+      {
+        "date": "2025-12-15",
+        "ai_equity": 99.24,
+        "buy_hold_equity": 99.9,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-12-16",
+        "ai_equity": 99.24,
+        "buy_hold_equity": 99.62,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-12-17",
+        "ai_equity": 99.24,
+        "buy_hold_equity": 98.53,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-12-18",
+        "ai_equity": 98.49,
+        "buy_hold_equity": 99.27,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2025-12-19",
+        "ai_equity": 98.49,
+        "buy_hold_equity": 99.88,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-12-22",
+        "ai_equity": 98.49,
+        "buy_hold_equity": 100.5,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-12-23",
+        "ai_equity": 98.49,
+        "buy_hold_equity": 100.96,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-12-24",
+        "ai_equity": 98.49,
+        "buy_hold_equity": 101.31,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-12-26",
+        "ai_equity": 98.48,
+        "buy_hold_equity": 101.3,
+        "signal": "UP"
+      },
+      {
+        "date": "2025-12-29",
+        "ai_equity": 98.13,
+        "buy_hold_equity": 100.94,
+        "signal": "UP"
+      },
+      {
+        "date": "2025-12-30",
+        "ai_equity": 98.01,
+        "buy_hold_equity": 100.82,
+        "signal": "UP"
+      },
+      {
+        "date": "2025-12-31",
+        "ai_equity": 97.29,
+        "buy_hold_equity": 100.07,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-01-02",
+        "ai_equity": 97.29,
+        "buy_hold_equity": 100.25,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-01-05",
+        "ai_equity": 97.29,
+        "buy_hold_equity": 100.92,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-01-06",
+        "ai_equity": 97.29,
+        "buy_hold_equity": 101.52,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-01-07",
+        "ai_equity": 96.97,
+        "buy_hold_equity": 101.19,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-01-08",
+        "ai_equity": 96.96,
+        "buy_hold_equity": 101.18,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-01-09",
+        "ai_equity": 97.6,
+        "buy_hold_equity": 101.85,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-01-12",
+        "ai_equity": 97.76,
+        "buy_hold_equity": 102.01,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-01-13",
+        "ai_equity": 97.56,
+        "buy_hold_equity": 101.81,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-01-14",
+        "ai_equity": 97.08,
+        "buy_hold_equity": 101.31,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-01-15",
+        "ai_equity": 97.35,
+        "buy_hold_equity": 101.58,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-01-16",
+        "ai_equity": 97.26,
+        "buy_hold_equity": 101.5,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-01-20",
+        "ai_equity": 95.28,
+        "buy_hold_equity": 99.43,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-01-21",
+        "ai_equity": 94.18,
+        "buy_hold_equity": 100.58,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-01-22",
+        "ai_equity": 94.18,
+        "buy_hold_equity": 101.11,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-01-23",
+        "ai_equity": 94.18,
+        "buy_hold_equity": 101.14,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-01-26",
+        "ai_equity": 94.18,
+        "buy_hold_equity": 101.66,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-01-27",
+        "ai_equity": 94.18,
+        "buy_hold_equity": 102.06,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-01-28",
+        "ai_equity": 94.18,
+        "buy_hold_equity": 102.05,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-01-29",
+        "ai_equity": 94.0,
+        "buy_hold_equity": 101.85,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-01-30",
+        "ai_equity": 93.72,
+        "buy_hold_equity": 101.55,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-02-02",
+        "ai_equity": 93.72,
+        "buy_hold_equity": 102.05,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-02-03",
+        "ai_equity": 92.93,
+        "buy_hold_equity": 101.19,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-02-04",
+        "ai_equity": 92.93,
+        "buy_hold_equity": 100.7,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-02-05",
+        "ai_equity": 92.93,
+        "buy_hold_equity": 99.44,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-02-06",
+        "ai_equity": 91.14,
+        "buy_hold_equity": 101.35,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-02-09",
+        "ai_equity": 91.14,
+        "buy_hold_equity": 101.84,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-02-10",
+        "ai_equity": 91.14,
+        "buy_hold_equity": 101.57,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-02-11",
+        "ai_equity": 91.14,
+        "buy_hold_equity": 101.54,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-02-12",
+        "ai_equity": 91.14,
+        "buy_hold_equity": 99.98,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-02-13",
+        "ai_equity": 91.08,
+        "buy_hold_equity": 100.05,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-02-17",
+        "ai_equity": 90.93,
+        "buy_hold_equity": 100.21,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-02-18",
+        "ai_equity": 90.47,
+        "buy_hold_equity": 100.71,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-02-19",
+        "ai_equity": 90.47,
+        "buy_hold_equity": 100.45,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-02-20",
+        "ai_equity": 90.47,
+        "buy_hold_equity": 101.17,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-02-23",
+        "ai_equity": 90.47,
+        "buy_hold_equity": 100.14,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-02-24",
+        "ai_equity": 90.47,
+        "buy_hold_equity": 100.87,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-02-25",
+        "ai_equity": 90.47,
+        "buy_hold_equity": 101.72,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-02-26",
+        "ai_equity": 89.97,
+        "buy_hold_equity": 101.15,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-02-27",
+        "ai_equity": 89.97,
+        "buy_hold_equity": 100.67,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-03-02",
+        "ai_equity": 89.97,
+        "buy_hold_equity": 100.72,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-03-03",
+        "ai_equity": 89.97,
+        "buy_hold_equity": 99.84,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-03-04",
+        "ai_equity": 89.34,
+        "buy_hold_equity": 100.54,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-03-05",
+        "ai_equity": 89.34,
+        "buy_hold_equity": 99.98,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-03-06",
+        "ai_equity": 89.34,
+        "buy_hold_equity": 98.67,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-03-09",
+        "ai_equity": 88.55,
+        "buy_hold_equity": 99.53,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-03-10",
+        "ai_equity": 88.7,
+        "buy_hold_equity": 99.37,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-03-11",
+        "ai_equity": 88.81,
+        "buy_hold_equity": 99.25,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-03-12",
+        "ai_equity": 90.16,
+        "buy_hold_equity": 97.74,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-03-13",
+        "ai_equity": 90.67,
+        "buy_hold_equity": 97.19,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-03-16",
+        "ai_equity": 89.74,
+        "buy_hold_equity": 98.18,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-03-17",
+        "ai_equity": 89.51,
+        "buy_hold_equity": 98.44,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-03-18",
+        "ai_equity": 90.76,
+        "buy_hold_equity": 97.06,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-03-19",
+        "ai_equity": 90.98,
+        "buy_hold_equity": 96.82,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-03-20",
+        "ai_equity": 92.53,
+        "buy_hold_equity": 95.18,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-03-23",
+        "ai_equity": 91.56,
+        "buy_hold_equity": 96.18,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-03-24",
+        "ai_equity": 91.86,
+        "buy_hold_equity": 95.85,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-03-25",
+        "ai_equity": 91.35,
+        "buy_hold_equity": 96.39,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-03-26",
+        "ai_equity": 92.98,
+        "buy_hold_equity": 94.67,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-03-27",
+        "ai_equity": 94.57,
+        "buy_hold_equity": 93.05,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-03-30",
+        "ai_equity": 94.89,
+        "buy_hold_equity": 92.74,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-03-31",
+        "ai_equity": 92.13,
+        "buy_hold_equity": 95.44,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-04-01",
+        "ai_equity": 91.43,
+        "buy_hold_equity": 96.16,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-04-02",
+        "ai_equity": 91.43,
+        "buy_hold_equity": 96.24,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-04-06",
+        "ai_equity": 91.43,
+        "buy_hold_equity": 96.7,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-04-07",
+        "ai_equity": 91.43,
+        "buy_hold_equity": 96.74,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-04-08",
+        "ai_equity": 91.43,
+        "buy_hold_equity": 99.2,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-04-09",
+        "ai_equity": 91.96,
+        "buy_hold_equity": 99.78,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-04-10",
+        "ai_equity": 91.9,
+        "buy_hold_equity": 99.71,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-04-13",
+        "ai_equity": 92.8,
+        "buy_hold_equity": 100.68,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-04-14",
+        "ai_equity": 93.93,
+        "buy_hold_equity": 101.91,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-04-15",
+        "ai_equity": 94.67,
+        "buy_hold_equity": 102.71,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-04-16",
+        "ai_equity": 94.9,
+        "buy_hold_equity": 102.97,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-04-17",
+        "ai_equity": 96.05,
+        "buy_hold_equity": 104.21,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-04-20",
+        "ai_equity": 95.86,
+        "buy_hold_equity": 104.0,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-04-21",
+        "ai_equity": 95.23,
+        "buy_hold_equity": 103.32,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-04-22",
+        "ai_equity": 96.19,
+        "buy_hold_equity": 104.37,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-04-23",
+        "ai_equity": 95.82,
+        "buy_hold_equity": 103.96,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-04-24",
+        "ai_equity": 96.56,
+        "buy_hold_equity": 104.77,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-04-27",
+        "ai_equity": 96.73,
+        "buy_hold_equity": 104.95,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-04-28",
+        "ai_equity": 96.26,
+        "buy_hold_equity": 104.44,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-04-29",
+        "ai_equity": 96.24,
+        "buy_hold_equity": 104.42,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-04-30",
+        "ai_equity": 97.2,
+        "buy_hold_equity": 105.46,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-05-01",
+        "ai_equity": 97.47,
+        "buy_hold_equity": 105.75,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-05-04",
+        "ai_equity": 97.11,
+        "buy_hold_equity": 105.37,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-05-05",
+        "ai_equity": 97.89,
+        "buy_hold_equity": 106.21,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-05-06",
+        "ai_equity": 99.25,
+        "buy_hold_equity": 107.69,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-05-07",
+        "ai_equity": 98.95,
+        "buy_hold_equity": 107.36,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-05-08",
+        "ai_equity": 99.77,
+        "buy_hold_equity": 108.24,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-05-11",
+        "ai_equity": 99.99,
+        "buy_hold_equity": 108.49,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-05-12",
+        "ai_equity": 99.84,
+        "buy_hold_equity": 108.33,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-05-13",
+        "ai_equity": 100.4,
+        "buy_hold_equity": 108.93,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-05-14",
+        "ai_equity": 101.19,
+        "buy_hold_equity": 109.79,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-05-15",
+        "ai_equity": 99.98,
+        "buy_hold_equity": 108.47,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-05-18",
+        "ai_equity": 99.91,
+        "buy_hold_equity": 108.4,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-05-19",
+        "ai_equity": 99.91,
+        "buy_hold_equity": 107.67,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-05-20",
+        "ai_equity": 99.91,
+        "buy_hold_equity": 108.78,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-05-21",
+        "ai_equity": 99.91,
+        "buy_hold_equity": 108.99,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-05-22",
+        "ai_equity": 99.91,
+        "buy_hold_equity": 109.42,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-05-26",
+        "ai_equity": 99.91,
+        "buy_hold_equity": 110.15,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-05-27",
+        "ai_equity": 99.91,
+        "buy_hold_equity": 110.13,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-05-28",
+        "ai_equity": 99.91,
+        "buy_hold_equity": 110.74,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-05-29",
+        "ai_equity": 99.91,
+        "buy_hold_equity": 111.01,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-06-01",
+        "ai_equity": 99.91,
+        "buy_hold_equity": 111.31,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-06-02",
+        "ai_equity": 99.91,
+        "buy_hold_equity": 111.47,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-06-03",
+        "ai_equity": 99.91,
+        "buy_hold_equity": 110.68,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-06-04",
+        "ai_equity": 99.91,
+        "buy_hold_equity": 111.1,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-06-05",
+        "ai_equity": 99.91,
+        "buy_hold_equity": 108.23,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-06-08",
+        "ai_equity": 99.91,
+        "buy_hold_equity": 108.48,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-06-09",
+        "ai_equity": 99.91,
+        "buy_hold_equity": 108.16,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-06-10",
+        "ai_equity": 99.91,
+        "buy_hold_equity": 106.46,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-06-11",
+        "ai_equity": 99.91,
+        "buy_hold_equity": 108.26,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-06-12",
+        "ai_equity": 99.91,
+        "buy_hold_equity": 108.85,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-06-15",
+        "ai_equity": 99.91,
+        "buy_hold_equity": 110.77,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-06-16",
+        "ai_equity": 99.91,
+        "buy_hold_equity": 110.11,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-06-17",
+        "ai_equity": 98.66,
+        "buy_hold_equity": 108.73,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-06-18",
+        "ai_equity": 98.66,
+        "buy_hold_equity": 109.58,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-06-22",
+        "ai_equity": 98.66,
+        "buy_hold_equity": 109.24,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-06-23",
+        "ai_equity": 98.66,
+        "buy_hold_equity": 107.65,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-06-24",
+        "ai_equity": 98.61,
+        "buy_hold_equity": 107.6,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-06-25",
+        "ai_equity": 98.75,
+        "buy_hold_equity": 107.76,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-06-26",
+        "ai_equity": 98.75,
+        "buy_hold_equity": 106.98,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-06-29",
+        "ai_equity": 97.13,
+        "buy_hold_equity": 108.74,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-06-30",
+        "ai_equity": 97.13,
+        "buy_hold_equity": 109.59,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-07-01",
+        "ai_equity": 97.13,
+        "buy_hold_equity": 109.44,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-07-02",
+        "ai_equity": 97.13,
+        "buy_hold_equity": 109.3,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-07-06",
+        "ai_equity": 97.13,
+        "buy_hold_equity": 110.25,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-07-07",
+        "ai_equity": 96.67,
+        "buy_hold_equity": 109.72,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-07-08",
+        "ai_equity": 96.37,
+        "buy_hold_equity": 109.39,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-07-09",
+        "ai_equity": 97.18,
+        "buy_hold_equity": 110.31,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-07-10",
+        "ai_equity": 97.6,
+        "buy_hold_equity": 110.79,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-07-13",
+        "ai_equity": 96.85,
+        "buy_hold_equity": 109.94,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-07-14",
+        "ai_equity": 97.2,
+        "buy_hold_equity": 110.33,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-07-15",
+        "ai_equity": 97.58,
+        "buy_hold_equity": 110.77,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-07-16",
+        "ai_equity": 97.06,
+        "buy_hold_equity": 110.17,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-07-17",
+        "ai_equity": 96.09,
+        "buy_hold_equity": 109.08,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-07-20",
+        "ai_equity": 96.09,
+        "buy_hold_equity": 108.9,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-07-21",
+        "ai_equity": 96.09,
+        "buy_hold_equity": 109.81,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-07-22",
+        "ai_equity": 96.09,
+        "buy_hold_equity": 109.68,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-07-23",
+        "ai_equity": 96.09,
+        "buy_hold_equity": 108.33,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-07-24",
+        "ai_equity": 96.0,
+        "buy_hold_equity": 108.44,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-07-27",
+        "ai_equity": 96.0,
+        "buy_hold_equity": 108.46,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-07-28",
+        "ai_equity": 96.0,
+        "buy_hold_equity": 108.72,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-07-29",
+        "ai_equity": 96.0,
+        "buy_hold_equity": 107.05,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-07-30",
+        "ai_equity": 94.39,
+        "buy_hold_equity": 108.84,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-07-31",
+        "ai_equity": 94.39,
+        "buy_hold_equity": 109.63,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-08-03",
+        "ai_equity": 94.39,
+        "buy_hold_equity": 111.19,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-08-04",
+        "ai_equity": 96.09,
+        "buy_hold_equity": 113.19,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-08-05",
+        "ai_equity": 95.9,
+        "buy_hold_equity": 112.97,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-08-06",
+        "ai_equity": 95.74,
+        "buy_hold_equity": 112.78,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-08-07",
+        "ai_equity": 96.33,
+        "buy_hold_equity": 113.47,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-08-10",
+        "ai_equity": 96.3,
+        "buy_hold_equity": 113.44,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-08-11",
+        "ai_equity": 95.99,
+        "buy_hold_equity": 113.08,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-08-12",
+        "ai_equity": 96.23,
+        "buy_hold_equity": 113.36,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-08-13",
+        "ai_equity": 96.91,
+        "buy_hold_equity": 114.15,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-08-14",
+        "ai_equity": 96.71,
+        "buy_hold_equity": 113.93,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-08-17",
+        "ai_equity": 96.26,
+        "buy_hold_equity": 113.39,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-08-18",
+        "ai_equity": 95.61,
+        "buy_hold_equity": 112.62,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-08-19",
+        "ai_equity": 95.81,
+        "buy_hold_equity": 112.86,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-08-20",
+        "ai_equity": 95.0,
+        "buy_hold_equity": 111.91,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-08-21",
+        "ai_equity": 95.0,
+        "buy_hold_equity": 112.37,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-08-24",
+        "ai_equity": 95.0,
+        "buy_hold_equity": 112.04,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-08-25",
+        "ai_equity": 95.0,
+        "buy_hold_equity": 112.4,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-08-26",
+        "ai_equity": 95.0,
+        "buy_hold_equity": 112.42,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-08-27",
+        "ai_equity": 95.0,
+        "buy_hold_equity": 113.16,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-08-28",
+        "ai_equity": 94.79,
+        "buy_hold_equity": 112.9,
+        "signal": "UP"
+      }
+    ]
+  },
+  "AAPL": {
+    "asset": "AAPL",
+    "horizon_days": 1,
+    "ai_total_return_pct": 6.06,
+    "buy_hold_total_return_pct": 18.66,
+    "ai_max_drawdown_pct": 13.78,
+    "buy_hold_max_drawdown_pct": 13.82,
+    "win_rate_pct": 50.8,
+    "total_trades": 118,
+    "equity_curve": [
+      {
+        "date": "2025-11-10",
+        "ai_equity": 100.0,
+        "buy_hold_equity": 100.0,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-11-11",
+        "ai_equity": 100.0,
+        "buy_hold_equity": 102.16,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-11-12",
+        "ai_equity": 100.0,
+        "buy_hold_equity": 101.5,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-11-13",
+        "ai_equity": 100.0,
+        "buy_hold_equity": 101.31,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-11-14",
+        "ai_equity": 100.0,
+        "buy_hold_equity": 101.11,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-11-17",
+        "ai_equity": 100.0,
+        "buy_hold_equity": 99.27,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-11-18",
+        "ai_equity": 100.0,
+        "buy_hold_equity": 99.26,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-11-19",
+        "ai_equity": 100.0,
+        "buy_hold_equity": 99.68,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-11-20",
+        "ai_equity": 100.0,
+        "buy_hold_equity": 98.82,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-11-21",
+        "ai_equity": 100.0,
+        "buy_hold_equity": 100.76,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-11-24",
+        "ai_equity": 100.0,
+        "buy_hold_equity": 102.41,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-11-25",
+        "ai_equity": 100.0,
+        "buy_hold_equity": 102.8,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-11-26",
+        "ai_equity": 100.0,
+        "buy_hold_equity": 103.01,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-11-28",
+        "ai_equity": 100.0,
+        "buy_hold_equity": 103.5,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-12-01",
+        "ai_equity": 101.52,
+        "buy_hold_equity": 105.07,
+        "signal": "UP"
+      },
+      {
+        "date": "2025-12-02",
+        "ai_equity": 102.63,
+        "buy_hold_equity": 106.22,
+        "signal": "UP"
+      },
+      {
+        "date": "2025-12-03",
+        "ai_equity": 101.9,
+        "buy_hold_equity": 105.46,
+        "signal": "UP"
+      },
+      {
+        "date": "2025-12-04",
+        "ai_equity": 100.66,
+        "buy_hold_equity": 104.18,
+        "signal": "UP"
+      },
+      {
+        "date": "2025-12-05",
+        "ai_equity": 99.97,
+        "buy_hold_equity": 103.47,
+        "signal": "UP"
+      },
+      {
+        "date": "2025-12-08",
+        "ai_equity": 99.66,
+        "buy_hold_equity": 103.14,
+        "signal": "UP"
+      },
+      {
+        "date": "2025-12-09",
+        "ai_equity": 99.66,
+        "buy_hold_equity": 102.88,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-12-10",
+        "ai_equity": 99.66,
+        "buy_hold_equity": 103.47,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-12-11",
+        "ai_equity": 99.66,
+        "buy_hold_equity": 103.19,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-12-12",
+        "ai_equity": 99.66,
+        "buy_hold_equity": 103.28,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-12-15",
+        "ai_equity": 99.66,
+        "buy_hold_equity": 101.74,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-12-16",
+        "ai_equity": 99.66,
+        "buy_hold_equity": 101.92,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-12-17",
+        "ai_equity": 99.66,
+        "buy_hold_equity": 100.89,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-12-18",
+        "ai_equity": 99.66,
+        "buy_hold_equity": 101.02,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-12-19",
+        "ai_equity": 99.66,
+        "buy_hold_equity": 101.57,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-12-22",
+        "ai_equity": 99.66,
+        "buy_hold_equity": 100.57,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-12-23",
+        "ai_equity": 99.66,
+        "buy_hold_equity": 101.09,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-12-24",
+        "ai_equity": 99.66,
+        "buy_hold_equity": 101.63,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-12-26",
+        "ai_equity": 99.66,
+        "buy_hold_equity": 101.47,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-12-29",
+        "ai_equity": 99.66,
+        "buy_hold_equity": 101.61,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-12-30",
+        "ai_equity": 99.66,
+        "buy_hold_equity": 101.35,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-12-31",
+        "ai_equity": 99.66,
+        "buy_hold_equity": 100.9,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-01-02",
+        "ai_equity": 99.66,
+        "buy_hold_equity": 100.59,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-01-05",
+        "ai_equity": 101.03,
+        "buy_hold_equity": 99.19,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-01-06",
+        "ai_equity": 102.89,
+        "buy_hold_equity": 97.38,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-01-07",
+        "ai_equity": 103.68,
+        "buy_hold_equity": 96.62,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-01-08",
+        "ai_equity": 104.2,
+        "buy_hold_equity": 96.14,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-01-09",
+        "ai_equity": 104.06,
+        "buy_hold_equity": 96.27,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-01-12",
+        "ai_equity": 103.71,
+        "buy_hold_equity": 96.59,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-01-13",
+        "ai_equity": 103.39,
+        "buy_hold_equity": 96.89,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-01-14",
+        "ai_equity": 103.82,
+        "buy_hold_equity": 96.49,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-01-15",
+        "ai_equity": 104.52,
+        "buy_hold_equity": 95.84,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-01-16",
+        "ai_equity": 105.61,
+        "buy_hold_equity": 94.84,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-01-20",
+        "ai_equity": 109.26,
+        "buy_hold_equity": 91.56,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-01-21",
+        "ai_equity": 108.84,
+        "buy_hold_equity": 91.92,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-01-22",
+        "ai_equity": 108.53,
+        "buy_hold_equity": 92.18,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-01-23",
+        "ai_equity": 108.66,
+        "buy_hold_equity": 92.06,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-01-26",
+        "ai_equity": 105.44,
+        "buy_hold_equity": 94.8,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-01-27",
+        "ai_equity": 104.25,
+        "buy_hold_equity": 95.86,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-01-28",
+        "ai_equity": 104.25,
+        "buy_hold_equity": 95.18,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-01-29",
+        "ai_equity": 104.25,
+        "buy_hold_equity": 95.86,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-01-30",
+        "ai_equity": 104.25,
+        "buy_hold_equity": 96.31,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-02-02",
+        "ai_equity": 104.25,
+        "buy_hold_equity": 100.22,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-02-03",
+        "ai_equity": 104.05,
+        "buy_hold_equity": 100.02,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-02-04",
+        "ai_equity": 106.76,
+        "buy_hold_equity": 102.62,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-02-05",
+        "ai_equity": 106.53,
+        "buy_hold_equity": 102.41,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-02-06",
+        "ai_equity": 107.39,
+        "buy_hold_equity": 103.23,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-02-09",
+        "ai_equity": 106.03,
+        "buy_hold_equity": 101.93,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-02-10",
+        "ai_equity": 105.67,
+        "buy_hold_equity": 101.58,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-02-11",
+        "ai_equity": 106.37,
+        "buy_hold_equity": 102.25,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-02-12",
+        "ai_equity": 101.06,
+        "buy_hold_equity": 97.14,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-02-13",
+        "ai_equity": 101.06,
+        "buy_hold_equity": 94.93,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-02-17",
+        "ai_equity": 97.86,
+        "buy_hold_equity": 97.94,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-02-18",
+        "ai_equity": 97.86,
+        "buy_hold_equity": 98.11,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-02-19",
+        "ai_equity": 97.86,
+        "buy_hold_equity": 96.72,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-02-20",
+        "ai_equity": 97.86,
+        "buy_hold_equity": 98.2,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-02-23",
+        "ai_equity": 97.86,
+        "buy_hold_equity": 98.79,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-02-24",
+        "ai_equity": 97.86,
+        "buy_hold_equity": 101.01,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-02-25",
+        "ai_equity": 98.61,
+        "buy_hold_equity": 101.78,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-02-26",
+        "ai_equity": 98.15,
+        "buy_hold_equity": 101.31,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-02-27",
+        "ai_equity": 95.0,
+        "buy_hold_equity": 98.05,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-03-02",
+        "ai_equity": 95.0,
+        "buy_hold_equity": 98.25,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-03-03",
+        "ai_equity": 95.0,
+        "buy_hold_equity": 97.89,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-03-04",
+        "ai_equity": 95.0,
+        "buy_hold_equity": 97.44,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-03-05",
+        "ai_equity": 95.0,
+        "buy_hold_equity": 96.61,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-03-06",
+        "ai_equity": 96.03,
+        "buy_hold_equity": 95.56,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-03-09",
+        "ai_equity": 95.13,
+        "buy_hold_equity": 96.46,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-03-10",
+        "ai_equity": 94.78,
+        "buy_hold_equity": 96.81,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-03-11",
+        "ai_equity": 94.78,
+        "buy_hold_equity": 96.8,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-03-12",
+        "ai_equity": 94.78,
+        "buy_hold_equity": 94.93,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-03-13",
+        "ai_equity": 96.87,
+        "buy_hold_equity": 92.83,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-03-16",
+        "ai_equity": 95.82,
+        "buy_hold_equity": 93.84,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-03-17",
+        "ai_equity": 95.29,
+        "buy_hold_equity": 94.36,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-03-18",
+        "ai_equity": 96.9,
+        "buy_hold_equity": 92.77,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-03-19",
+        "ai_equity": 97.28,
+        "buy_hold_equity": 92.4,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-03-20",
+        "ai_equity": 97.65,
+        "buy_hold_equity": 92.04,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-03-23",
+        "ai_equity": 96.28,
+        "buy_hold_equity": 93.34,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-03-24",
+        "ai_equity": 96.22,
+        "buy_hold_equity": 93.4,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-03-25",
+        "ai_equity": 95.84,
+        "buy_hold_equity": 93.76,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-03-26",
+        "ai_equity": 95.74,
+        "buy_hold_equity": 93.86,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-03-27",
+        "ai_equity": 97.29,
+        "buy_hold_equity": 92.34,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-03-30",
+        "ai_equity": 98.14,
+        "buy_hold_equity": 91.54,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-03-31",
+        "ai_equity": 95.29,
+        "buy_hold_equity": 94.2,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-04-01",
+        "ai_equity": 95.29,
+        "buy_hold_equity": 94.88,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-04-02",
+        "ai_equity": 95.29,
+        "buy_hold_equity": 94.99,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-04-06",
+        "ai_equity": 95.29,
+        "buy_hold_equity": 96.08,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-04-07",
+        "ai_equity": 95.29,
+        "buy_hold_equity": 94.09,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-04-08",
+        "ai_equity": 95.29,
+        "buy_hold_equity": 96.09,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-04-09",
+        "ai_equity": 95.29,
+        "buy_hold_equity": 96.68,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-04-10",
+        "ai_equity": 95.29,
+        "buy_hold_equity": 96.68,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-04-13",
+        "ai_equity": 95.29,
+        "buy_hold_equity": 96.2,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-04-14",
+        "ai_equity": 95.29,
+        "buy_hold_equity": 96.07,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-04-15",
+        "ai_equity": 95.29,
+        "buy_hold_equity": 98.89,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-04-16",
+        "ai_equity": 94.21,
+        "buy_hold_equity": 97.76,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-04-17",
+        "ai_equity": 96.65,
+        "buy_hold_equity": 100.3,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-04-20",
+        "ai_equity": 97.66,
+        "buy_hold_equity": 101.34,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-04-21",
+        "ai_equity": 95.2,
+        "buy_hold_equity": 98.79,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-04-22",
+        "ai_equity": 97.7,
+        "buy_hold_equity": 101.39,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-04-23",
+        "ai_equity": 97.79,
+        "buy_hold_equity": 101.48,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-04-24",
+        "ai_equity": 96.95,
+        "buy_hold_equity": 100.6,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-04-27",
+        "ai_equity": 95.71,
+        "buy_hold_equity": 99.32,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-04-28",
+        "ai_equity": 96.82,
+        "buy_hold_equity": 100.48,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-04-29",
+        "ai_equity": 96.63,
+        "buy_hold_equity": 100.27,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-04-30",
+        "ai_equity": 97.05,
+        "buy_hold_equity": 100.71,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-05-01",
+        "ai_equity": 100.19,
+        "buy_hold_equity": 103.98,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-05-04",
+        "ai_equity": 99.01,
+        "buy_hold_equity": 102.75,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-05-05",
+        "ai_equity": 101.64,
+        "buy_hold_equity": 105.47,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-05-06",
+        "ai_equity": 102.83,
+        "buy_hold_equity": 106.71,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-05-07",
+        "ai_equity": 102.8,
+        "buy_hold_equity": 106.68,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-05-08",
+        "ai_equity": 104.91,
+        "buy_hold_equity": 108.87,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-05-11",
+        "ai_equity": 104.68,
+        "buy_hold_equity": 108.63,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-05-12",
+        "ai_equity": 105.44,
+        "buy_hold_equity": 109.42,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-05-13",
+        "ai_equity": 106.89,
+        "buy_hold_equity": 110.93,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-05-14",
+        "ai_equity": 106.66,
+        "buy_hold_equity": 110.68,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-05-15",
+        "ai_equity": 107.38,
+        "buy_hold_equity": 111.43,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-05-18",
+        "ai_equity": 106.52,
+        "buy_hold_equity": 110.54,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-05-19",
+        "ai_equity": 106.93,
+        "buy_hold_equity": 110.96,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-05-20",
+        "ai_equity": 108.1,
+        "buy_hold_equity": 112.18,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-05-21",
+        "ai_equity": 109.08,
+        "buy_hold_equity": 113.2,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-05-22",
+        "ai_equity": 110.45,
+        "buy_hold_equity": 114.62,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-05-26",
+        "ai_equity": 110.28,
+        "buy_hold_equity": 114.44,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-05-27",
+        "ai_equity": 111.18,
+        "buy_hold_equity": 115.37,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-05-28",
+        "ai_equity": 111.77,
+        "buy_hold_equity": 115.99,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-05-29",
+        "ai_equity": 111.61,
+        "buy_hold_equity": 115.82,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-06-01",
+        "ai_equity": 109.55,
+        "buy_hold_equity": 113.69,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-06-02",
+        "ai_equity": 112.73,
+        "buy_hold_equity": 116.99,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-06-03",
+        "ai_equity": 110.97,
+        "buy_hold_equity": 115.15,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-06-04",
+        "ai_equity": 110.97,
+        "buy_hold_equity": 115.51,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-06-05",
+        "ai_equity": 110.97,
+        "buy_hold_equity": 114.07,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-06-08",
+        "ai_equity": 110.97,
+        "buy_hold_equity": 111.92,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-06-09",
+        "ai_equity": 110.97,
+        "buy_hold_equity": 107.84,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-06-10",
+        "ai_equity": 110.97,
+        "buy_hold_equity": 108.22,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-06-11",
+        "ai_equity": 110.97,
+        "buy_hold_equity": 109.72,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-06-12",
+        "ai_equity": 110.97,
+        "buy_hold_equity": 108.05,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-06-15",
+        "ai_equity": 110.97,
+        "buy_hold_equity": 110.02,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-06-16",
+        "ai_equity": 110.97,
+        "buy_hold_equity": 111.06,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-06-17",
+        "ai_equity": 110.97,
+        "buy_hold_equity": 109.84,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-06-18",
+        "ai_equity": 110.97,
+        "buy_hold_equity": 110.61,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-06-22",
+        "ai_equity": 110.97,
+        "buy_hold_equity": 110.24,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-06-23",
+        "ai_equity": 110.97,
+        "buy_hold_equity": 109.23,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-06-24",
+        "ai_equity": 110.97,
+        "buy_hold_equity": 108.78,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-06-25",
+        "ai_equity": 110.97,
+        "buy_hold_equity": 102.12,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-06-26",
+        "ai_equity": 107.49,
+        "buy_hold_equity": 105.33,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-06-29",
+        "ai_equity": 108.26,
+        "buy_hold_equity": 104.57,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-06-30",
+        "ai_equity": 105.33,
+        "buy_hold_equity": 107.4,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-07-01",
+        "ai_equity": 105.33,
+        "buy_hold_equity": 109.26,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-07-02",
+        "ai_equity": 105.33,
+        "buy_hold_equity": 114.55,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-07-06",
+        "ai_equity": 106.71,
+        "buy_hold_equity": 116.04,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-07-07",
+        "ai_equity": 106.02,
+        "buy_hold_equity": 115.3,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-07-08",
+        "ai_equity": 106.95,
+        "buy_hold_equity": 116.32,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-07-09",
+        "ai_equity": 107.92,
+        "buy_hold_equity": 117.37,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-07-10",
+        "ai_equity": 107.61,
+        "buy_hold_equity": 117.03,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-07-13",
+        "ai_equity": 108.29,
+        "buy_hold_equity": 117.77,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-07-14",
+        "ai_equity": 107.46,
+        "buy_hold_equity": 116.86,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-07-15",
+        "ai_equity": 111.77,
+        "buy_hold_equity": 121.55,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-07-16",
+        "ai_equity": 113.74,
+        "buy_hold_equity": 123.69,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-07-17",
+        "ai_equity": 113.9,
+        "buy_hold_equity": 123.87,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-07-20",
+        "ai_equity": 111.46,
+        "buy_hold_equity": 121.22,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-07-21",
+        "ai_equity": 111.85,
+        "buy_hold_equity": 121.64,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-07-22",
+        "ai_equity": 111.22,
+        "buy_hold_equity": 120.96,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-07-23",
+        "ai_equity": 109.78,
+        "buy_hold_equity": 119.39,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-07-24",
+        "ai_equity": 113.65,
+        "buy_hold_equity": 123.6,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-07-27",
+        "ai_equity": 114.98,
+        "buy_hold_equity": 125.05,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-07-28",
+        "ai_equity": 116.06,
+        "buy_hold_equity": 126.22,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-07-29",
+        "ai_equity": 115.42,
+        "buy_hold_equity": 125.52,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-07-30",
+        "ai_equity": 113.79,
+        "buy_hold_equity": 123.75,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-07-31",
+        "ai_equity": 105.43,
+        "buy_hold_equity": 114.65,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-08-03",
+        "ai_equity": 107.3,
+        "buy_hold_equity": 112.62,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-08-04",
+        "ai_equity": 105.19,
+        "buy_hold_equity": 114.83,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-08-05",
+        "ai_equity": 104.64,
+        "buy_hold_equity": 115.43,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-08-06",
+        "ai_equity": 104.64,
+        "buy_hold_equity": 115.95,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-08-07",
+        "ai_equity": 104.64,
+        "buy_hold_equity": 116.29,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-08-10",
+        "ai_equity": 104.64,
+        "buy_hold_equity": 114.41,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-08-11",
+        "ai_equity": 105.78,
+        "buy_hold_equity": 113.17,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-08-12",
+        "ai_equity": 106.7,
+        "buy_hold_equity": 112.18,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-08-13",
+        "ai_equity": 105.64,
+        "buy_hold_equity": 113.3,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-08-14",
+        "ai_equity": 105.41,
+        "buy_hold_equity": 113.55,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-08-17",
+        "ai_equity": 105.52,
+        "buy_hold_equity": 113.42,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-08-18",
+        "ai_equity": 103.99,
+        "buy_hold_equity": 115.07,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-08-19",
+        "ai_equity": 103.99,
+        "buy_hold_equity": 117.59,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-08-20",
+        "ai_equity": 103.99,
+        "buy_hold_equity": 115.54,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-08-21",
+        "ai_equity": 103.99,
+        "buy_hold_equity": 114.82,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-08-24",
+        "ai_equity": 103.99,
+        "buy_hold_equity": 115.18,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-08-25",
+        "ai_equity": 103.99,
+        "buy_hold_equity": 115.02,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-08-26",
+        "ai_equity": 103.99,
+        "buy_hold_equity": 116.34,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-08-27",
+        "ai_equity": 104.36,
+        "buy_hold_equity": 116.76,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-08-28",
+        "ai_equity": 106.06,
+        "buy_hold_equity": 118.66,
+        "signal": "UP"
+      }
+    ]
+  },
+  "NVDA": {
+    "asset": "NVDA",
+    "horizon_days": 1,
+    "ai_total_return_pct": -39.04,
+    "buy_hold_total_return_pct": 9.29,
+    "ai_max_drawdown_pct": 39.04,
+    "buy_hold_max_drawdown_pct": 19.4,
+    "win_rate_pct": 37.8,
+    "total_trades": 98,
+    "equity_curve": [
+      {
+        "date": "2025-11-10",
+        "ai_equity": 100.0,
+        "buy_hold_equity": 100.0,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-11-11",
+        "ai_equity": 100.0,
+        "buy_hold_equity": 97.04,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-11-12",
+        "ai_equity": 100.0,
+        "buy_hold_equity": 97.36,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-11-13",
+        "ai_equity": 100.0,
+        "buy_hold_equity": 93.88,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-11-14",
+        "ai_equity": 100.0,
+        "buy_hold_equity": 95.54,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-11-17",
+        "ai_equity": 100.0,
+        "buy_hold_equity": 93.75,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-11-18",
+        "ai_equity": 100.0,
+        "buy_hold_equity": 91.11,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-11-19",
+        "ai_equity": 97.15,
+        "buy_hold_equity": 93.71,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2025-11-20",
+        "ai_equity": 97.15,
+        "buy_hold_equity": 90.75,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-11-21",
+        "ai_equity": 98.1,
+        "buy_hold_equity": 89.87,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2025-11-24",
+        "ai_equity": 96.09,
+        "buy_hold_equity": 91.71,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2025-11-25",
+        "ai_equity": 96.09,
+        "buy_hold_equity": 89.33,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-11-26",
+        "ai_equity": 94.77,
+        "buy_hold_equity": 90.56,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2025-11-28",
+        "ai_equity": 96.48,
+        "buy_hold_equity": 88.92,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2025-12-01",
+        "ai_equity": 94.89,
+        "buy_hold_equity": 90.39,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2025-12-02",
+        "ai_equity": 94.08,
+        "buy_hold_equity": 91.16,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2025-12-03",
+        "ai_equity": 94.08,
+        "buy_hold_equity": 90.22,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-12-04",
+        "ai_equity": 92.09,
+        "buy_hold_equity": 92.13,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2025-12-05",
+        "ai_equity": 92.09,
+        "buy_hold_equity": 91.64,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-12-08",
+        "ai_equity": 92.09,
+        "buy_hold_equity": 93.22,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-12-09",
+        "ai_equity": 92.09,
+        "buy_hold_equity": 92.93,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-12-10",
+        "ai_equity": 92.09,
+        "buy_hold_equity": 92.33,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-12-11",
+        "ai_equity": 92.09,
+        "buy_hold_equity": 90.9,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-12-12",
+        "ai_equity": 92.09,
+        "buy_hold_equity": 87.93,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-12-15",
+        "ai_equity": 91.43,
+        "buy_hold_equity": 88.57,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2025-12-16",
+        "ai_equity": 90.68,
+        "buy_hold_equity": 89.28,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2025-12-17",
+        "ai_equity": 94.14,
+        "buy_hold_equity": 85.88,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2025-12-18",
+        "ai_equity": 92.38,
+        "buy_hold_equity": 87.49,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2025-12-19",
+        "ai_equity": 88.75,
+        "buy_hold_equity": 90.93,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2025-12-22",
+        "ai_equity": 88.75,
+        "buy_hold_equity": 92.28,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-12-23",
+        "ai_equity": 88.75,
+        "buy_hold_equity": 95.06,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-12-24",
+        "ai_equity": 88.47,
+        "buy_hold_equity": 94.76,
+        "signal": "UP"
+      },
+      {
+        "date": "2025-12-26",
+        "ai_equity": 89.37,
+        "buy_hold_equity": 95.72,
+        "signal": "UP"
+      },
+      {
+        "date": "2025-12-29",
+        "ai_equity": 88.28,
+        "buy_hold_equity": 94.56,
+        "signal": "UP"
+      },
+      {
+        "date": "2025-12-30",
+        "ai_equity": 87.96,
+        "buy_hold_equity": 94.22,
+        "signal": "UP"
+      },
+      {
+        "date": "2025-12-31",
+        "ai_equity": 87.96,
+        "buy_hold_equity": 93.7,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-01-02",
+        "ai_equity": 87.96,
+        "buy_hold_equity": 94.88,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-01-05",
+        "ai_equity": 87.62,
+        "buy_hold_equity": 94.51,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-01-06",
+        "ai_equity": 87.21,
+        "buy_hold_equity": 94.07,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-01-07",
+        "ai_equity": 87.21,
+        "buy_hold_equity": 95.01,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-01-08",
+        "ai_equity": 85.34,
+        "buy_hold_equity": 92.96,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-01-09",
+        "ai_equity": 85.34,
+        "buy_hold_equity": 92.87,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-01-12",
+        "ai_equity": 85.34,
+        "buy_hold_equity": 92.91,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-01-13",
+        "ai_equity": 85.34,
+        "buy_hold_equity": 93.35,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-01-14",
+        "ai_equity": 85.34,
+        "buy_hold_equity": 92.01,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-01-15",
+        "ai_equity": 85.34,
+        "buy_hold_equity": 93.97,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-01-16",
+        "ai_equity": 85.34,
+        "buy_hold_equity": 93.56,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-01-20",
+        "ai_equity": 85.34,
+        "buy_hold_equity": 89.46,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-01-21",
+        "ai_equity": 82.82,
+        "buy_hold_equity": 92.1,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-01-22",
+        "ai_equity": 82.82,
+        "buy_hold_equity": 92.86,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-01-23",
+        "ai_equity": 82.82,
+        "buy_hold_equity": 94.28,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-01-26",
+        "ai_equity": 82.82,
+        "buy_hold_equity": 93.68,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-01-27",
+        "ai_equity": 82.82,
+        "buy_hold_equity": 94.71,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-01-28",
+        "ai_equity": 82.82,
+        "buy_hold_equity": 96.22,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-01-29",
+        "ai_equity": 83.25,
+        "buy_hold_equity": 96.71,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-01-30",
+        "ai_equity": 82.65,
+        "buy_hold_equity": 96.02,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-02-02",
+        "ai_equity": 80.27,
+        "buy_hold_equity": 93.25,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-02-03",
+        "ai_equity": 80.27,
+        "buy_hold_equity": 90.6,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-02-04",
+        "ai_equity": 83.0,
+        "buy_hold_equity": 87.51,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-02-05",
+        "ai_equity": 84.1,
+        "buy_hold_equity": 86.35,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-02-06",
+        "ai_equity": 77.48,
+        "buy_hold_equity": 93.15,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-02-09",
+        "ai_equity": 77.48,
+        "buy_hold_equity": 95.47,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-02-10",
+        "ai_equity": 77.48,
+        "buy_hold_equity": 94.72,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-02-11",
+        "ai_equity": 77.48,
+        "buy_hold_equity": 95.48,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-02-12",
+        "ai_equity": 76.22,
+        "buy_hold_equity": 93.92,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-02-13",
+        "ai_equity": 76.22,
+        "buy_hold_equity": 91.84,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-02-17",
+        "ai_equity": 76.22,
+        "buy_hold_equity": 92.93,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-02-18",
+        "ai_equity": 76.22,
+        "buy_hold_equity": 94.44,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-02-19",
+        "ai_equity": 76.22,
+        "buy_hold_equity": 94.4,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-02-20",
+        "ai_equity": 76.22,
+        "buy_hold_equity": 95.36,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-02-23",
+        "ai_equity": 76.22,
+        "buy_hold_equity": 96.23,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-02-24",
+        "ai_equity": 76.73,
+        "buy_hold_equity": 96.89,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-02-25",
+        "ai_equity": 77.81,
+        "buy_hold_equity": 98.25,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-02-26",
+        "ai_equity": 73.57,
+        "buy_hold_equity": 92.89,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-02-27",
+        "ai_equity": 73.57,
+        "buy_hold_equity": 89.02,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-03-02",
+        "ai_equity": 71.37,
+        "buy_hold_equity": 91.68,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-03-03",
+        "ai_equity": 71.37,
+        "buy_hold_equity": 90.45,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-03-04",
+        "ai_equity": 70.18,
+        "buy_hold_equity": 91.96,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-03-05",
+        "ai_equity": 70.18,
+        "buy_hold_equity": 92.11,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-03-06",
+        "ai_equity": 70.18,
+        "buy_hold_equity": 89.33,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-03-09",
+        "ai_equity": 68.28,
+        "buy_hold_equity": 91.76,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-03-10",
+        "ai_equity": 68.28,
+        "buy_hold_equity": 92.83,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-03-11",
+        "ai_equity": 68.28,
+        "buy_hold_equity": 93.46,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-03-12",
+        "ai_equity": 68.28,
+        "buy_hold_equity": 92.01,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-03-13",
+        "ai_equity": 68.28,
+        "buy_hold_equity": 90.56,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-03-16",
+        "ai_equity": 68.28,
+        "buy_hold_equity": 92.05,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-03-17",
+        "ai_equity": 68.28,
+        "buy_hold_equity": 91.4,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-03-18",
+        "ai_equity": 68.28,
+        "buy_hold_equity": 90.63,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-03-19",
+        "ai_equity": 68.28,
+        "buy_hold_equity": 89.71,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-03-20",
+        "ai_equity": 70.52,
+        "buy_hold_equity": 86.76,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-03-23",
+        "ai_equity": 69.32,
+        "buy_hold_equity": 88.24,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-03-24",
+        "ai_equity": 69.49,
+        "buy_hold_equity": 88.02,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-03-25",
+        "ai_equity": 68.11,
+        "buy_hold_equity": 89.77,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-03-26",
+        "ai_equity": 68.11,
+        "buy_hold_equity": 86.03,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-03-27",
+        "ai_equity": 69.59,
+        "buy_hold_equity": 84.16,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-03-30",
+        "ai_equity": 70.57,
+        "buy_hold_equity": 82.98,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-03-31",
+        "ai_equity": 66.62,
+        "buy_hold_equity": 87.62,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-04-01",
+        "ai_equity": 66.62,
+        "buy_hold_equity": 88.29,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-04-02",
+        "ai_equity": 66.62,
+        "buy_hold_equity": 89.12,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-04-06",
+        "ai_equity": 66.62,
+        "buy_hold_equity": 89.24,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-04-07",
+        "ai_equity": 66.62,
+        "buy_hold_equity": 89.48,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-04-08",
+        "ai_equity": 66.62,
+        "buy_hold_equity": 91.47,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-04-09",
+        "ai_equity": 66.62,
+        "buy_hold_equity": 92.39,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-04-10",
+        "ai_equity": 68.33,
+        "buy_hold_equity": 94.77,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-04-13",
+        "ai_equity": 68.58,
+        "buy_hold_equity": 95.11,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-04-14",
+        "ai_equity": 71.19,
+        "buy_hold_equity": 98.72,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-04-15",
+        "ai_equity": 72.04,
+        "buy_hold_equity": 99.91,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-04-16",
+        "ai_equity": 71.86,
+        "buy_hold_equity": 99.65,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-04-17",
+        "ai_equity": 73.06,
+        "buy_hold_equity": 101.32,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-04-20",
+        "ai_equity": 73.2,
+        "buy_hold_equity": 101.51,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-04-21",
+        "ai_equity": 72.41,
+        "buy_hold_equity": 100.42,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-04-22",
+        "ai_equity": 73.36,
+        "buy_hold_equity": 101.73,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-04-23",
+        "ai_equity": 72.32,
+        "buy_hold_equity": 100.3,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-04-24",
+        "ai_equity": 75.45,
+        "buy_hold_equity": 104.63,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-04-27",
+        "ai_equity": 78.47,
+        "buy_hold_equity": 108.82,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-04-28",
+        "ai_equity": 77.22,
+        "buy_hold_equity": 107.09,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-04-29",
+        "ai_equity": 75.8,
+        "buy_hold_equity": 105.12,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-04-30",
+        "ai_equity": 72.3,
+        "buy_hold_equity": 100.26,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-05-01",
+        "ai_equity": 72.3,
+        "buy_hold_equity": 99.7,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-05-04",
+        "ai_equity": 72.3,
+        "buy_hold_equity": 99.71,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-05-05",
+        "ai_equity": 72.3,
+        "buy_hold_equity": 98.72,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-05-06",
+        "ai_equity": 72.3,
+        "buy_hold_equity": 104.41,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-05-07",
+        "ai_equity": 72.3,
+        "buy_hold_equity": 106.25,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-05-08",
+        "ai_equity": 72.3,
+        "buy_hold_equity": 108.11,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-05-11",
+        "ai_equity": 73.72,
+        "buy_hold_equity": 110.24,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-05-12",
+        "ai_equity": 74.17,
+        "buy_hold_equity": 110.92,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-05-13",
+        "ai_equity": 75.87,
+        "buy_hold_equity": 113.45,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-05-14",
+        "ai_equity": 79.2,
+        "buy_hold_equity": 118.43,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-05-15",
+        "ai_equity": 75.7,
+        "buy_hold_equity": 113.2,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-05-18",
+        "ai_equity": 74.69,
+        "buy_hold_equity": 111.69,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-05-19",
+        "ai_equity": 74.11,
+        "buy_hold_equity": 110.83,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-05-20",
+        "ai_equity": 75.08,
+        "buy_hold_equity": 112.27,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-05-21",
+        "ai_equity": 73.74,
+        "buy_hold_equity": 110.28,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-05-22",
+        "ai_equity": 73.74,
+        "buy_hold_equity": 108.18,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-05-26",
+        "ai_equity": 73.74,
+        "buy_hold_equity": 107.94,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-05-27",
+        "ai_equity": 73.74,
+        "buy_hold_equity": 106.81,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-05-28",
+        "ai_equity": 73.74,
+        "buy_hold_equity": 107.64,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-05-29",
+        "ai_equity": 73.74,
+        "buy_hold_equity": 106.07,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-06-01",
+        "ai_equity": 73.74,
+        "buy_hold_equity": 112.72,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-06-02",
+        "ai_equity": 73.74,
+        "buy_hold_equity": 111.94,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-06-03",
+        "ai_equity": 73.74,
+        "buy_hold_equity": 107.89,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-06-04",
+        "ai_equity": 73.74,
+        "buy_hold_equity": 109.85,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-06-05",
+        "ai_equity": 73.74,
+        "buy_hold_equity": 103.04,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-06-08",
+        "ai_equity": 73.74,
+        "buy_hold_equity": 104.82,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-06-09",
+        "ai_equity": 73.74,
+        "buy_hold_equity": 104.59,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-06-10",
+        "ai_equity": 73.74,
+        "buy_hold_equity": 100.69,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-06-11",
+        "ai_equity": 72.11,
+        "buy_hold_equity": 102.92,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-06-12",
+        "ai_equity": 71.99,
+        "buy_hold_equity": 103.08,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-06-15",
+        "ai_equity": 71.99,
+        "buy_hold_equity": 106.73,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-06-16",
+        "ai_equity": 71.99,
+        "buy_hold_equity": 104.2,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-06-17",
+        "ai_equity": 71.99,
+        "buy_hold_equity": 102.81,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-06-18",
+        "ai_equity": 71.99,
+        "buy_hold_equity": 105.85,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-06-22",
+        "ai_equity": 71.99,
+        "buy_hold_equity": 104.82,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-06-23",
+        "ai_equity": 71.99,
+        "buy_hold_equity": 100.5,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-06-24",
+        "ai_equity": 72.37,
+        "buy_hold_equity": 99.97,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-06-25",
+        "ai_equity": 73.55,
+        "buy_hold_equity": 98.34,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-06-26",
+        "ai_equity": 74.76,
+        "buy_hold_equity": 96.72,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-06-29",
+        "ai_equity": 73.81,
+        "buy_hold_equity": 97.95,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-06-30",
+        "ai_equity": 71.88,
+        "buy_hold_equity": 100.52,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-07-01",
+        "ai_equity": 71.88,
+        "buy_hold_equity": 99.26,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-07-02",
+        "ai_equity": 72.88,
+        "buy_hold_equity": 97.88,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-07-06",
+        "ai_equity": 72.61,
+        "buy_hold_equity": 98.24,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-07-07",
+        "ai_equity": 72.09,
+        "buy_hold_equity": 98.93,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-07-08",
+        "ai_equity": 69.46,
+        "buy_hold_equity": 102.55,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-07-09",
+        "ai_equity": 69.46,
+        "buy_hold_equity": 101.87,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-07-10",
+        "ai_equity": 69.46,
+        "buy_hold_equity": 105.98,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-07-13",
+        "ai_equity": 67.02,
+        "buy_hold_equity": 102.25,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-07-14",
+        "ai_equity": 67.02,
+        "buy_hold_equity": 106.41,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-07-15",
+        "ai_equity": 67.24,
+        "buy_hold_equity": 106.76,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-07-16",
+        "ai_equity": 65.62,
+        "buy_hold_equity": 104.19,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-07-17",
+        "ai_equity": 65.62,
+        "buy_hold_equity": 101.89,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-07-20",
+        "ai_equity": 65.62,
+        "buy_hold_equity": 102.13,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-07-21",
+        "ai_equity": 65.62,
+        "buy_hold_equity": 104.14,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-07-22",
+        "ai_equity": 65.62,
+        "buy_hold_equity": 106.54,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-07-23",
+        "ai_equity": 64.6,
+        "buy_hold_equity": 104.88,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-07-24",
+        "ai_equity": 64.6,
+        "buy_hold_equity": 103.91,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-07-27",
+        "ai_equity": 64.6,
+        "buy_hold_equity": 98.72,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-07-28",
+        "ai_equity": 64.44,
+        "buy_hold_equity": 98.98,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-07-29",
+        "ai_equity": 66.73,
+        "buy_hold_equity": 95.46,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-07-30",
+        "ai_equity": 64.96,
+        "buy_hold_equity": 97.99,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-07-31",
+        "ai_equity": 63.06,
+        "buy_hold_equity": 100.85,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-08-03",
+        "ai_equity": 63.06,
+        "buy_hold_equity": 103.81,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-08-04",
+        "ai_equity": 63.06,
+        "buy_hold_equity": 106.48,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-08-05",
+        "ai_equity": 65.22,
+        "buy_hold_equity": 110.13,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-08-06",
+        "ai_equity": 65.16,
+        "buy_hold_equity": 110.02,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-08-07",
+        "ai_equity": 66.64,
+        "buy_hold_equity": 112.51,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-08-10",
+        "ai_equity": 64.73,
+        "buy_hold_equity": 109.29,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-08-11",
+        "ai_equity": 64.71,
+        "buy_hold_equity": 109.27,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-08-12",
+        "ai_equity": 66.67,
+        "buy_hold_equity": 112.58,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-08-13",
+        "ai_equity": 67.03,
+        "buy_hold_equity": 113.19,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-08-14",
+        "ai_equity": 66.99,
+        "buy_hold_equity": 113.12,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-08-17",
+        "ai_equity": 66.95,
+        "buy_hold_equity": 113.04,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-08-18",
+        "ai_equity": 65.38,
+        "buy_hold_equity": 110.39,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-08-19",
+        "ai_equity": 64.73,
+        "buy_hold_equity": 109.3,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-08-20",
+        "ai_equity": 64.52,
+        "buy_hold_equity": 108.94,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-08-21",
+        "ai_equity": 63.89,
+        "buy_hold_equity": 107.87,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-08-24",
+        "ai_equity": 63.89,
+        "buy_hold_equity": 104.74,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-08-25",
+        "ai_equity": 63.89,
+        "buy_hold_equity": 107.03,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-08-26",
+        "ai_equity": 63.89,
+        "buy_hold_equity": 105.33,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-08-27",
+        "ai_equity": 63.89,
+        "buy_hold_equity": 114.53,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-08-28",
+        "ai_equity": 60.96,
+        "buy_hold_equity": 109.29,
+        "signal": "UP"
+      }
+    ]
+  },
+  "MSFT": {
+    "asset": "MSFT",
+    "horizon_days": 1,
+    "ai_total_return_pct": 10.26,
+    "buy_hold_total_return_pct": 1.49,
+    "ai_max_drawdown_pct": 14.14,
+    "buy_hold_max_drawdown_pct": 30.97,
+    "win_rate_pct": 56.0,
+    "total_trades": 109,
+    "equity_curve": [
+      {
+        "date": "2025-11-10",
+        "ai_equity": 100.0,
+        "buy_hold_equity": 100.0,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-11-11",
+        "ai_equity": 99.47,
+        "buy_hold_equity": 100.53,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2025-11-12",
+        "ai_equity": 99.47,
+        "buy_hold_equity": 101.02,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-11-13",
+        "ai_equity": 99.47,
+        "buy_hold_equity": 99.46,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-11-14",
+        "ai_equity": 98.11,
+        "buy_hold_equity": 100.83,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2025-11-17",
+        "ai_equity": 98.11,
+        "buy_hold_equity": 100.29,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-11-18",
+        "ai_equity": 98.11,
+        "buy_hold_equity": 97.59,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-11-19",
+        "ai_equity": 99.43,
+        "buy_hold_equity": 96.27,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2025-11-20",
+        "ai_equity": 101.21,
+        "buy_hold_equity": 94.55,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2025-11-21",
+        "ai_equity": 102.54,
+        "buy_hold_equity": 93.3,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2025-11-24",
+        "ai_equity": 102.13,
+        "buy_hold_equity": 93.68,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2025-11-25",
+        "ai_equity": 101.49,
+        "buy_hold_equity": 94.27,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2025-11-26",
+        "ai_equity": 99.68,
+        "buy_hold_equity": 95.95,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2025-11-28",
+        "ai_equity": 98.34,
+        "buy_hold_equity": 97.24,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2025-12-01",
+        "ai_equity": 99.4,
+        "buy_hold_equity": 96.19,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2025-12-02",
+        "ai_equity": 98.73,
+        "buy_hold_equity": 96.84,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2025-12-03",
+        "ai_equity": 101.2,
+        "buy_hold_equity": 94.41,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2025-12-04",
+        "ai_equity": 100.54,
+        "buy_hold_equity": 95.03,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2025-12-05",
+        "ai_equity": 100.06,
+        "buy_hold_equity": 95.49,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2025-12-08",
+        "ai_equity": 100.06,
+        "buy_hold_equity": 97.04,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-12-09",
+        "ai_equity": 100.06,
+        "buy_hold_equity": 97.24,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-12-10",
+        "ai_equity": 100.06,
+        "buy_hold_equity": 94.58,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-12-11",
+        "ai_equity": 100.06,
+        "buy_hold_equity": 95.55,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-12-12",
+        "ai_equity": 100.06,
+        "buy_hold_equity": 94.57,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-12-15",
+        "ai_equity": 100.06,
+        "buy_hold_equity": 93.84,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-12-16",
+        "ai_equity": 100.06,
+        "buy_hold_equity": 94.15,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-12-17",
+        "ai_equity": 100.06,
+        "buy_hold_equity": 94.09,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-12-18",
+        "ai_equity": 100.06,
+        "buy_hold_equity": 95.65,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-12-19",
+        "ai_equity": 100.06,
+        "buy_hold_equity": 96.03,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-12-22",
+        "ai_equity": 100.06,
+        "buy_hold_equity": 95.83,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-12-23",
+        "ai_equity": 100.06,
+        "buy_hold_equity": 96.22,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-12-24",
+        "ai_equity": 100.06,
+        "buy_hold_equity": 96.45,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-12-26",
+        "ai_equity": 100.06,
+        "buy_hold_equity": 96.39,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-12-29",
+        "ai_equity": 100.06,
+        "buy_hold_equity": 96.26,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-12-30",
+        "ai_equity": 100.06,
+        "buy_hold_equity": 96.34,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2025-12-31",
+        "ai_equity": 100.06,
+        "buy_hold_equity": 95.58,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-01-02",
+        "ai_equity": 100.06,
+        "buy_hold_equity": 93.47,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-01-05",
+        "ai_equity": 100.06,
+        "buy_hold_equity": 93.45,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-01-06",
+        "ai_equity": 98.86,
+        "buy_hold_equity": 94.57,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-01-07",
+        "ai_equity": 97.84,
+        "buy_hold_equity": 95.55,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-01-08",
+        "ai_equity": 97.84,
+        "buy_hold_equity": 94.49,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-01-09",
+        "ai_equity": 97.84,
+        "buy_hold_equity": 94.72,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-01-12",
+        "ai_equity": 97.84,
+        "buy_hold_equity": 94.3,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-01-13",
+        "ai_equity": 97.84,
+        "buy_hold_equity": 93.02,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-01-14",
+        "ai_equity": 100.18,
+        "buy_hold_equity": 90.79,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-01-15",
+        "ai_equity": 100.78,
+        "buy_hold_equity": 90.25,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-01-16",
+        "ai_equity": 100.07,
+        "buy_hold_equity": 90.88,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-01-20",
+        "ai_equity": 101.23,
+        "buy_hold_equity": 89.83,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-01-21",
+        "ai_equity": 103.55,
+        "buy_hold_equity": 87.77,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-01-22",
+        "ai_equity": 101.91,
+        "buy_hold_equity": 89.16,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-01-23",
+        "ai_equity": 98.57,
+        "buy_hold_equity": 92.08,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-01-26",
+        "ai_equity": 98.57,
+        "buy_hold_equity": 92.94,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-01-27",
+        "ai_equity": 98.57,
+        "buy_hold_equity": 94.98,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-01-28",
+        "ai_equity": 98.78,
+        "buy_hold_equity": 95.18,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-01-29",
+        "ai_equity": 88.91,
+        "buy_hold_equity": 85.67,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-01-30",
+        "ai_equity": 89.57,
+        "buy_hold_equity": 85.04,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-02-02",
+        "ai_equity": 91.01,
+        "buy_hold_equity": 83.67,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-02-03",
+        "ai_equity": 93.62,
+        "buy_hold_equity": 81.27,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-02-04",
+        "ai_equity": 92.94,
+        "buy_hold_equity": 81.86,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-02-05",
+        "ai_equity": 97.55,
+        "buy_hold_equity": 77.8,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-02-06",
+        "ai_equity": 95.7,
+        "buy_hold_equity": 79.28,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-02-09",
+        "ai_equity": 92.73,
+        "buy_hold_equity": 81.74,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-02-10",
+        "ai_equity": 92.8,
+        "buy_hold_equity": 81.67,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-02-11",
+        "ai_equity": 94.8,
+        "buy_hold_equity": 79.92,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-02-12",
+        "ai_equity": 95.39,
+        "buy_hold_equity": 79.42,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-02-13",
+        "ai_equity": 95.51,
+        "buy_hold_equity": 79.31,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-02-17",
+        "ai_equity": 96.58,
+        "buy_hold_equity": 78.43,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-02-18",
+        "ai_equity": 95.91,
+        "buy_hold_equity": 78.97,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-02-19",
+        "ai_equity": 96.18,
+        "buy_hold_equity": 78.75,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-02-20",
+        "ai_equity": 96.48,
+        "buy_hold_equity": 78.5,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-02-23",
+        "ai_equity": 99.58,
+        "buy_hold_equity": 75.98,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-02-24",
+        "ai_equity": 98.41,
+        "buy_hold_equity": 76.88,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-02-25",
+        "ai_equity": 95.47,
+        "buy_hold_equity": 79.17,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-02-26",
+        "ai_equity": 95.47,
+        "buy_hold_equity": 79.39,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-02-27",
+        "ai_equity": 95.47,
+        "buy_hold_equity": 77.62,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-03-02",
+        "ai_equity": 95.47,
+        "buy_hold_equity": 78.76,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-03-03",
+        "ai_equity": 95.47,
+        "buy_hold_equity": 79.83,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-03-04",
+        "ai_equity": 95.47,
+        "buy_hold_equity": 80.08,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-03-05",
+        "ai_equity": 95.47,
+        "buy_hold_equity": 81.16,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-03-06",
+        "ai_equity": 95.47,
+        "buy_hold_equity": 80.82,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-03-09",
+        "ai_equity": 95.47,
+        "buy_hold_equity": 80.91,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-03-10",
+        "ai_equity": 95.47,
+        "buy_hold_equity": 80.19,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-03-11",
+        "ai_equity": 95.47,
+        "buy_hold_equity": 80.02,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-03-12",
+        "ai_equity": 95.47,
+        "buy_hold_equity": 79.42,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-03-13",
+        "ai_equity": 95.47,
+        "buy_hold_equity": 78.17,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-03-16",
+        "ai_equity": 95.47,
+        "buy_hold_equity": 79.04,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-03-17",
+        "ai_equity": 95.47,
+        "buy_hold_equity": 78.93,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-03-18",
+        "ai_equity": 95.47,
+        "buy_hold_equity": 77.43,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-03-19",
+        "ai_equity": 95.47,
+        "buy_hold_equity": 76.88,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-03-20",
+        "ai_equity": 95.47,
+        "buy_hold_equity": 75.47,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-03-23",
+        "ai_equity": 95.19,
+        "buy_hold_equity": 75.69,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-03-24",
+        "ai_equity": 97.74,
+        "buy_hold_equity": 73.66,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-03-25",
+        "ai_equity": 98.18,
+        "buy_hold_equity": 73.33,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-03-26",
+        "ai_equity": 99.53,
+        "buy_hold_equity": 72.33,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-03-27",
+        "ai_equity": 102.03,
+        "buy_hold_equity": 70.51,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-03-30",
+        "ai_equity": 101.4,
+        "buy_hold_equity": 70.94,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-03-31",
+        "ai_equity": 98.23,
+        "buy_hold_equity": 73.16,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-04-01",
+        "ai_equity": 98.45,
+        "buy_hold_equity": 73.0,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-04-02",
+        "ai_equity": 97.36,
+        "buy_hold_equity": 73.81,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-04-06",
+        "ai_equity": 97.51,
+        "buy_hold_equity": 73.69,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-04-07",
+        "ai_equity": 97.51,
+        "buy_hold_equity": 73.58,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-04-08",
+        "ai_equity": 97.51,
+        "buy_hold_equity": 73.98,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-04-09",
+        "ai_equity": 97.51,
+        "buy_hold_equity": 73.73,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-04-10",
+        "ai_equity": 97.51,
+        "buy_hold_equity": 73.29,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-04-13",
+        "ai_equity": 97.51,
+        "buy_hold_equity": 75.96,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-04-14",
+        "ai_equity": 97.51,
+        "buy_hold_equity": 77.69,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-04-15",
+        "ai_equity": 102.0,
+        "buy_hold_equity": 81.27,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-04-16",
+        "ai_equity": 104.24,
+        "buy_hold_equity": 83.06,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-04-17",
+        "ai_equity": 104.87,
+        "buy_hold_equity": 83.56,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-04-20",
+        "ai_equity": 103.7,
+        "buy_hold_equity": 82.62,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-04-21",
+        "ai_equity": 105.21,
+        "buy_hold_equity": 83.83,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-04-22",
+        "ai_equity": 107.38,
+        "buy_hold_equity": 85.56,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-04-23",
+        "ai_equity": 103.12,
+        "buy_hold_equity": 82.16,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-04-24",
+        "ai_equity": 105.32,
+        "buy_hold_equity": 83.92,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-04-27",
+        "ai_equity": 105.37,
+        "buy_hold_equity": 83.96,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-04-28",
+        "ai_equity": 106.47,
+        "buy_hold_equity": 84.83,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-04-29",
+        "ai_equity": 105.28,
+        "buy_hold_equity": 83.89,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-04-30",
+        "ai_equity": 101.15,
+        "buy_hold_equity": 80.59,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-05-01",
+        "ai_equity": 101.15,
+        "buy_hold_equity": 81.91,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-05-04",
+        "ai_equity": 101.15,
+        "buy_hold_equity": 81.74,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-05-05",
+        "ai_equity": 101.15,
+        "buy_hold_equity": 81.3,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-05-06",
+        "ai_equity": 101.15,
+        "buy_hold_equity": 81.81,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-05-07",
+        "ai_equity": 101.15,
+        "buy_hold_equity": 83.16,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-05-08",
+        "ai_equity": 101.15,
+        "buy_hold_equity": 82.04,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-05-11",
+        "ai_equity": 101.15,
+        "buy_hold_equity": 81.55,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-05-12",
+        "ai_equity": 101.15,
+        "buy_hold_equity": 80.59,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-05-13",
+        "ai_equity": 101.15,
+        "buy_hold_equity": 80.08,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-05-14",
+        "ai_equity": 101.15,
+        "buy_hold_equity": 80.92,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-05-15",
+        "ai_equity": 101.15,
+        "buy_hold_equity": 83.38,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-05-18",
+        "ai_equity": 101.15,
+        "buy_hold_equity": 83.7,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-05-19",
+        "ai_equity": 101.15,
+        "buy_hold_equity": 82.49,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-05-20",
+        "ai_equity": 101.15,
+        "buy_hold_equity": 83.21,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-05-21",
+        "ai_equity": 101.15,
+        "buy_hold_equity": 82.82,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-05-22",
+        "ai_equity": 101.15,
+        "buy_hold_equity": 82.72,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-05-26",
+        "ai_equity": 101.15,
+        "buy_hold_equity": 82.22,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-05-27",
+        "ai_equity": 101.15,
+        "buy_hold_equity": 81.56,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-05-28",
+        "ai_equity": 101.15,
+        "buy_hold_equity": 84.39,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-05-29",
+        "ai_equity": 101.15,
+        "buy_hold_equity": 88.98,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-06-01",
+        "ai_equity": 103.46,
+        "buy_hold_equity": 91.01,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-06-02",
+        "ai_equity": 99.14,
+        "buy_hold_equity": 87.22,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-06-03",
+        "ai_equity": 96.0,
+        "buy_hold_equity": 84.45,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-06-04",
+        "ai_equity": 96.0,
+        "buy_hold_equity": 84.59,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-06-05",
+        "ai_equity": 96.0,
+        "buy_hold_equity": 82.35,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-06-08",
+        "ai_equity": 96.0,
+        "buy_hold_equity": 81.37,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-06-09",
+        "ai_equity": 96.0,
+        "buy_hold_equity": 79.73,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-06-10",
+        "ai_equity": 97.44,
+        "buy_hold_equity": 78.53,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-06-11",
+        "ai_equity": 99.16,
+        "buy_hold_equity": 77.14,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-06-12",
+        "ai_equity": 99.06,
+        "buy_hold_equity": 77.22,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-06-15",
+        "ai_equity": 96.78,
+        "buy_hold_equity": 79.0,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-06-16",
+        "ai_equity": 98.21,
+        "buy_hold_equity": 77.83,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-06-17",
+        "ai_equity": 101.93,
+        "buy_hold_equity": 74.88,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-06-18",
+        "ai_equity": 101.8,
+        "buy_hold_equity": 74.98,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-06-22",
+        "ai_equity": 105.04,
+        "buy_hold_equity": 72.6,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-06-23",
+        "ai_equity": 103.15,
+        "buy_hold_equity": 73.9,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-06-24",
+        "ai_equity": 105.49,
+        "buy_hold_equity": 72.23,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-06-25",
+        "ai_equity": 109.13,
+        "buy_hold_equity": 69.73,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-06-26",
+        "ai_equity": 102.9,
+        "buy_hold_equity": 73.71,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-06-29",
+        "ai_equity": 104.12,
+        "buy_hold_equity": 72.84,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-06-30",
+        "ai_equity": 102.86,
+        "buy_hold_equity": 73.72,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-07-01",
+        "ai_equity": 99.76,
+        "buy_hold_equity": 75.94,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-07-02",
+        "ai_equity": 98.14,
+        "buy_hold_equity": 77.17,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-07-06",
+        "ai_equity": 98.14,
+        "buy_hold_equity": 76.43,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-07-07",
+        "ai_equity": 98.14,
+        "buy_hold_equity": 76.85,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-07-08",
+        "ai_equity": 98.14,
+        "buy_hold_equity": 75.76,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-07-09",
+        "ai_equity": 98.14,
+        "buy_hold_equity": 75.96,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-07-10",
+        "ai_equity": 98.14,
+        "buy_hold_equity": 76.11,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-07-13",
+        "ai_equity": 98.14,
+        "buy_hold_equity": 77.27,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-07-14",
+        "ai_equity": 98.14,
+        "buy_hold_equity": 76.07,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-07-15",
+        "ai_equity": 98.14,
+        "buy_hold_equity": 78.19,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-07-16",
+        "ai_equity": 98.14,
+        "buy_hold_equity": 79.27,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-07-17",
+        "ai_equity": 99.92,
+        "buy_hold_equity": 77.83,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-07-20",
+        "ai_equity": 99.92,
+        "buy_hold_equity": 79.5,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-07-21",
+        "ai_equity": 98.8,
+        "buy_hold_equity": 78.61,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-07-22",
+        "ai_equity": 98.8,
+        "buy_hold_equity": 77.14,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-07-23",
+        "ai_equity": 98.8,
+        "buy_hold_equity": 75.41,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-07-24",
+        "ai_equity": 98.77,
+        "buy_hold_equity": 75.43,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-07-27",
+        "ai_equity": 96.85,
+        "buy_hold_equity": 76.9,
+        "signal": "DOWN"
+      },
+      {
+        "date": "2026-07-28",
+        "ai_equity": 96.85,
+        "buy_hold_equity": 77.74,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-07-29",
+        "ai_equity": 96.85,
+        "buy_hold_equity": 77.18,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-07-30",
+        "ai_equity": 96.85,
+        "buy_hold_equity": 89.15,
+        "signal": "FLAT"
+      },
+      {
+        "date": "2026-07-31",
+        "ai_equity": 99.78,
+        "buy_hold_equity": 91.84,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-08-03",
+        "ai_equity": 104.7,
+        "buy_hold_equity": 96.37,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-08-04",
+        "ai_equity": 105.81,
+        "buy_hold_equity": 97.39,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-08-05",
+        "ai_equity": 104.66,
+        "buy_hold_equity": 96.34,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-08-06",
+        "ai_equity": 107.32,
+        "buy_hold_equity": 98.79,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-08-07",
+        "ai_equity": 107.35,
+        "buy_hold_equity": 98.81,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-08-10",
+        "ai_equity": 108.65,
+        "buy_hold_equity": 100.01,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-08-11",
+        "ai_equity": 108.17,
+        "buy_hold_equity": 99.57,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-08-12",
+        "ai_equity": 105.72,
+        "buy_hold_equity": 97.32,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-08-13",
+        "ai_equity": 106.68,
+        "buy_hold_equity": 98.2,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-08-14",
+        "ai_equity": 106.36,
+        "buy_hold_equity": 97.91,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-08-17",
+        "ai_equity": 103.13,
+        "buy_hold_equity": 94.93,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-08-18",
+        "ai_equity": 103.41,
+        "buy_hold_equity": 95.18,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-08-19",
+        "ai_equity": 103.98,
+        "buy_hold_equity": 95.71,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-08-20",
+        "ai_equity": 103.3,
+        "buy_hold_equity": 95.09,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-08-21",
+        "ai_equity": 103.75,
+        "buy_hold_equity": 95.5,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-08-24",
+        "ai_equity": 104.63,
+        "buy_hold_equity": 96.31,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-08-25",
+        "ai_equity": 105.57,
+        "buy_hold_equity": 97.18,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-08-26",
+        "ai_equity": 106.57,
+        "buy_hold_equity": 98.1,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-08-27",
+        "ai_equity": 108.44,
+        "buy_hold_equity": 99.81,
+        "signal": "UP"
+      },
+      {
+        "date": "2026-08-28",
+        "ai_equity": 110.26,
+        "buy_hold_equity": 101.49,
+        "signal": "UP"
+      }
+    ]
+  }
+}
