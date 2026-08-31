@@ -14,7 +14,7 @@ from flask import Flask, jsonify, render_template_string, request
 # Aggiungi cartella radice al path per import di src
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from src import config, evaluate_run, predict_run, report, storage
+from src import backtest, config, evaluate_run, predict_run, report, storage
 
 app = Flask(__name__)
 
@@ -584,6 +584,19 @@ def api_evaluate():
     try:
         evaluate_run.run(dry_run=False)
         return jsonify({"status": "ok", "message": "Valutazione completata con successo!"})
+    except Exception as exc:  # noqa: BLE001
+        return jsonify({"status": "error", "message": str(exc)}), 500
+
+
+@app.route("/api/backtest", methods=["GET", "POST"])
+def api_backtest():
+    try:
+        if request.method == "POST":
+            horizon = int(request.json.get("horizon_days", 1)) if request.is_json and request.json else 1
+            res = backtest.run_full_backtest(horizon_days=horizon)
+        else:
+            res = backtest.load_backtest_cache()
+        return jsonify({"status": "ok", "data": res})
     except Exception as exc:  # noqa: BLE001
         return jsonify({"status": "error", "message": str(exc)}), 500
 
