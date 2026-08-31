@@ -389,6 +389,96 @@
                 </table>
             </div>
         </div>
+
+        <!-- NVDA Asset Card -->
+        <div class="asset-card">
+            <div class="asset-header">
+                <span class="asset-title">NVDA</span>
+                <span class="badge-accuracy" id="accuracy-NVDA">Accuratezza: 0.0%</span>
+            </div>
+            <div class="chart-container">
+                <canvas id="chart-NVDA"></canvas>
+            </div>
+            <div class="section-title">Ultimi Risultati Valutati</div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Orizzonte</th>
+                            <th>Preditto</th>
+                            <th>Reale</th>
+                            <th>Esito</th>
+                        </tr>
+                    </thead>
+                    <tbody id="outcomes-body-NVDA">
+                        <tr><td colspan="5" style="text-align:center; color: var(--text-muted);">Caricamento dati...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="section-title" style="margin-top: 16px;">Ultimi Segnali Generati</div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Orizzonte</th>
+                            <th>Classe</th>
+                            <th>Conf.</th>
+                        </tr>
+                    </thead>
+                    <tbody id="predictions-body-NVDA">
+                        <tr><td colspan="4" style="text-align:center; color: var(--text-muted);">Caricamento dati...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- MSFT Asset Card -->
+        <div class="asset-card">
+            <div class="asset-header">
+                <span class="asset-title">MSFT</span>
+                <span class="badge-accuracy" id="accuracy-MSFT">Accuratezza: 0.0%</span>
+            </div>
+            <div class="chart-container">
+                <canvas id="chart-MSFT"></canvas>
+            </div>
+            <div class="section-title">Ultimi Risultati Valutati</div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Orizzonte</th>
+                            <th>Preditto</th>
+                            <th>Reale</th>
+                            <th>Esito</th>
+                        </tr>
+                    </thead>
+                    <tbody id="outcomes-body-MSFT">
+                        <tr><td colspan="5" style="text-align:center; color: var(--text-muted);">Caricamento dati...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="section-title" style="margin-top: 16px;">Ultimi Segnali Generati</div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Orizzonte</th>
+                            <th>Classe</th>
+                            <th>Conf.</th>
+                        </tr>
+                    </thead>
+                    <tbody id="predictions-body-MSFT">
+                        <tr><td colspan="4" style="text-align:center; color: var(--text-muted);">Caricamento dati...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
     <!-- Info Modal per GitHub Pages -->
@@ -451,15 +541,19 @@
         }
 
         async function loadDashboardData() {
-            const [spyPreds, spyOuts, aaplPreds, aaplOuts, pending] = await Promise.all([
+            const [spyPreds, spyOuts, aaplPreds, aaplOuts, nvdaPreds, nvdaOuts, msftPreds, msftOuts, pending] = await Promise.all([
                 parseJsonl('data/spy/predictions.jsonl'),
                 parseJsonl('data/spy/outcomes.jsonl'),
                 parseJsonl('data/aapl/predictions.jsonl'),
                 parseJsonl('data/aapl/outcomes.jsonl'),
+                parseJsonl('data/nvda/predictions.jsonl'),
+                parseJsonl('data/nvda/outcomes.jsonl'),
+                parseJsonl('data/msft/predictions.jsonl'),
+                parseJsonl('data/msft/outcomes.jsonl'),
                 fetchPending()
             ]);
 
-            const allOutcomes = [...spyOuts, ...aaplOuts];
+            const allOutcomes = [...spyOuts, ...aaplOuts, ...nvdaOuts, ...msftOuts];
             const totalOutcomes = allOutcomes.length;
             const correctOutcomes = allOutcomes.filter(o => o.correct === true).length;
             const overallAccuracy = totalOutcomes > 0 ? ((correctOutcomes / totalOutcomes) * 100).toFixed(1) : "0.0";
@@ -470,6 +564,8 @@
 
             renderAssetData('SPY', spyPreds, spyOuts);
             renderAssetData('AAPL', aaplPreds, aaplOuts);
+            renderAssetData('NVDA', nvdaPreds, nvdaOuts);
+            renderAssetData('MSFT', msftPreds, msftOuts);
         }
 
         function renderAssetData(asset, predictions, outcomes) {

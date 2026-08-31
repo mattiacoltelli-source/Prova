@@ -8,10 +8,10 @@ EASTERN = ZoneInfo("America/New_York")
 
 # --- Asset ---------------------------------------------------------------
 
-ASSETS = ["SPY", "AAPL"]
+ASSETS = ["SPY", "AAPL", "NVDA", "MSFT"]
 
-# SPY è un ETF (nessun filing XBRL standard su SEC EDGAR); AAPL è un'azione.
-ASSET_TYPE = {"SPY": "etf", "AAPL": "stock"}
+# SPY è un ETF (nessun filing XBRL standard su SEC EDGAR); AAPL, NVDA, MSFT sono azioni.
+ASSET_TYPE = {"SPY": "etf", "AAPL": "stock", "NVDA": "stock", "MSFT": "stock"}
 
 # Email di contatto richiesta da SEC EDGAR nell'header User-Agent (non è una API key).
 SEC_EDGAR_CONTACT_EMAIL = "mattia.coltelli@gmail.com"
