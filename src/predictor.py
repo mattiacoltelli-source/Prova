@@ -17,6 +17,8 @@ class PredictionParseError(RuntimeError):
     pass
 
 
+from .data_sources.sentiment import compute_sentiment_score
+
 def build_prompt(
     asset: str,
     horizon_code: str,
@@ -35,6 +37,12 @@ def build_prompt(
     fundamentals_block = json.dumps(fundamentals["metrics"], indent=2) if fundamentals else "Non disponibili."
     macro_block = "\n".join(f"- {k}: {v['value']} (al {v['date']})" for k, v in macro.items()) or "Non disponibili."
 
+    sentiment_res = compute_sentiment_score(asset, news)
+    sentiment_block = (
+        f"Score: {sentiment_res['sentiment_score']} ({sentiment_res['sentiment_label']}) | "
+        f"Segnali Positivi: {sentiment_res['bullish_signals']}, Segnali Negativi: {sentiment_res['bearish_signals']}"
+    )
+
     return f"""Sei un analista quantitativo che deve emettere una previsione REALE e verificabile
 sulla direzione del prezzo di {asset}, con orizzonte {horizon_code} da adesso.
 
@@ -43,6 +51,9 @@ Banda neutra (FLAT) calcolata sulla volatilità storica recente: +/- {threshold_
   → prevedi UP se ti aspetti una variazione superiore a +{threshold_pct}%
   → prevedi DOWN se ti aspetti una variazione inferiore a -{threshold_pct}%
   → prevedi FLAT se ti aspetti una variazione entro questa banda
+
+Punteggio News & Social Sentiment Scoring (Analisi NLP):
+{sentiment_block}
 
 News recenti:
 {news_block}
