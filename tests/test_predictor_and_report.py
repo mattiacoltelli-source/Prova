@@ -45,6 +45,27 @@ def test_predictor_parse_prediction():
         predictor.parse_prediction('{"predicted_class": "UP", "confidence": 150, "reasoning_short": "x"}')
 
 
+def test_predictor_build_prompt_with_enhancements():
+    prompt = predictor.build_prompt(
+        asset="NVDA",
+        horizon_code="1d",
+        price=120.5,
+        price_asof="2026-08-31",
+        threshold_pct=1.5,
+        news=[{"published_at": "2026-08-31", "headline": "NVDA Earnings Report"}],
+        fundamentals=None,
+        macro={},
+        technical_indicators={"RSI_14": 65.2},
+        market_regime="Bullish Trend (Prezzo sopra SMA 50)",
+        high_impact_events=["Notizia Rilevante: NVDA Earnings Report"],
+    )
+
+    assert "NVDA" in prompt
+    assert "Bullish Trend" in prompt
+    assert "NVDA Earnings Report" in prompt
+    assert "RSI_14: 65.2" in prompt
+
+
 def test_report_generation(tmp_path, monkeypatch):
     report_file = str(tmp_path / "REPORT.md")
     monkeypatch.setattr(config, "REPORT_FILE", report_file)
