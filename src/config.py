@@ -49,7 +49,6 @@ VOLATILITY_LOOKBACK_DAYS = 60
 
 ANTHROPIC_MODEL = "claude-haiku-4-5-20251001"
 ANTHROPIC_MAX_TOKENS = 500
-PROMPT_VERSION = "v1"
 
 # --- Tetto di spesa (enforcement lato codice) ------------------------------
 

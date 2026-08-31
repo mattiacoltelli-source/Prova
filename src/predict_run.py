@@ -8,8 +8,6 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
-import hashlib
-import json
 import sys
 import uuid
 
@@ -68,28 +66,11 @@ def run(dry_run: bool, force: bool) -> None:
                 print(f"[{asset}/{horizon.code}] skipped_model_error: {exc}")
                 continue
 
-            timestamp_iso = now_utc.isoformat()
-            inputs_summary = {
-                "news_count": len(news_items),
-                "fundamentals_source": fundamentals_data["source"] if fundamentals_data else None,
-                "macro_keys": sorted(macro_data.keys()),
-            }
-            c_hash = compute_context_hash(
-                asset=asset,
-                horizon=horizon.code,
-                generated_at=timestamp_iso,
-                price_at_generation=price,
-                volatility_threshold_pct=threshold_pct,
-                model=config.ANTHROPIC_MODEL,
-                prompt_version=config.PROMPT_VERSION,
-                inputs_summary=inputs_summary,
-            )
-
             record = {
                 "id": str(uuid.uuid4()),
                 "asset": asset,
                 "horizon": horizon.code,
-                "generated_at": timestamp_iso,
+                "generated_at": now_utc.isoformat(),
                 "target_at": (now_utc + dt.timedelta(days=horizon.days)).isoformat(),
                 "price_at_generation": price,
                 "price_source": price_source,
@@ -97,9 +78,11 @@ def run(dry_run: bool, force: bool) -> None:
                 "confidence": pred["confidence"],
                 "volatility_threshold_pct": threshold_pct,
                 "model": config.ANTHROPIC_MODEL,
-                "prompt_version": config.PROMPT_VERSION,
-                "inputs_summary": inputs_summary,
-                "context_hash": c_hash,
+                "inputs_summary": {
+                    "news_count": len(news_items),
+                    "fundamentals_source": fundamentals_data["source"] if fundamentals_data else None,
+                    "macro_keys": sorted(macro_data.keys()),
+                },
                 "reasoning_short": pred["reasoning_short"],
             }
 
@@ -112,31 +95,6 @@ def run(dry_run: bool, force: bool) -> None:
                 {"id": saved["id"], "asset": asset, "horizon": horizon.code, "target_at": saved["target_at"]}
             )
             print(f"[{asset}/{horizon.code}] previsione salvata: {saved['predicted_class']} ({saved['confidence']}%)")
-
-
-def compute_context_hash(
-    asset: str,
-    horizon: str,
-    generated_at: str,
-    price_at_generation: float,
-    volatility_threshold_pct: float,
-    model: str,
-    prompt_version: str,
-    inputs_summary: dict,
-) -> str:
-    """Calcola in modo deterministico l'hash SHA-256 del contesto di previsione disponibile al momento della generazione."""
-    payload = {
-        "asset": asset,
-        "horizon": horizon,
-        "generated_at": generated_at,
-        "price_at_generation": price_at_generation,
-        "volatility_threshold_pct": volatility_threshold_pct,
-        "model": model,
-        "prompt_version": prompt_version,
-        "inputs_summary": inputs_summary,
-    }
-    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
-    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
 def _macro_key_present() -> bool:

@@ -11,14 +11,6 @@ from . import config, storage
 CLASSES = ["UP", "DOWN", "FLAT"]
 CONFIDENCE_BUCKETS = [(0, 50, "bassa (0-49)"), (50, 75, "media (50-74)"), (75, 101, "alta (75-100)")]
 
-CONFIDENCE_ANALYSIS_BUCKETS = [
-    (50, 60, "50–59%"),
-    (60, 70, "60–69%"),
-    (70, 80, "70–79%"),
-    (80, 90, "80–89%"),
-    (90, 101, "90–100%"),
-]
-
 
 def load_all_outcomes() -> list[dict]:
     outcomes = []
@@ -44,35 +36,9 @@ def _confusion_matrix(rows: list[dict]) -> dict[tuple[str, str], int]:
 def _calibration(rows: list[dict]) -> list[tuple[str, int, float]]:
     out = []
     for low, high, label in CONFIDENCE_BUCKETS:
-        bucket_rows = [r for r in rows if r.get("confidence") is not None and low <= r["confidence"] < high]
+        bucket_rows = [r for r in rows if low <= r["confidence"] < high]
         _, total, pct = _accuracy(bucket_rows)
         out.append((label, total, pct))
-    return out
-
-
-def analyze_confidence_buckets(rows: list[dict]) -> list[dict]:
-    """Analisi per fasce di confidence (50–59%, 60–69%, 70–79%, 80–89%, 90–100%).
-    Calcola per ogni fascia: n, corrette, accuracy_pct, mean_confidence.
-    Gestisce fasce vuote e ignora o gestisce in modo sicuro record con confidence invalida/fuori range.
-    """
-    out = []
-    for low, high, label in CONFIDENCE_ANALYSIS_BUCKETS:
-        bucket_rows = [
-            r for r in rows
-            if isinstance(r.get("confidence"), (int, float)) and low <= r["confidence"] < high
-        ]
-        n = len(bucket_rows)
-        correct = sum(1 for r in bucket_rows if r.get("correct"))
-        accuracy_pct = round(correct / n * 100, 1) if n > 0 else 0.0
-        mean_conf = round(sum(r["confidence"] for r in bucket_rows) / n, 1) if n > 0 else 0.0
-
-        out.append({
-            "bucket_label": label,
-            "total": n,
-            "correct": correct,
-            "accuracy_pct": accuracy_pct,
-            "mean_confidence": mean_conf,
-        })
     return out
 
 
@@ -126,18 +92,6 @@ def render_markdown(rows: list[dict]) -> str:
     lines += ["## Calibrazione (confidence dichiarata vs accuratezza reale)", "", "| Fascia confidence | N | Accuratezza |", "|---|---|---|"]
     for label, n, cal_pct in _calibration(rows):
         lines.append(f"| {label} | {n} | {cal_pct}% |")
-    lines.append("")
-
-    lines += [
-        "## Analisi Correlazione Confidence vs Successo",
-        "",
-        "| Fascia Confidence | N Previsioni | Corrette | Accuratezza % | Confidence Media |",
-        "|---|---|---|---|---|",
-    ]
-    for b in analyze_confidence_buckets(rows):
-        lines.append(
-            f"| {b['bucket_label']} | {b['total']} | {b['correct']} | {b['accuracy_pct']}% | {b['mean_confidence']}% |"
-        )
     lines.append("")
 
     lines += ["## Confronto con baseline naive", ""]
