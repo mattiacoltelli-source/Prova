@@ -8,10 +8,12 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+import hashlib
+import json
 import sys
 import uuid
 
-from . import budget, config, predictor, storage, technical_indicators, volatility
+from . import budget, config, predictor, storage, volatility
 from .data_sources import fundamentals, macro, news, prices
 
 
@@ -46,15 +48,6 @@ def run(dry_run: bool, force: bool) -> None:
         fundamentals_data = fundamentals.fetch_fundamentals(asset)
         macro_data = macro.fetch_macro_snapshot() if _macro_key_present() else {}
 
-        closes = [b["close"] for b in bars] if bars else []
-        tech_indicators = technical_indicators.compute_all_indicators(closes) if closes else None
-
-        # 1. Market Regime Filter (VIX & Trend)
-        market_regime = _determine_market_regime(closes, macro_data)
-
-        # 2. High Impact Event Detection
-        high_impact_events = _detect_high_impact_events(asset, news_items)
-
         for horizon in config.HORIZONS:
             try:
                 threshold_pct = volatility.compute_threshold_pct(bars, horizon)
@@ -67,24 +60,36 @@ def run(dry_run: bool, force: bool) -> None:
                 continue
 
             try:
-                # 3. Ensemble Multi-Sampling (3 samples per consensus se non dry_run)
-                ensemble_samples = 3 if not dry_run else 1
                 pred = predictor.generate_prediction(
                     asset, horizon.code, price, price_asof, threshold_pct,
-                    news_items, fundamentals_data, macro_data, tech_indicators,
-                    market_regime=market_regime,
-                    high_impact_events=high_impact_events,
-                    ensemble_samples=ensemble_samples,
+                    news_items, fundamentals_data, macro_data,
                 )
             except Exception as exc:  # noqa: BLE001
                 print(f"[{asset}/{horizon.code}] skipped_model_error: {exc}")
                 continue
 
+            timestamp_iso = now_utc.isoformat()
+            inputs_summary = {
+                "news_count": len(news_items),
+                "fundamentals_source": fundamentals_data["source"] if fundamentals_data else None,
+                "macro_keys": sorted(macro_data.keys()),
+            }
+            c_hash = compute_context_hash(
+                asset=asset,
+                horizon=horizon.code,
+                generated_at=timestamp_iso,
+                price_at_generation=price,
+                volatility_threshold_pct=threshold_pct,
+                model=config.ANTHROPIC_MODEL,
+                prompt_version=config.PROMPT_VERSION,
+                inputs_summary=inputs_summary,
+            )
+
             record = {
                 "id": str(uuid.uuid4()),
                 "asset": asset,
                 "horizon": horizon.code,
-                "generated_at": now_utc.isoformat(),
+                "generated_at": timestamp_iso,
                 "target_at": (now_utc + dt.timedelta(days=horizon.days)).isoformat(),
                 "price_at_generation": price,
                 "price_source": price_source,
@@ -92,11 +97,9 @@ def run(dry_run: bool, force: bool) -> None:
                 "confidence": pred["confidence"],
                 "volatility_threshold_pct": threshold_pct,
                 "model": config.ANTHROPIC_MODEL,
-                "inputs_summary": {
-                    "news_count": len(news_items),
-                    "fundamentals_source": fundamentals_data["source"] if fundamentals_data else None,
-                    "macro_keys": sorted(macro_data.keys()),
-                },
+                "prompt_version": config.PROMPT_VERSION,
+                "inputs_summary": inputs_summary,
+                "context_hash": c_hash,
                 "reasoning_short": pred["reasoning_short"],
             }
 
@@ -111,44 +114,29 @@ def run(dry_run: bool, force: bool) -> None:
             print(f"[{asset}/{horizon.code}] previsione salvata: {saved['predicted_class']} ({saved['confidence']}%)")
 
 
-def _determine_market_regime(closes: list[float], macro_data: dict) -> str:
-    """Determina il regime di mercato basandosi su VIX e trend recente."""
-    vix_val = None
-    if "VIXCLS" in macro_data and isinstance(macro_data["VIXCLS"], dict):
-        try:
-            vix_val = float(macro_data["VIXCLS"]["value"])
-        except (ValueError, TypeError):
-            pass
-
-    if vix_val is not None:
-        if vix_val > 25.0:
-            return f"Alta Volatilità / Turbolenza (VIX: {vix_val})"
-        if vix_val < 15.0:
-            return f"Bassa Volatilità / Trend Stabile (VIX: {vix_val})"
-
-    if len(closes) >= 50:
-        sma50 = sum(closes[-50:]) / 50
-        latest = closes[-1]
-        if latest > sma50 * 1.02:
-            return "Bullish Trend (Prezzo sopra SMA 50)"
-        if latest < sma50 * 0.98:
-            return "Bearish Trend (Prezzo sotto SMA 50)"
-        return "Mercato Lateralizzato / Consolidamento"
-
-    return "Regime Neutro / Informazioni limitate"
-
-
-def _detect_high_impact_events(asset: str, news_items: list[dict]) -> list[str]:
-    """Identifica potenziali eventi ad alto impatto imminenti dalle news e dal calendario."""
-    events = []
-    keywords = ["earnings", "trimestrale", "fomc", "fed rate", "cpi", "inflazione", "gdp"]
-    for item in news_items[:10]:
-        headline = item.get("headline", "").lower()
-        for kw in keywords:
-            if kw in headline:
-                events.append(f"Notizia Rilevante: {item.get('headline')}")
-                break
-    return events[:3]
+def compute_context_hash(
+    asset: str,
+    horizon: str,
+    generated_at: str,
+    price_at_generation: float,
+    volatility_threshold_pct: float,
+    model: str,
+    prompt_version: str,
+    inputs_summary: dict,
+) -> str:
+    """Calcola in modo deterministico l'hash SHA-256 del contesto di previsione disponibile al momento della generazione."""
+    payload = {
+        "asset": asset,
+        "horizon": horizon,
+        "generated_at": generated_at,
+        "price_at_generation": price_at_generation,
+        "volatility_threshold_pct": volatility_threshold_pct,
+        "model": model,
+        "prompt_version": prompt_version,
+        "inputs_summary": inputs_summary,
+    }
+    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
 def _macro_key_present() -> bool:
