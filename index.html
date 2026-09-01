@@ -247,7 +247,11 @@
             padding: 0 12px;
         }
 
-        .info-toggle {
+        .info-panel {
+            margin-bottom: 20px;
+        }
+
+        .info-panel summary {
             background-color: var(--card-bg);
             border: 1px solid var(--card-border);
             color: var(--text-main);
@@ -256,15 +260,8 @@
             font-size: 0.85rem;
             font-weight: 600;
             cursor: pointer;
-        }
-
-        .info-panel {
-            margin-bottom: 20px;
-        }
-
-        .info-panel summary {
-            cursor: pointer;
             list-style: none;
+            display: inline-block;
         }
 
         .info-panel summary::-webkit-details-marker { display: none; }
@@ -331,7 +328,7 @@
     </header>
 
     <details class="info-panel">
-        <summary><button class="info-toggle" type="button">ℹ️ Che dati analizza l'AI?</button></summary>
+        <summary>ℹ️ Che dati analizza l'AI?</summary>
         <div class="info-panel-body">
             <strong>Prezzo:</strong> Yahoo Finance, con Twelve Data e Finnhub come riserva.<br>
             <strong>News:</strong> Finnhub, con Alpha Vantage Sentiment e GDELT come riserva.<br>
