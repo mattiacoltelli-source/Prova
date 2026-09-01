@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import datetime as dt
 import os
-from typing import TypedDict
+from typing import NotRequired, TypedDict
 
 import requests
 
@@ -23,6 +23,11 @@ class DataUnavailableError(RuntimeError):
 class DailyBar(TypedDict):
     date: str  # YYYY-MM-DD
     close: float
+    # Non sempre disponibili (es. se una fonte fallback non le fornisce):
+    # usate per gli indicatori tecnici basati sul volume (OBV, CMF).
+    volume: NotRequired[float]
+    high: NotRequired[float]
+    low: NotRequired[float]
 
 
 def _yahoo_daily_history(ticker: str, range_: str = "1y") -> list[DailyBar]:
@@ -33,13 +38,21 @@ def _yahoo_daily_history(ticker: str, range_: str = "1y") -> list[DailyBar]:
     resp.raise_for_status()
     payload = resp.json()["chart"]["result"][0]
     timestamps = payload["timestamp"]
-    closes = payload["indicators"]["quote"][0]["close"]
+    quote = payload["indicators"]["quote"][0]
+    closes, volumes, highs, lows = quote["close"], quote["volume"], quote["high"], quote["low"]
     bars: list[DailyBar] = []
-    for ts, close in zip(timestamps, closes):
+    for ts, close, volume, high, low in zip(timestamps, closes, volumes, highs, lows):
         if close is None:
             continue
         date = dt.datetime.fromtimestamp(ts, tz=dt.timezone.utc).strftime("%Y-%m-%d")
-        bars.append({"date": date, "close": round(float(close), 4)})
+        bar: DailyBar = {"date": date, "close": round(float(close), 4)}
+        if volume is not None:
+            bar["volume"] = float(volume)
+        if high is not None:
+            bar["high"] = round(float(high), 4)
+        if low is not None:
+            bar["low"] = round(float(low), 4)
+        bars.append(bar)
     if not bars:
         raise DataUnavailableError(f"Yahoo: nessuna barra per {ticker}")
     return bars
@@ -75,7 +88,16 @@ def _twelvedata_daily_history(ticker: str, outputsize: int = 260) -> list[DailyB
     values = payload.get("values")
     if not values:
         raise DataUnavailableError(f"Twelve Data: {payload.get('message', 'nessun dato')}")
-    bars = [{"date": v["datetime"][:10], "close": round(float(v["close"]), 4)} for v in values]
+    bars: list[DailyBar] = []
+    for v in values:
+        bar: DailyBar = {"date": v["datetime"][:10], "close": round(float(v["close"]), 4)}
+        if v.get("volume") is not None:
+            bar["volume"] = float(v["volume"])
+        if v.get("high") is not None:
+            bar["high"] = round(float(v["high"]), 4)
+        if v.get("low") is not None:
+            bar["low"] = round(float(v["low"]), 4)
+        bars.append(bar)
     return sorted(bars, key=lambda b: b["date"])
 
 

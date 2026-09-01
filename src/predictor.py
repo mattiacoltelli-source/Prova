@@ -26,6 +26,7 @@ def build_prompt(
     news: list[dict],
     fundamentals: dict | None,
     macro: dict,
+    technicals: dict | None = None,
 ) -> str:
     news_block = (
         "\n".join(f"- ({n['published_at']}) {n['headline']}" for n in news[:8])
@@ -34,6 +35,19 @@ def build_prompt(
     )
     fundamentals_block = json.dumps(fundamentals["metrics"], indent=2) if fundamentals else "Non disponibili."
     macro_block = "\n".join(f"- {k}: {v['value']} (al {v['date']})" for k, v in macro.items()) or "Non disponibili."
+
+    technicals = technicals or {}
+    technical_lines = []
+    if technicals.get("obv_trend"):
+        technical_lines.append(f"- On-Balance Volume: {technicals['obv_trend']}")
+    if technicals.get("cmf") is not None:
+        technical_lines.append(f"- Chaikin Money Flow (20gg): {technicals['cmf']} (range -1..+1, >0 = pressione in acquisto)")
+    if technicals.get("relative_strength_vs_spy_pct") is not None:
+        technical_lines.append(
+            f"- Forza relativa vs S&P 500 (60gg): {technicals['relative_strength_vs_spy_pct']}% "
+            "(positivo = sta sovraperformando il mercato)"
+        )
+    technicals_block = "\n".join(technical_lines) or "Non disponibili."
 
     return f"""Sei un analista quantitativo che deve emettere una previsione REALE e verificabile
 sulla direzione del prezzo di {asset}, con orizzonte {horizon_code} da adesso.
@@ -52,6 +66,9 @@ Fondamentali/dati ETF disponibili:
 
 Contesto macro:
 {macro_block}
+
+Indicatori tecnici aggiuntivi:
+{technicals_block}
 
 Rispondi ESCLUSIVAMENTE con un oggetto JSON valido, nessun altro testo, con questa forma esatta:
 {{"predicted_class": "UP|DOWN|FLAT", "confidence": <intero 0-100>, "reasoning_short": "<massimo 3 frasi>"}}
@@ -101,7 +118,10 @@ def generate_prediction(
     news: list[dict],
     fundamentals: dict | None,
     macro: dict,
+    technicals: dict | None = None,
 ) -> dict:
-    prompt = build_prompt(asset, horizon_code, price, price_asof, threshold_pct, news, fundamentals, macro)
+    prompt = build_prompt(
+        asset, horizon_code, price, price_asof, threshold_pct, news, fundamentals, macro, technicals
+    )
     raw = call_model(prompt)
     return parse_prediction(raw)

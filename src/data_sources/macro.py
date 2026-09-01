@@ -10,10 +10,12 @@ TIMEOUT = 15
 # id serie FRED -> etichetta leggibile
 SERIES = {
     "DGS10": "treasury_yield_10y",
+    "DGS2": "treasury_yield_2y",
     "FEDFUNDS": "fed_funds_rate",
     "CPIAUCSL": "cpi",
     "UNRATE": "unemployment_rate",
     "VIXCLS": "vix",
+    "DTWEXBGS": "dollar_index",
 }
 
 
@@ -54,4 +56,14 @@ def fetch_macro_snapshot() -> dict:
                 snapshot[label] = value
         except Exception:  # noqa: BLE001 - salta la singola serie
             continue
+
+    # Spread 10Y-2Y: negativo = curva invertita, segnale classico di
+    # rallentamento/recessione attesa. Derivato, non una serie FRED a sé.
+    if "treasury_yield_10y" in snapshot and "treasury_yield_2y" in snapshot:
+        spread = snapshot["treasury_yield_10y"]["value"] - snapshot["treasury_yield_2y"]["value"]
+        snapshot["yield_curve_10y_2y"] = {
+            "value": round(spread, 3),
+            "date": snapshot["treasury_yield_10y"]["date"],
+        }
+
     return snapshot

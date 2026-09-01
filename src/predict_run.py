@@ -13,8 +13,10 @@ import os
 import sys
 import uuid
 
-from . import budget, config, predictor, storage, volatility
+from . import budget, config, predictor, storage, technicals, volatility
 from .data_sources import fundamentals, macro, news, prices
+
+BENCHMARK_TICKER = "SPY"
 
 
 def _slot_label(hour: int, minute: int) -> str:
@@ -70,6 +72,11 @@ def run(dry_run: bool, force: bool) -> None:
 
     now_utc = dt.datetime.now(dt.timezone.utc)
 
+    try:
+        benchmark_bars = prices.fetch_daily_history(BENCHMARK_TICKER)
+    except Exception:  # noqa: BLE001 - la forza relativa è un segnale opzionale
+        benchmark_bars = None
+
     for asset in config.ASSETS:
         try:
             bars = prices.fetch_daily_history(asset)
@@ -81,6 +88,16 @@ def run(dry_run: bool, force: bool) -> None:
         news_items = news.fetch_recent_news(asset)
         fundamentals_data = fundamentals.fetch_fundamentals(asset)
         macro_data = macro.fetch_macro_snapshot() if _macro_key_present() else {}
+
+        technical_signals = {
+            "obv_trend": technicals.compute_obv_trend(bars),
+            "cmf": technicals.compute_cmf(bars),
+            "relative_strength_vs_spy_pct": (
+                technicals.compute_relative_strength_pct(bars, benchmark_bars)
+                if benchmark_bars
+                else None
+            ),
+        }
 
         for horizon in config.HORIZONS:
             try:
@@ -96,7 +113,7 @@ def run(dry_run: bool, force: bool) -> None:
             try:
                 pred = predictor.generate_prediction(
                     asset, horizon.code, price, price_asof, threshold_pct,
-                    news_items, fundamentals_data, macro_data,
+                    news_items, fundamentals_data, macro_data, technical_signals,
                 )
             except Exception as exc:  # noqa: BLE001
                 print(f"[{asset}/{horizon.code}] skipped_model_error: {exc}")
@@ -118,6 +135,7 @@ def run(dry_run: bool, force: bool) -> None:
                     "news_count": len(news_items),
                     "fundamentals_source": fundamentals_data["source"] if fundamentals_data else None,
                     "macro_keys": sorted(macro_data.keys()),
+                    "technicals": technical_signals,
                 },
                 "reasoning_short": pred["reasoning_short"],
             }

@@ -47,7 +47,13 @@ una fase 2 successiva.
 | Prezzo | Yahoo Finance (endpoint pubblico) | Twelve Data → Finnhub |
 | News | Finnhub News | Alpha Vantage Sentiment → GDELT |
 | Fondamentali | SEC EDGAR | Alpha Vantage |
-| Macro | FRED | — |
+| Macro | FRED (tassi 10Y/2Y, spread curva, CPI, disoccupazione, VIX, indice dollaro) | — |
+
+Oltre a prezzo/news/fondamentali/macro, ogni previsione include anche
+indicatori tecnici calcolati da OHLCV gratuito (`src/technicals.py`):
+On-Balance Volume (trend accumulazione/distribuzione), Chaikin Money Flow
+e forza relativa rispetto all'S&P 500 (SPY usato solo come benchmark,
+non più come asset attivo).
 
 ## Secret richiesti (repo → Settings → Secrets and variables → Actions)
 
