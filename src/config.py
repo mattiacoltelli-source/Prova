@@ -33,12 +33,18 @@ HORIZONS = [
 ]
 
 # --- Slot di previsione giornalieri (ora locale US/Eastern) ----------------
-# (ora, minuto, tolleranza in minuti)
+# (ora, minuto)
 PREDICTION_SLOTS_ET = [
-    (9, 45, 20),
-    (12, 0, 20),
-    (15, 45, 20),
+    (9, 45),
+    (12, 0),
+    (15, 45),
 ]
+
+# Una scheduled run di GitHub Actions può partire in ritardo rispetto al
+# cron (anche di ore, su repo pubblici in orari di picco). Uno slot resta
+# "recuperabile" fino a questa finestra dopo l'orario nominale, così un
+# run in ritardo esegue comunque il prossimo slot dovuto invece di saltarlo.
+SLOT_CATCHUP_MINUTES = 180
 
 # --- Soglia di volatilità per UP/DOWN/FLAT ---------------------------------
 # threshold_pct = VOLATILITY_K * (std dev rendimenti giornalieri storici) * sqrt(trading_days)

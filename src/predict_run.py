@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+import json
+import os
 import sys
 import uuid
 
@@ -15,12 +17,44 @@ from . import budget, config, predictor, storage, volatility
 from .data_sources import fundamentals, macro, news, prices
 
 
-def in_prediction_slot(now_et: dt.datetime) -> bool:
-    for hour, minute, tolerance in config.PREDICTION_SLOTS_ET:
-        slot = now_et.replace(hour=hour, minute=minute, second=0, microsecond=0)
-        if abs((now_et - slot).total_seconds()) <= tolerance * 60:
-            return True
-    return False
+def _slot_label(hour: int, minute: int) -> str:
+    return f"{hour:02d}:{minute:02d}"
+
+
+def _slots_state_path(day: dt.date) -> str:
+    return f"{config.STATE_DIR}/predict_slots_{day.isoformat()}.json"
+
+
+def _done_slots(day: dt.date) -> set[str]:
+    path = _slots_state_path(day)
+    if not os.path.exists(path):
+        return set()
+    with open(path, "r", encoding="utf-8") as fh:
+        return set(json.load(fh).get("done_slots", []))
+
+
+def _mark_slot_done(day: dt.date, label: str) -> None:
+    os.makedirs(config.STATE_DIR, exist_ok=True)
+    done = _done_slots(day) | {label}
+    with open(_slots_state_path(day), "w", encoding="utf-8") as fh:
+        json.dump({"date": day.isoformat(), "done_slots": sorted(done)}, fh)
+
+
+def find_due_slot(now_et: dt.datetime) -> str | None:
+    """Ritorna il primo slot del giorno già scattato e non ancora eseguito,
+    entro la finestra di recupero. Robusto a run schedulate in ritardo:
+    una run in ritardo esegue comunque il prossimo slot dovuto invece di
+    saltarlo (a differenza di un confronto a tolleranza simmetrica attorno
+    all'orario nominale)."""
+    done = _done_slots(now_et.date())
+    for hour, minute in config.PREDICTION_SLOTS_ET:
+        label = _slot_label(hour, minute)
+        if label in done:
+            continue
+        slot_dt = now_et.replace(hour=hour, minute=minute, second=0, microsecond=0)
+        if slot_dt <= now_et <= slot_dt + dt.timedelta(minutes=config.SLOT_CATCHUP_MINUTES):
+            return label
+    return None
 
 
 def run(dry_run: bool, force: bool) -> None:
@@ -28,8 +62,10 @@ def run(dry_run: bool, force: bool) -> None:
     if not force and now_et.weekday() >= 5:
         print(f"Weekend ({now_et.isoformat()}), nessuna previsione.")
         return
-    if not force and not in_prediction_slot(now_et):
-        print(f"Fuori dagli slot di previsione ({now_et.isoformat()}), esco senza consumare budget.")
+
+    slot_label = "manual-force" if force else find_due_slot(now_et)
+    if slot_label is None:
+        print(f"Nessuno slot dovuto ({now_et.isoformat()}), esco senza consumare budget.")
         return
 
     now_utc = dt.datetime.now(dt.timezone.utc)
@@ -95,6 +131,9 @@ def run(dry_run: bool, force: bool) -> None:
                 {"id": saved["id"], "asset": asset, "horizon": horizon.code, "target_at": saved["target_at"]}
             )
             print(f"[{asset}/{horizon.code}] previsione salvata: {saved['predicted_class']} ({saved['confidence']}%)")
+
+    if not dry_run and slot_label != "manual-force":
+        _mark_slot_done(now_et.date(), slot_label)
 
 
 def _macro_key_present() -> bool:
