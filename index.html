@@ -275,9 +275,41 @@
             width: 100%;
             cursor: pointer;
         }
+
+        .update-banner {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 3000;
+            background-color: var(--accent-blue);
+            color: white;
+            padding: 10px 16px;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            font-size: 0.85rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+
+        .update-banner-btn {
+            background-color: white;
+            color: var(--accent-blue);
+            border: none;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 0.8rem;
+            cursor: pointer;
+            white-space: nowrap;
+        }
     </style>
 </head>
 <body>
+
+    <div id="updateBanner" class="update-banner">
+        <span>🔄 Nuova versione disponibile</span>
+        <button class="update-banner-btn" onclick="applyUpdate()">Aggiorna</button>
+    </div>
 
     <header>
         <h1>📈 AI Predictor</h1>
@@ -553,10 +585,51 @@
             showModal(title, desc);
         }
 
-        // Service Worker registration per PWA
+        // Service Worker registration per PWA, con banner "nuova versione disponibile"
+        let waitingWorker = null;
+        let reloadingAfterUpdate = false;
+
+        function showUpdateBanner(worker) {
+            waitingWorker = worker;
+            document.getElementById('updateBanner').style.display = 'flex';
+        }
+
+        function applyUpdate() {
+            if (waitingWorker) {
+                waitingWorker.postMessage({ type: 'SKIP_WAITING' });
+            }
+        }
+
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js').catch(() => {});
+                navigator.serviceWorker.register('./sw.js').then(registration => {
+                    // Una versione nuova era già stata scaricata in una sessione precedente.
+                    if (registration.waiting) {
+                        showUpdateBanner(registration.waiting);
+                    }
+
+                    registration.addEventListener('updatefound', () => {
+                        const installing = registration.installing;
+                        if (!installing) return;
+                        installing.addEventListener('statechange', () => {
+                            // 'installed' con un controller già attivo = aggiornamento
+                            // di una PWA già in uso, non la prima installazione.
+                            if (installing.state === 'installed' && navigator.serviceWorker.controller) {
+                                showUpdateBanner(installing);
+                            }
+                        });
+                    });
+
+                    // Pagina statica: controlla periodicamente una nuova versione
+                    // oltre al controllo automatico che il browser fa ad ogni load.
+                    setInterval(() => registration.update(), 60 * 60 * 1000);
+                }).catch(() => {});
+
+                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                    if (reloadingAfterUpdate) return;
+                    reloadingAfterUpdate = true;
+                    location.reload();
+                });
             });
         }
 
