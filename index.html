@@ -97,33 +97,6 @@
         .stat-value.green { color: var(--accent-green); }
         .stat-value.blue { color: var(--accent-blue); }
 
-        .actions-panel {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-bottom: 24px;
-        }
-
-        .btn-action {
-            background-color: var(--card-bg);
-            border: 1px solid var(--card-border);
-            color: var(--text-main);
-            padding: 12px;
-            border-radius: 10px;
-            font-size: 0.9rem;
-            font-weight: 600;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            transition: background-color 0.2s;
-        }
-
-        .btn-action:active {
-            background-color: var(--card-border);
-        }
-
         .grid-two-assets {
             display: grid;
             grid-template-columns: 1fr;
@@ -215,67 +188,6 @@
         .correct-true { color: var(--accent-green); font-weight: bold; }
         .correct-false { color: var(--accent-red); font-weight: bold; }
 
-        .toast {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: var(--accent-blue);
-            color: white;
-            padding: 12px 20px;
-            border-radius: 20px;
-            font-size: 0.9rem;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-            display: none;
-            z-index: 1000;
-            max-width: 90%;
-            text-align: center;
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.7);
-            z-index: 2000;
-            align-items: center;
-            justify-content: center;
-            padding: 16px;
-        }
-
-        .modal-content {
-            background-color: var(--card-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 14px;
-            padding: 20px;
-            max-width: 450px;
-            width: 100%;
-        }
-
-        .modal-title {
-            font-size: 1.1rem;
-            font-weight: 700;
-            margin-bottom: 10px;
-        }
-
-        .modal-body {
-            font-size: 0.9rem;
-            color: var(--text-muted);
-            line-height: 1.5;
-            margin-bottom: 16px;
-        }
-
-        .modal-btn {
-            background-color: var(--accent-blue);
-            color: white;
-            border: none;
-            padding: 10px 16px;
-            border-radius: 8px;
-            font-weight: 600;
-            width: 100%;
-            cursor: pointer;
-        }
-
         .update-banner {
             display: none;
             position: fixed;
@@ -331,29 +243,7 @@
         </div>
     </div>
 
-    <div class="actions-panel">
-        <button class="btn-action" onclick="handleAction('predict')">
-            ⚡ Nuova Predizione
-        </button>
-        <button class="btn-action" onclick="handleAction('evaluate')">
-            🎯 Valuta Risultati
-        </button>
-    </div>
-
     <div class="grid-two-assets" id="assets-grid"></div>
-
-    <!-- Info Modal per GitHub Pages -->
-    <div id="infoModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-title" id="modalTitle">Aggiornamento Automatico</div>
-            <div class="modal-body" id="modalBody">
-                Su GitHub Pages, le nuove previsioni e le valutazioni dei risultati vengono eseguite in automatico tramite **GitHub Actions** dal lunedì al venerdì durante l'orario di apertura dei mercati finanziari.
-            </div>
-            <button class="modal-btn" onclick="closeModal()">Capito!</button>
-        </div>
-    </div>
-
-    <div id="toast" class="toast">Elaborazione...</div>
 
     <script>
         // Unico punto da modificare quando cambia il paniere di asset seguiti.
@@ -395,23 +285,6 @@
                     </div>
                 </div>
             `).join('');
-        }
-
-        function showToast(msg) {
-            const toast = document.getElementById('toast');
-            toast.innerText = msg;
-            toast.style.display = 'block';
-            setTimeout(() => { toast.style.display = 'none'; }, 3000);
-        }
-
-        function showModal(title, text) {
-            document.getElementById('modalTitle').innerText = title;
-            document.getElementById('modalBody').innerHTML = text;
-            document.getElementById('infoModal').style.display = 'flex';
-        }
-
-        function closeModal() {
-            document.getElementById('infoModal').style.display = 'none';
         }
 
         async function parseJsonl(url) {
@@ -562,27 +435,6 @@
                     }
                 }
             });
-        }
-
-        async function handleAction(type) {
-            // Tenta chiamata API se in ambiente Flask
-            try {
-                const res = await fetch(`/api/${type}`, { method: 'POST' });
-                if (res.ok) {
-                    const json = await res.json();
-                    if (json.status === 'ok') {
-                        showToast('Completato con successo!');
-                        setTimeout(() => location.reload(), 1500);
-                        return;
-                    }
-                }
-            } catch (err) {
-                // Fallback statico su GitHub Pages
-            }
-
-            const title = type === 'predict' ? '⚡ Nuova Predizione' : '🎯 Valuta Risultati';
-            const desc = `Su GitHub Pages, la generazione delle predizioni e la valutazione dei risultati avvengono in modo del tutto automatico tramite **GitHub Actions** ad ogni slot di borsa dal lunedì al venerdì.<br><br>I risultati aggiornati appariranno qui automaticamente dopo ogni esecuzione!`;
-            showModal(title, desc);
         }
 
         // Service Worker registration per PWA, con banner "nuova versione disponibile"
