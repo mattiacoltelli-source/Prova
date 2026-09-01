@@ -143,6 +143,27 @@
             margin-bottom: 16px;
         }
 
+        .chart-container.small {
+            height: 120px;
+            margin-bottom: 4px;
+        }
+
+        .horizon-charts-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .horizon-label {
+            display: block;
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-align: center;
+            margin-bottom: 4px;
+        }
+
         .section-title {
             font-size: 0.95rem;
             font-weight: 600;
@@ -258,8 +279,27 @@
                         <span class="asset-title">${asset}</span>
                         <span class="badge-accuracy" id="accuracy-${asset}">Accuratezza: 0.0%</span>
                     </div>
+                    <div class="section-title">Accuratezza nel tempo</div>
+                    <div class="chart-container small">
+                        <canvas id="accuracy-chart-${asset}"></canvas>
+                    </div>
                     <div class="chart-container">
                         <canvas id="chart-${asset}"></canvas>
+                    </div>
+                    <div class="section-title">Prezzo per orizzonte</div>
+                    <div class="horizon-charts-grid">
+                        <div>
+                            <span class="horizon-label">1g</span>
+                            <div class="chart-container small"><canvas id="chart-${asset}-1d"></canvas></div>
+                        </div>
+                        <div>
+                            <span class="horizon-label">7g</span>
+                            <div class="chart-container small"><canvas id="chart-${asset}-7d"></canvas></div>
+                        </div>
+                        <div>
+                            <span class="horizon-label">1m</span>
+                            <div class="chart-container small"><canvas id="chart-${asset}-1m"></canvas></div>
+                        </div>
                     </div>
                     <div class="section-title">Ultimi Risultati Valutati</div>
                     <div class="table-wrapper">
@@ -379,29 +419,43 @@
             const predsMap = {};
             predictions.forEach(p => { if (p.id) predsMap[p.id] = p; });
 
-            const chartPoints = [...outcomes].sort((a, b) => (a.evaluated_at || '').localeCompare(b.evaluated_at || '')).map(o => {
-                const pInfo = predsMap[o.prediction_id] || {};
-                return {
-                    date: o.target_bar_date || (o.evaluated_at || '').slice(0, 10),
-                    priceStart: pInfo.price_at_generation || null,
-                    priceTarget: o.price_at_target || null
-                };
+            const toChartPoints = (rows) => rows
+                .sort((a, b) => (a.evaluated_at || '').localeCompare(b.evaluated_at || ''))
+                .map(o => {
+                    const pInfo = predsMap[o.prediction_id] || {};
+                    return {
+                        date: o.target_bar_date || (o.evaluated_at || '').slice(0, 10),
+                        priceStart: pInfo.price_at_generation || null,
+                        priceTarget: o.price_at_target || null
+                    };
+                });
+
+            // Grafico principale: tutte le previsioni valutate, invariato.
+            renderPriceChart(`chart-${asset}`, asset, toChartPoints([...outcomes]), true);
+
+            // Stessi dati, spezzati per orizzonte, così le scadenze molto
+            // diverse (1g vs 1m) non finiscono confuse sulla stessa linea.
+            ['1d', '7d', '1m'].forEach(h => {
+                const hOutcomes = outcomes.filter(o => o.horizon === h);
+                renderPriceChart(`chart-${asset}-${h}`, `${asset}-${h}`, toChartPoints(hOutcomes), false);
             });
 
-            renderChart(asset, chartPoints);
+            renderAccuracyChart(asset, outcomes);
         }
 
-        function renderChart(asset, points) {
-            const ctx = document.getElementById(`chart-${asset}`).getContext('2d');
+        function renderPriceChart(canvasId, instanceKey, points, showLegend) {
+            const canvasEl = document.getElementById(canvasId);
+            if (!canvasEl) return;
+            const ctx = canvasEl.getContext('2d');
             const labels = points.length ? points.map(p => p.date) : ['Nessun dato'];
             const priceStart = points.length ? points.map(p => p.priceStart) : [0];
             const priceTarget = points.length ? points.map(p => p.priceTarget) : [0];
 
-            if (chartInstances[asset]) {
-                chartInstances[asset].destroy();
+            if (chartInstances[instanceKey]) {
+                chartInstances[instanceKey].destroy();
             }
 
-            chartInstances[asset] = new Chart(ctx, {
+            chartInstances[instanceKey] = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: labels,
@@ -411,7 +465,8 @@
                             data: priceStart,
                             borderColor: '#3b82f6',
                             borderDash: [5, 5],
-                            tension: 0.1
+                            tension: 0.1,
+                            pointRadius: showLegend ? 3 : 2
                         },
                         {
                             label: 'Prezzo Target Reale',
@@ -419,7 +474,8 @@
                             borderColor: '#10b981',
                             backgroundColor: 'rgba(16, 185, 129, 0.1)',
                             fill: true,
-                            tension: 0.1
+                            tension: 0.1,
+                            pointRadius: showLegend ? 3 : 2
                         }
                     ]
                 },
@@ -427,11 +483,66 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: { labels: { color: '#94a3b8', font: { size: 10 } } }
+                        legend: { display: showLegend, labels: { color: '#94a3b8', font: { size: 10 } } }
                     },
                     scales: {
-                        x: { ticks: { color: '#94a3b8', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.05)' } },
-                        y: { ticks: { color: '#94a3b8', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                        x: { ticks: { color: '#94a3b8', font: { size: showLegend ? 9 : 8 } }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                        y: { ticks: { color: '#94a3b8', font: { size: showLegend ? 9 : 8 } }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                    }
+                }
+            });
+        }
+
+        function renderAccuracyChart(asset, outcomes) {
+            const canvasEl = document.getElementById(`accuracy-chart-${asset}`);
+            if (!canvasEl) return;
+            const ctx = canvasEl.getContext('2d');
+
+            // Accuratezza cumulativa: % di previsioni corrette tra tutte
+            // quelle valutate fino a quel momento, in ordine di valutazione.
+            const sorted = [...outcomes].sort((a, b) => (a.evaluated_at || '').localeCompare(b.evaluated_at || ''));
+            let correctSoFar = 0;
+            const points = sorted.map((o, i) => {
+                if (o.correct) correctSoFar++;
+                return {
+                    date: (o.evaluated_at || '').slice(0, 10),
+                    accuracy: Number((correctSoFar / (i + 1) * 100).toFixed(1))
+                };
+            });
+
+            const labels = points.length ? points.map(p => p.date) : ['Nessun dato'];
+            const values = points.length ? points.map(p => p.accuracy) : [0];
+
+            const key = `accuracy-${asset}`;
+            if (chartInstances[key]) {
+                chartInstances[key].destroy();
+            }
+
+            chartInstances[key] = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Accuratezza cumulativa %',
+                        data: values,
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                        fill: true,
+                        stepped: true,
+                        pointRadius: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { ticks: { color: '#94a3b8', font: { size: 8 } }, grid: { display: false } },
+                        y: {
+                            min: 0, max: 100,
+                            ticks: { color: '#94a3b8', font: { size: 8 }, callback: (v) => v + '%' },
+                            grid: { color: 'rgba(255,255,255,0.05)' }
+                        }
                     }
                 }
             });
