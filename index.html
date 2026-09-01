@@ -375,28 +375,28 @@
                         <span class="badge-accuracy" id="accuracy-${asset}">Accuratezza: 0.0%</span>
                     </div>
                     <div class="section-title">Accuratezza nel tempo</div>
-                    <div class="chart-container small">
+                    <div class="chart-container small" id="accuracy-wrap-${asset}">
                         <canvas id="accuracy-chart-${asset}"></canvas>
                     </div>
 
                     <details class="chart-details">
                         <summary>Grafici prezzo dettagliati</summary>
-                        <div class="chart-container">
+                        <div class="chart-container" id="chart-wrap-${asset}">
                             <canvas id="chart-${asset}"></canvas>
                         </div>
                         <div class="section-title">Prezzo per orizzonte</div>
                         <div class="horizon-charts-grid">
                             <div>
                                 <span class="horizon-label">1g</span>
-                                <div class="chart-container small"><canvas id="chart-${asset}-1d"></canvas></div>
+                                <div class="chart-container small" id="chart-wrap-${asset}-1d"><canvas id="chart-${asset}-1d"></canvas></div>
                             </div>
                             <div>
                                 <span class="horizon-label">7g</span>
-                                <div class="chart-container small"><canvas id="chart-${asset}-7d"></canvas></div>
+                                <div class="chart-container small" id="chart-wrap-${asset}-7d"><canvas id="chart-${asset}-7d"></canvas></div>
                             </div>
                             <div>
                                 <span class="horizon-label">1m</span>
-                                <div class="chart-container small"><canvas id="chart-${asset}-1m"></canvas></div>
+                                <div class="chart-container small" id="chart-wrap-${asset}-1m"><canvas id="chart-${asset}-1m"></canvas></div>
                             </div>
                         </div>
                     </details>
