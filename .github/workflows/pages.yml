@@ -1,0 +1,52 @@
+name: Pubblica GitHub Pages
+
+on:
+  push:
+    branches: [Main]
+    paths:
+      - "index.html"
+      - "manifest.json"
+      - "sw.js"
+      - "data/**"
+      - "REPORT.md"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pages-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          path: main
+
+      - uses: actions/checkout@v5
+        with:
+          ref: gh-pages
+          path: pages
+
+      - name: Sincronizza i file del sito statico su gh-pages
+        run: |
+          rsync -a --delete \
+            main/index.html main/manifest.json main/sw.js main/REPORT.md \
+            pages/
+          rsync -a --delete main/data/ pages/data/
+
+      - name: Commit e push su gh-pages
+        run: |
+          cd pages
+          git config user.name "predictive-agent-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Nessuna modifica da pubblicare."
+          else
+            git commit -m "deploy: ${{ github.sha }}"
+            git push
+          fi
