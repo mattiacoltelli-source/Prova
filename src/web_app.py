@@ -1,6 +1,6 @@
 """Web Application (Flask) per la visualizzazione e gestione della dashboard.
 Supporta installazione come PWA su Android, visualizzazione di predizioni,
-storico, grafici Reali vs Previsti e % di accuratezza per SPY e AAPL insieme.
+storico, grafici Reali vs Previsti e % di accuratezza per gli asset configurati.
 """
 from __future__ import annotations
 
@@ -344,7 +344,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     </div>
 
     <div class="grid-two-assets">
-        {% for asset in ['SPY', 'AAPL'] %}
+        {% for asset in data.assets_data.keys() %}
         {% set a_data = data.assets_data[asset] %}
         <div class="asset-card">
             <div class="asset-header">
@@ -446,7 +446,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         // Render Grafici Reale vs Previsto
         const rawData = {{ data|tojson }};
 
-        ['SPY', 'AAPL'].forEach(asset => {
+        Object.keys(rawData.assets_data).forEach(asset => {
             const points = rawData.assets_data[asset].chart_points;
             const labels = points.map(p => p.date);
             const priceStart = points.map(p => p.price_start);

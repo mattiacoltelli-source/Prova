@@ -308,97 +308,7 @@
         </button>
     </div>
 
-    <div class="grid-two-assets">
-        <!-- SPY Asset Card -->
-        <div class="asset-card">
-            <div class="asset-header">
-                <span class="asset-title">SPY</span>
-                <span class="badge-accuracy" id="accuracy-SPY">Accuratezza: 0.0%</span>
-            </div>
-            <div class="chart-container">
-                <canvas id="chart-SPY"></canvas>
-            </div>
-            <div class="section-title">Ultimi Risultati Valutati</div>
-            <div class="table-wrapper">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Data</th>
-                            <th>Orizzonte</th>
-                            <th>Preditto</th>
-                            <th>Reale</th>
-                            <th>Esito</th>
-                        </tr>
-                    </thead>
-                    <tbody id="outcomes-body-SPY">
-                        <tr><td colspan="5" style="text-align:center; color: var(--text-muted);">Caricamento dati...</td></tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="section-title" style="margin-top: 16px;">Ultimi Segnali Generati</div>
-            <div class="table-wrapper">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Data</th>
-                            <th>Orizzonte</th>
-                            <th>Classe</th>
-                            <th>Conf.</th>
-                        </tr>
-                    </thead>
-                    <tbody id="predictions-body-SPY">
-                        <tr><td colspan="4" style="text-align:center; color: var(--text-muted);">Caricamento dati...</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- AAPL Asset Card -->
-        <div class="asset-card">
-            <div class="asset-header">
-                <span class="asset-title">AAPL</span>
-                <span class="badge-accuracy" id="accuracy-AAPL">Accuratezza: 0.0%</span>
-            </div>
-            <div class="chart-container">
-                <canvas id="chart-AAPL"></canvas>
-            </div>
-            <div class="section-title">Ultimi Risultati Valutati</div>
-            <div class="table-wrapper">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Data</th>
-                            <th>Orizzonte</th>
-                            <th>Preditto</th>
-                            <th>Reale</th>
-                            <th>Esito</th>
-                        </tr>
-                    </thead>
-                    <tbody id="outcomes-body-AAPL">
-                        <tr><td colspan="5" style="text-align:center; color: var(--text-muted);">Caricamento dati...</td></tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="section-title" style="margin-top: 16px;">Ultimi Segnali Generati</div>
-            <div class="table-wrapper">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Data</th>
-                            <th>Orizzonte</th>
-                            <th>Classe</th>
-                            <th>Conf.</th>
-                        </tr>
-                    </thead>
-                    <tbody id="predictions-body-AAPL">
-                        <tr><td colspan="4" style="text-align:center; color: var(--text-muted);">Caricamento dati...</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
+    <div class="grid-two-assets" id="assets-grid"></div>
 
     <!-- Info Modal per GitHub Pages -->
     <div id="infoModal" class="modal">
@@ -414,7 +324,46 @@
     <div id="toast" class="toast">Elaborazione...</div>
 
     <script>
+        // Unico punto da modificare quando cambia il paniere di asset seguiti.
+        const ASSETS = ['NVDA', 'MSFT', 'AAPL'];
         const chartInstances = {};
+
+        function renderAssetCards() {
+            const grid = document.getElementById('assets-grid');
+            grid.innerHTML = ASSETS.map(asset => `
+                <div class="asset-card">
+                    <div class="asset-header">
+                        <span class="asset-title">${asset}</span>
+                        <span class="badge-accuracy" id="accuracy-${asset}">Accuratezza: 0.0%</span>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="chart-${asset}"></canvas>
+                    </div>
+                    <div class="section-title">Ultimi Risultati Valutati</div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr><th>Data</th><th>Orizzonte</th><th>Preditto</th><th>Reale</th><th>Esito</th></tr>
+                            </thead>
+                            <tbody id="outcomes-body-${asset}">
+                                <tr><td colspan="5" style="text-align:center; color: var(--text-muted);">Caricamento dati...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="section-title" style="margin-top: 16px;">Ultimi Segnali Generati</div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr><th>Data</th><th>Orizzonte</th><th>Classe</th><th>Conf.</th></tr>
+                            </thead>
+                            <tbody id="predictions-body-${asset}">
+                                <tr><td colspan="4" style="text-align:center; color: var(--text-muted);">Caricamento dati...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `).join('');
+        }
 
         function showToast(msg) {
             const toast = document.getElementById('toast');
@@ -460,15 +409,13 @@
         }
 
         async function loadDashboardData() {
-            const [spyPreds, spyOuts, aaplPreds, aaplOuts, pending] = await Promise.all([
-                parseJsonl('data/spy/predictions.jsonl'),
-                parseJsonl('data/spy/outcomes.jsonl'),
-                parseJsonl('data/aapl/predictions.jsonl'),
-                parseJsonl('data/aapl/outcomes.jsonl'),
-                fetchPending()
-            ]);
+            const perAsset = await Promise.all(ASSETS.map(asset => Promise.all([
+                parseJsonl(`data/${asset.toLowerCase()}/predictions.jsonl`),
+                parseJsonl(`data/${asset.toLowerCase()}/outcomes.jsonl`)
+            ])));
+            const pending = await fetchPending();
 
-            const allOutcomes = [...spyOuts, ...aaplOuts];
+            const allOutcomes = perAsset.flatMap(([, outcomes]) => outcomes);
             const totalOutcomes = allOutcomes.length;
             const correctOutcomes = allOutcomes.filter(o => o.correct === true).length;
             const overallAccuracy = totalOutcomes > 0 ? ((correctOutcomes / totalOutcomes) * 100).toFixed(1) : "0.0";
@@ -477,8 +424,10 @@
             document.getElementById('stat-outcomes').innerText = totalOutcomes;
             document.getElementById('stat-pending').innerText = pending.length;
 
-            renderAssetData('SPY', spyPreds, spyOuts);
-            renderAssetData('AAPL', aaplPreds, aaplOuts);
+            ASSETS.forEach((asset, i) => {
+                const [predictions, outcomes] = perAsset[i];
+                renderAssetData(asset, predictions, outcomes);
+            });
         }
 
         function renderAssetData(asset, predictions, outcomes) {
@@ -611,6 +560,7 @@
             });
         }
 
+        renderAssetCards();
         loadDashboardData();
     </script>
 </body>

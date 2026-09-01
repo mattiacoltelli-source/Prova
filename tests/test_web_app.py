@@ -15,9 +15,11 @@ def client():
 def test_index_route(client):
     response = client.get("/")
     assert response.status_code == 200
-    assert "AI Predictor" in response.get_data(as_text=True)
-    assert "SPY" in response.get_data(as_text=True)
-    assert "AAPL" in response.get_data(as_text=True)
+    text = response.get_data(as_text=True)
+    assert "AI Predictor" in text
+    assert "NVDA" in text
+    assert "MSFT" in text
+    assert "AAPL" in text
 
 
 def test_manifest_route(client):

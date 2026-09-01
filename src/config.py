@@ -8,10 +8,10 @@ EASTERN = ZoneInfo("America/New_York")
 
 # --- Asset ---------------------------------------------------------------
 
-ASSETS = ["SPY", "AAPL"]
+ASSETS = ["NVDA", "MSFT", "AAPL"]
 
-# SPY è un ETF (nessun filing XBRL standard su SEC EDGAR); AAPL è un'azione.
-ASSET_TYPE = {"SPY": "etf", "AAPL": "stock"}
+# Tutte azioni (nessun ETF attivo al momento): fondamentali via SEC EDGAR.
+ASSET_TYPE = {"NVDA": "stock", "MSFT": "stock", "AAPL": "stock"}
 
 # Email di contatto richiesta da SEC EDGAR nell'header User-Agent (non è una API key).
 SEC_EDGAR_CONTACT_EMAIL = "mattia.coltelli@gmail.com"
@@ -57,8 +57,8 @@ ANTHROPIC_MODEL = "claude-haiku-4-5-20251001"
 ANTHROPIC_MAX_TOKENS = 500
 
 # --- Tetto di spesa (enforcement lato codice) ------------------------------
-
-MAX_AI_CALLS_PER_DAY = 24
+# 3 asset x 3 orizzonti x 3 slot/giorno = 27 chiamate attese al massimo.
+MAX_AI_CALLS_PER_DAY = 32
 
 # --- Percorsi ---------------------------------------------------------------
 

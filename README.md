@@ -1,4 +1,4 @@
-# Agente predittivo AI — SPY & AAPL
+# Agente predittivo AI — NVDA, MSFT & AAPL
 
 Esperimento reale (non un backtest) di previsione AI sui mercati finanziari.
 L'agente raccoglie dati reali, produce previsioni classificate su più
@@ -11,8 +11,14 @@ prevedere la direzione del prezzo, non generare segnali di trading.
 
 ## Asset
 
-- **SPY** — SPDR S&P 500 ETF Trust
+- **NVDA** — NVIDIA Corporation
+- **MSFT** — Microsoft Corporation
 - **AAPL** — Apple Inc.
+
+SPY (ETF, tracciato inizialmente) è stato rimosso dal paniere attivo su
+richiesta: il suo storico reale (`data/spy/`) resta nel repo per non
+perdere previsioni ed esiti già registrati, ma non riceve più nuove
+previsioni.
 
 ## Orizzonti (fase 1)
 
