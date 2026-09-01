@@ -235,6 +235,87 @@
             cursor: pointer;
             white-space: nowrap;
         }
+
+        .chart-empty {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            text-align: center;
+            padding: 0 12px;
+        }
+
+        .info-toggle {
+            background-color: var(--card-bg);
+            border: 1px solid var(--card-border);
+            color: var(--text-main);
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .info-panel {
+            margin-bottom: 20px;
+        }
+
+        .info-panel summary {
+            cursor: pointer;
+            list-style: none;
+        }
+
+        .info-panel summary::-webkit-details-marker { display: none; }
+
+        .info-panel-body {
+            background-color: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin-top: 8px;
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        .info-panel-body strong { color: var(--text-main); }
+
+        .chart-details summary {
+            cursor: pointer;
+            color: var(--accent-blue);
+            font-size: 0.85rem;
+            font-weight: 600;
+            padding: 8px 0;
+            list-style: none;
+        }
+
+        .chart-details summary::-webkit-details-marker { display: none; }
+
+        .chart-details summary::before { content: "▸ "; }
+        .chart-details[open] summary::before { content: "▾ "; }
+
+        tr.pred-row, tr.outcome-row {
+            cursor: pointer;
+        }
+
+        tr.pred-row:active, tr.outcome-row:active {
+            background-color: rgba(255,255,255,0.03);
+        }
+
+        .detail-row { display: none; }
+
+        .pred-detail-cell {
+            background-color: rgba(255,255,255,0.02);
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+            padding: 10px 8px;
+            white-space: normal;
+        }
+
+        .pred-detail-cell strong { color: var(--text-main); }
     </style>
 </head>
 <body>
@@ -248,6 +329,23 @@
         <h1>📈 AI Predictor</h1>
         <button class="refresh-btn" onclick="location.reload()">🔄 Aggiorna</button>
     </header>
+
+    <details class="info-panel">
+        <summary><button class="info-toggle" type="button">ℹ️ Che dati analizza l'AI?</button></summary>
+        <div class="info-panel-body">
+            <strong>Prezzo:</strong> Yahoo Finance, con Twelve Data e Finnhub come riserva.<br>
+            <strong>News:</strong> Finnhub, con Alpha Vantage Sentiment e GDELT come riserva.<br>
+            <strong>Fondamentali:</strong> SEC EDGAR (bilanci ufficiali), con Alpha Vantage come riserva.<br>
+            <strong>Macro:</strong> FRED — tassi a 10 e 2 anni, spread di curva, inflazione (CPI),
+            disoccupazione, VIX, indice del dollaro.<br>
+            <strong>Indicatori tecnici:</strong> On-Balance Volume (accumulazione/distribuzione),
+            Chaikin Money Flow (pressione acquisto/vendita), forza relativa rispetto all'S&P 500.<br>
+            <strong>Orizzonti previsti:</strong> 1 giorno, 7 giorni, 1 mese — con una banda neutra
+            (FLAT) calcolata sulla volatilità storica recente di ciascun titolo.<br><br>
+            Tocca una riga in "Ultimi Risultati Valutati" o "Ultimi Segnali Generati" per vedere
+            i dati specifici usati in quella previsione.
+        </div>
+    </details>
 
     <div class="summary-banner">
         <div class="stat-box">
@@ -283,25 +381,30 @@
                     <div class="chart-container small">
                         <canvas id="accuracy-chart-${asset}"></canvas>
                     </div>
-                    <div class="chart-container">
-                        <canvas id="chart-${asset}"></canvas>
-                    </div>
-                    <div class="section-title">Prezzo per orizzonte</div>
-                    <div class="horizon-charts-grid">
-                        <div>
-                            <span class="horizon-label">1g</span>
-                            <div class="chart-container small"><canvas id="chart-${asset}-1d"></canvas></div>
+
+                    <details class="chart-details">
+                        <summary>Grafici prezzo dettagliati</summary>
+                        <div class="chart-container">
+                            <canvas id="chart-${asset}"></canvas>
                         </div>
-                        <div>
-                            <span class="horizon-label">7g</span>
-                            <div class="chart-container small"><canvas id="chart-${asset}-7d"></canvas></div>
+                        <div class="section-title">Prezzo per orizzonte</div>
+                        <div class="horizon-charts-grid">
+                            <div>
+                                <span class="horizon-label">1g</span>
+                                <div class="chart-container small"><canvas id="chart-${asset}-1d"></canvas></div>
+                            </div>
+                            <div>
+                                <span class="horizon-label">7g</span>
+                                <div class="chart-container small"><canvas id="chart-${asset}-7d"></canvas></div>
+                            </div>
+                            <div>
+                                <span class="horizon-label">1m</span>
+                                <div class="chart-container small"><canvas id="chart-${asset}-1m"></canvas></div>
+                            </div>
                         </div>
-                        <div>
-                            <span class="horizon-label">1m</span>
-                            <div class="chart-container small"><canvas id="chart-${asset}-1m"></canvas></div>
-                        </div>
-                    </div>
-                    <div class="section-title">Ultimi Risultati Valutati</div>
+                    </details>
+
+                    <div class="section-title">Ultimi Risultati Valutati <span style="font-weight:400; font-size:0.75rem;">(tocca una riga per i dettagli)</span></div>
                     <div class="table-wrapper">
                         <table>
                             <thead>
@@ -312,7 +415,7 @@
                             </tbody>
                         </table>
                     </div>
-                    <div class="section-title" style="margin-top: 16px;">Ultimi Segnali Generati</div>
+                    <div class="section-title" style="margin-top: 16px;">Ultimi Segnali Generati <span style="font-weight:400; font-size:0.75rem;">(tocca una riga per i dettagli)</span></div>
                     <div class="table-wrapper">
                         <table>
                             <thead>
@@ -375,6 +478,68 @@
             });
         }
 
+        // Dati grezzi tenuti da parte per i dettagli on-tap (nessuna nuova
+        // chiamata: sono già dentro predictions.jsonl/outcomes.jsonl).
+        const detailStore = {};
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text ?? '';
+            return div.innerHTML;
+        }
+
+        function technicalsLines(inputsSummary) {
+            const t = (inputsSummary && inputsSummary.technicals) || {};
+            const lines = [];
+            if (t.obv_trend) lines.push(`On-Balance Volume: <strong>${escapeHtml(t.obv_trend)}</strong>`);
+            if (t.cmf !== undefined && t.cmf !== null) lines.push(`Chaikin Money Flow: <strong>${t.cmf}</strong>`);
+            if (t.relative_strength_vs_spy_pct !== undefined && t.relative_strength_vs_spy_pct !== null) {
+                lines.push(`Forza relativa vs S&P 500: <strong>${t.relative_strength_vs_spy_pct}%</strong>`);
+            }
+            return lines;
+        }
+
+        // Ricostruisce la spiegazione di una previsione dai dati già salvati
+        // in predictions.jsonl: nessuna nuova chiamata al modello.
+        function predictionDetailHtml(pred) {
+            if (!pred) return '<em>Previsione originale non trovata.</em>';
+            const s = pred.inputs_summary || {};
+            const lines = [
+                `<strong>Motivazione del modello:</strong> ${escapeHtml(pred.reasoning_short || '-')}`,
+                `Soglia di volatilità (banda FLAT): <strong>±${pred.volatility_threshold_pct}%</strong>`,
+                `News analizzate: <strong>${s.news_count ?? 0}</strong>`,
+                `Fondamentali: <strong>${escapeHtml(s.fundamentals_source || 'non disponibili')}</strong>`,
+                `Dati macro usati: <strong>${escapeHtml((s.macro_keys || []).join(', ') || 'nessuno')}</strong>`,
+                ...technicalsLines(s)
+            ];
+            return lines.join('<br>');
+        }
+
+        function toggleDetail(storeKey, index) {
+            const row = document.getElementById(`detail-${storeKey}-${index}`);
+            if (!row) return;
+            const isOpen = row.style.display === 'table-row';
+            // Chiude eventuali altri dettagli aperti nella stessa tabella,
+            // così non si accumula troppo testo espanso sullo schermo.
+            document.querySelectorAll(`tr[id^="detail-${storeKey}-"]`).forEach(r => {
+                r.style.display = 'none';
+            });
+            if (isOpen) return;
+
+            const item = (detailStore[storeKey] || [])[index];
+            if (!item) return;
+            const isOutcome = storeKey.startsWith('outcome-');
+            const pred = isOutcome ? item._prediction : item;
+            const cell = row.querySelector('td');
+            const outcomeSummary = isOutcome
+                ? `Prezzo alla previsione: <strong>${pred ? pred.price_at_generation : '-'}</strong> → `
+                  + `prezzo reale: <strong>${item.price_at_target}</strong> `
+                  + `(variazione ${item.actual_change_pct > 0 ? '+' : ''}${item.actual_change_pct}%)<br>`
+                : '';
+            cell.innerHTML = outcomeSummary + predictionDetailHtml(pred);
+            row.style.display = 'table-row';
+        }
+
         function renderAssetData(asset, predictions, outcomes) {
             const total = outcomes.length;
             const correct = outcomes.filter(o => o.correct === true).length;
@@ -382,42 +547,45 @@
 
             document.getElementById(`accuracy-${asset}`).innerText = `Accuratezza: ${accuracy}%`;
 
+            const predsMap = {};
+            predictions.forEach(p => { if (p.id) predsMap[p.id] = p; });
+
             // Sort Outcomes descending for table
             const recentOutcomes = [...outcomes].sort((a, b) => (b.evaluated_at || '').localeCompare(a.evaluated_at || '')).slice(0, 10);
             const outcomesBody = document.getElementById(`outcomes-body-${asset}`);
+            detailStore[`outcome-${asset}`] = recentOutcomes.map(o => ({ ...o, _prediction: predsMap[o.prediction_id] }));
             if (recentOutcomes.length === 0) {
                 outcomesBody.innerHTML = '<tr><td colspan="5" style="text-align:center; color: var(--text-muted);">Nessuna valutazione ancora.</td></tr>';
             } else {
-                outcomesBody.innerHTML = recentOutcomes.map(row => `
-                    <tr>
+                outcomesBody.innerHTML = recentOutcomes.map((row, i) => `
+                    <tr class="outcome-row" onclick="toggleDetail('outcome-${asset}', ${i})">
                         <td>${(row.evaluated_at || '').slice(0, 10)}</td>
                         <td>${row.horizon || '-'}</td>
                         <td><span class="badge badge-${row.predicted_class}">${row.predicted_class}</span></td>
                         <td><span class="badge badge-${row.actual_class}">${row.actual_class}</span></td>
                         <td class="correct-${row.correct}">${row.correct ? '✅ SI' : '❌ NO'}</td>
                     </tr>
+                    <tr class="detail-row" id="detail-outcome-${asset}-${i}"><td class="pred-detail-cell" colspan="5"></td></tr>
                 `).join('');
             }
 
             // Sort Predictions descending for table
             const recentPredictions = [...predictions].sort((a, b) => (b.generated_at || '').localeCompare(a.generated_at || '')).slice(0, 10);
             const predictionsBody = document.getElementById(`predictions-body-${asset}`);
+            detailStore[`pred-${asset}`] = recentPredictions;
             if (recentPredictions.length === 0) {
                 predictionsBody.innerHTML = '<tr><td colspan="4" style="text-align:center; color: var(--text-muted);">Nessuna predizione registrata.</td></tr>';
             } else {
-                predictionsBody.innerHTML = recentPredictions.map(p => `
-                    <tr>
+                predictionsBody.innerHTML = recentPredictions.map((p, i) => `
+                    <tr class="pred-row" onclick="toggleDetail('pred-${asset}', ${i})">
                         <td>${(p.generated_at || '').slice(0, 10)}</td>
                         <td>${p.horizon || '-'}</td>
                         <td><span class="badge badge-${p.predicted_class}">${p.predicted_class}</span></td>
                         <td>${p.confidence || 0}%</td>
                     </tr>
+                    <tr class="detail-row" id="detail-pred-${asset}-${i}"><td class="pred-detail-cell" colspan="4"></td></tr>
                 `).join('');
             }
-
-            // Prepare chart data
-            const predsMap = {};
-            predictions.forEach(p => { if (p.id) predsMap[p.id] = p; });
 
             const toChartPoints = (rows) => rows
                 .sort((a, b) => (a.evaluated_at || '').localeCompare(b.evaluated_at || ''))
@@ -443,13 +611,23 @@
             renderAccuracyChart(asset, outcomes);
         }
 
+        function showEmptyChart(canvasId, message) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            canvas.parentElement.innerHTML = `<div class="chart-empty">${message}</div>`;
+        }
+
         function renderPriceChart(canvasId, instanceKey, points, showLegend) {
+            if (points.length === 0) {
+                showEmptyChart(canvasId, 'Nessuna previsione valutata ancora');
+                return;
+            }
             const canvasEl = document.getElementById(canvasId);
             if (!canvasEl) return;
             const ctx = canvasEl.getContext('2d');
-            const labels = points.length ? points.map(p => p.date) : ['Nessun dato'];
-            const priceStart = points.length ? points.map(p => p.priceStart) : [0];
-            const priceTarget = points.length ? points.map(p => p.priceTarget) : [0];
+            const labels = points.map(p => p.date);
+            const priceStart = points.map(p => p.priceStart);
+            const priceTarget = points.map(p => p.priceTarget);
 
             if (chartInstances[instanceKey]) {
                 chartInstances[instanceKey].destroy();
@@ -494,9 +672,7 @@
         }
 
         function renderAccuracyChart(asset, outcomes) {
-            const canvasEl = document.getElementById(`accuracy-chart-${asset}`);
-            if (!canvasEl) return;
-            const ctx = canvasEl.getContext('2d');
+            const canvasId = `accuracy-chart-${asset}`;
 
             // Accuratezza cumulativa: % di previsioni corrette tra tutte
             // quelle valutate fino a quel momento, in ordine di valutazione.
@@ -510,8 +686,16 @@
                 };
             });
 
-            const labels = points.length ? points.map(p => p.date) : ['Nessun dato'];
-            const values = points.length ? points.map(p => p.accuracy) : [0];
+            if (points.length === 0) {
+                showEmptyChart(canvasId, 'Ancora nessuna previsione valutata: torna qui dopo la prima scadenza (1 giorno).');
+                return;
+            }
+
+            const canvasEl = document.getElementById(canvasId);
+            if (!canvasEl) return;
+            const ctx = canvasEl.getContext('2d');
+            const labels = points.map(p => p.date);
+            const values = points.map(p => p.accuracy);
 
             const key = `accuracy-${asset}`;
             if (chartInstances[key]) {
