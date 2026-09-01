@@ -1,105 +1,640 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Predictor</title>
-  <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="style.css">
-  <meta name="theme-color" content="#0d1117">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link rel="apple-touch-icon" href="icon-192.png">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Market Predictor Dashboard</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#121826">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --card-border: #334155;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --accent-yellow: #f59e0b;
+            --accent-blue: #3b82f6;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            padding: 16px;
+            padding-bottom: 80px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        h1 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .refresh-btn {
+            background: var(--accent-blue);
+            color: white;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .summary-banner {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 20px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            text-align: center;
+        }
+
+        .stat-box {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-value {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-top: 4px;
+        }
+
+        .stat-value.green { color: var(--accent-green); }
+        .stat-value.blue { color: var(--accent-blue); }
+
+        .actions-panel {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .btn-action {
+            background-color: var(--card-bg);
+            border: 1px solid var(--card-border);
+            color: var(--text-main);
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: background-color 0.2s;
+        }
+
+        .btn-action:active {
+            background-color: var(--card-border);
+        }
+
+        .grid-two-assets {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+
+        @media (min-width: 768px) {
+            .grid-two-assets {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .asset-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 14px;
+            padding: 16px;
+        }
+
+        .asset-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .asset-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        .badge-accuracy {
+            background-color: rgba(16, 185, 129, 0.15);
+            color: var(--accent-green);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 700;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 200px;
+            margin-bottom: 16px;
+        }
+
+        .section-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--card-border);
+            padding-bottom: 4px;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.82rem;
+        }
+
+        th, td {
+            padding: 8px 6px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        th {
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .badge {
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 700;
+            font-size: 0.75rem;
+            display: inline-block;
+        }
+
+        .badge-UP { background-color: rgba(16, 185, 129, 0.2); color: var(--accent-green); }
+        .badge-DOWN { background-color: rgba(239, 68, 68, 0.2); color: var(--accent-red); }
+        .badge-FLAT { background-color: rgba(245, 158, 11, 0.2); color: var(--accent-yellow); }
+
+        .correct-true { color: var(--accent-green); font-weight: bold; }
+        .correct-false { color: var(--accent-red); font-weight: bold; }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: var(--accent-blue);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            display: none;
+            z-index: 1000;
+            max-width: 90%;
+            text-align: center;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        .modal-content {
+            background-color: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 14px;
+            padding: 20px;
+            max-width: 450px;
+            width: 100%;
+        }
+
+        .modal-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .modal-body {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+            margin-bottom: 16px;
+        }
+
+        .modal-btn {
+            background-color: var(--accent-blue);
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            width: 100%;
+            cursor: pointer;
+        }
+
+        .update-banner {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 3000;
+            background-color: var(--accent-blue);
+            color: white;
+            padding: 10px 16px;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            font-size: 0.85rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+
+        .update-banner-btn {
+            background-color: white;
+            color: var(--accent-blue);
+            border: none;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 0.8rem;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+    </style>
 </head>
 <body>
-  <header>
-    <div class="brand">
-      <div class="logo-icon">📈</div>
-      <h1>AI Predictor</h1>
-    </div>
-    <button class="btn-refresh" id="refreshBtn">🔄 Aggiorna</button>
-  </header>
 
-  <div class="overview-card">
-    <div class="stat-item">
-      <span class="stat-label">ACCURATEZZA AI</span>
-      <span class="stat-value green" id="globalAccuracy">0.0%</span>
-    </div>
-    <div class="stat-item">
-      <span class="stat-label">VALUTATI</span>
-      <span class="stat-value" id="totalEvaluated">0</span>
-    </div>
-    <div class="stat-item">
-      <span class="stat-label">IN ATTESA</span>
-      <span class="stat-value" id="totalPending">0</span>
-    </div>
-  </div>
-
-  <div class="action-grid">
-    <button class="action-btn" id="newPredBtn">⚡ Nuova Predizione</button>
-    <button class="action-btn" id="evaluateBtn">🎯 Valuta Risultati</button>
-  </div>
-
-  <div class="asset-section">
-    <div class="asset-header">
-      <div class="asset-tabs">
-        <button class="tab-btn active" data-asset="SPY">SPY</button>
-        <button class="tab-btn" data-asset="AAPL">AAPL</button>
-      </div>
-      <span class="asset-accuracy-badge" id="assetAccuracy">Accuratezza: 0.0%</span>
+    <div id="updateBanner" class="update-banner">
+        <span>🔄 Nuova versione disponibile</span>
+        <button class="update-banner-btn" onclick="applyUpdate()">Aggiorna</button>
     </div>
 
-    <div class="legend">
-      <div class="legend-item"><span class="legend-dot blue"></span> Prezzo Iniziale</div>
-      <div class="legend-item"><span class="legend-dot green"></span> Prezzo Target Reale</div>
+    <header>
+        <h1>📈 AI Predictor</h1>
+        <button class="refresh-btn" onclick="location.reload()">🔄 Aggiorna</button>
+    </header>
+
+    <div class="summary-banner">
+        <div class="stat-box">
+            <span class="stat-label">Accuratezza AI</span>
+            <span class="stat-value green" id="stat-accuracy">0.0%</span>
+        </div>
+        <div class="stat-box">
+            <span class="stat-label">Valutati</span>
+            <span class="stat-value" id="stat-outcomes">0</span>
+        </div>
+        <div class="stat-box">
+            <span class="stat-label">In Attesa</span>
+            <span class="stat-value blue" id="stat-pending">0</span>
+        </div>
     </div>
 
-    <div class="chart-container" id="chartContainer">
-      <svg class="chart-svg" viewBox="0 0 300 150" id="chartSvg">
-        <text x="150" y="75" fill="#94a3b8" font-size="12" text-anchor="middle">Caricamento dati grafico...</text>
-      </svg>
+    <div class="actions-panel">
+        <button class="btn-action" onclick="handleAction('predict')">
+            ⚡ Nuova Predizione
+        </button>
+        <button class="btn-action" onclick="handleAction('evaluate')">
+            🎯 Valuta Risultati
+        </button>
     </div>
-  </div>
 
-  <div class="section-title">Ultimi Risultati Valutati</div>
-  <div class="table-card">
-    <table class="data-table">
-      <thead>
-        <tr>
-          <th>Data</th>
-          <th>Orizzonte</th>
-          <th>Preditto</th>
-          <th>Reale</th>
-          <th>Esito</th>
-        </tr>
-      </thead>
-      <tbody id="evaluatedTableBody">
-        <tr>
-          <td colspan="5" class="empty-msg">Nessuna valutazione ancora.</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+    <div class="grid-two-assets" id="assets-grid"></div>
 
-  <div class="section-title">Ultimi Segnali Generati</div>
-  <div class="table-card">
-    <table class="data-table">
-      <thead>
-        <tr>
-          <th>Data</th>
-          <th>Orizzonte</th>
-          <th>Classe</th>
-          <th>Conf.</th>
-        </tr>
-      </thead>
-      <tbody id="predictionsTableBody">
-        <tr>
-          <td colspan="4" class="empty-msg">Nessuna predizione registrata.</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+    <!-- Info Modal per GitHub Pages -->
+    <div id="infoModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-title" id="modalTitle">Aggiornamento Automatico</div>
+            <div class="modal-body" id="modalBody">
+                Su GitHub Pages, le nuove previsioni e le valutazioni dei risultati vengono eseguite in automatico tramite **GitHub Actions** dal lunedì al venerdì durante l'orario di apertura dei mercati finanziari.
+            </div>
+            <button class="modal-btn" onclick="closeModal()">Capito!</button>
+        </div>
+    </div>
 
-  <script src="app.js"></script>
+    <div id="toast" class="toast">Elaborazione...</div>
+
+    <script>
+        // Unico punto da modificare quando cambia il paniere di asset seguiti.
+        const ASSETS = ['NVDA', 'MSFT', 'AAPL'];
+        const chartInstances = {};
+
+        function renderAssetCards() {
+            const grid = document.getElementById('assets-grid');
+            grid.innerHTML = ASSETS.map(asset => `
+                <div class="asset-card">
+                    <div class="asset-header">
+                        <span class="asset-title">${asset}</span>
+                        <span class="badge-accuracy" id="accuracy-${asset}">Accuratezza: 0.0%</span>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="chart-${asset}"></canvas>
+                    </div>
+                    <div class="section-title">Ultimi Risultati Valutati</div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr><th>Data</th><th>Orizzonte</th><th>Preditto</th><th>Reale</th><th>Esito</th></tr>
+                            </thead>
+                            <tbody id="outcomes-body-${asset}">
+                                <tr><td colspan="5" style="text-align:center; color: var(--text-muted);">Caricamento dati...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="section-title" style="margin-top: 16px;">Ultimi Segnali Generati</div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr><th>Data</th><th>Orizzonte</th><th>Classe</th><th>Conf.</th></tr>
+                            </thead>
+                            <tbody id="predictions-body-${asset}">
+                                <tr><td colspan="4" style="text-align:center; color: var(--text-muted);">Caricamento dati...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.innerText = msg;
+            toast.style.display = 'block';
+            setTimeout(() => { toast.style.display = 'none'; }, 3000);
+        }
+
+        function showModal(title, text) {
+            document.getElementById('modalTitle').innerText = title;
+            document.getElementById('modalBody').innerHTML = text;
+            document.getElementById('infoModal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('infoModal').style.display = 'none';
+        }
+
+        async function parseJsonl(url) {
+            try {
+                const res = await fetch(url);
+                if (!res.ok) return [];
+                const text = await res.text();
+                return text.trim().split('\n')
+                    .filter(line => line.trim().length > 0)
+                    .map(line => {
+                        try { return JSON.parse(line); } catch(e) { return null; }
+                    })
+                    .filter(item => item !== null);
+            } catch (err) {
+                return [];
+            }
+        }
+
+        async function fetchPending() {
+            try {
+                const res = await fetch('data/pending.json');
+                if (!res.ok) return [];
+                return await res.json();
+            } catch (err) {
+                return [];
+            }
+        }
+
+        async function loadDashboardData() {
+            const perAsset = await Promise.all(ASSETS.map(asset => Promise.all([
+                parseJsonl(`data/${asset.toLowerCase()}/predictions.jsonl`),
+                parseJsonl(`data/${asset.toLowerCase()}/outcomes.jsonl`)
+            ])));
+            const pending = await fetchPending();
+
+            const allOutcomes = perAsset.flatMap(([, outcomes]) => outcomes);
+            const totalOutcomes = allOutcomes.length;
+            const correctOutcomes = allOutcomes.filter(o => o.correct === true).length;
+            const overallAccuracy = totalOutcomes > 0 ? ((correctOutcomes / totalOutcomes) * 100).toFixed(1) : "0.0";
+
+            document.getElementById('stat-accuracy').innerText = overallAccuracy + '%';
+            document.getElementById('stat-outcomes').innerText = totalOutcomes;
+            document.getElementById('stat-pending').innerText = pending.length;
+
+            ASSETS.forEach((asset, i) => {
+                const [predictions, outcomes] = perAsset[i];
+                renderAssetData(asset, predictions, outcomes);
+            });
+        }
+
+        function renderAssetData(asset, predictions, outcomes) {
+            const total = outcomes.length;
+            const correct = outcomes.filter(o => o.correct === true).length;
+            const accuracy = total > 0 ? ((correct / total) * 100).toFixed(1) : "0.0";
+
+            document.getElementById(`accuracy-${asset}`).innerText = `Accuratezza: ${accuracy}%`;
+
+            // Sort Outcomes descending for table
+            const recentOutcomes = [...outcomes].sort((a, b) => (b.evaluated_at || '').localeCompare(a.evaluated_at || '')).slice(0, 10);
+            const outcomesBody = document.getElementById(`outcomes-body-${asset}`);
+            if (recentOutcomes.length === 0) {
+                outcomesBody.innerHTML = '<tr><td colspan="5" style="text-align:center; color: var(--text-muted);">Nessuna valutazione ancora.</td></tr>';
+            } else {
+                outcomesBody.innerHTML = recentOutcomes.map(row => `
+                    <tr>
+                        <td>${(row.evaluated_at || '').slice(0, 10)}</td>
+                        <td>${row.horizon || '-'}</td>
+                        <td><span class="badge badge-${row.predicted_class}">${row.predicted_class}</span></td>
+                        <td><span class="badge badge-${row.actual_class}">${row.actual_class}</span></td>
+                        <td class="correct-${row.correct}">${row.correct ? '✅ SI' : '❌ NO'}</td>
+                    </tr>
+                `).join('');
+            }
+
+            // Sort Predictions descending for table
+            const recentPredictions = [...predictions].sort((a, b) => (b.generated_at || '').localeCompare(a.generated_at || '')).slice(0, 10);
+            const predictionsBody = document.getElementById(`predictions-body-${asset}`);
+            if (recentPredictions.length === 0) {
+                predictionsBody.innerHTML = '<tr><td colspan="4" style="text-align:center; color: var(--text-muted);">Nessuna predizione registrata.</td></tr>';
+            } else {
+                predictionsBody.innerHTML = recentPredictions.map(p => `
+                    <tr>
+                        <td>${(p.generated_at || '').slice(0, 10)}</td>
+                        <td>${p.horizon || '-'}</td>
+                        <td><span class="badge badge-${p.predicted_class}">${p.predicted_class}</span></td>
+                        <td>${p.confidence || 0}%</td>
+                    </tr>
+                `).join('');
+            }
+
+            // Prepare chart data
+            const predsMap = {};
+            predictions.forEach(p => { if (p.id) predsMap[p.id] = p; });
+
+            const chartPoints = [...outcomes].sort((a, b) => (a.evaluated_at || '').localeCompare(b.evaluated_at || '')).map(o => {
+                const pInfo = predsMap[o.prediction_id] || {};
+                return {
+                    date: o.target_bar_date || (o.evaluated_at || '').slice(0, 10),
+                    priceStart: pInfo.price_at_generation || null,
+                    priceTarget: o.price_at_target || null
+                };
+            });
+
+            renderChart(asset, chartPoints);
+        }
+
+        function renderChart(asset, points) {
+            const ctx = document.getElementById(`chart-${asset}`).getContext('2d');
+            const labels = points.length ? points.map(p => p.date) : ['Nessun dato'];
+            const priceStart = points.length ? points.map(p => p.priceStart) : [0];
+            const priceTarget = points.length ? points.map(p => p.priceTarget) : [0];
+
+            if (chartInstances[asset]) {
+                chartInstances[asset].destroy();
+            }
+
+            chartInstances[asset] = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Prezzo Iniziale',
+                            data: priceStart,
+                            borderColor: '#3b82f6',
+                            borderDash: [5, 5],
+                            tension: 0.1
+                        },
+                        {
+                            label: 'Prezzo Target Reale',
+                            data: priceTarget,
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            fill: true,
+                            tension: 0.1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { labels: { color: '#94a3b8', font: { size: 10 } } }
+                    },
+                    scales: {
+                        x: { ticks: { color: '#94a3b8', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                        y: { ticks: { color: '#94a3b8', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                    }
+                }
+            });
+        }
+
+        async function handleAction(type) {
+            // Tenta chiamata API se in ambiente Flask
+            try {
+                const res = await fetch(`/api/${type}`, { method: 'POST' });
+                if (res.ok) {
+                    const json = await res.json();
+                    if (json.status === 'ok') {
+                        showToast('Completato con successo!');
+                        setTimeout(() => location.reload(), 1500);
+                        return;
+                    }
+                }
+            } catch (err) {
+                // Fallback statico su GitHub Pages
+            }
+
+            const title = type === 'predict' ? '⚡ Nuova Predizione' : '🎯 Valuta Risultati';
+            const desc = `Su GitHub Pages, la generazione delle predizioni e la valutazione dei risultati avvengono in modo del tutto automatico tramite **GitHub Actions** ad ogni slot di borsa dal lunedì al venerdì.<br><br>I risultati aggiornati appariranno qui automaticamente dopo ogni esecuzione!`;
+            showModal(title, desc);
+        }
+
+        // Service Worker registration per PWA, con banner "nuova versione disponibile"
+        let waitingWorker = null;
+        let reloadingAfterUpdate = false;
+
+        function showUpdateBanner(worker) {
+            waitingWorker = worker;
+            document.getElementById('updateBanner').style.display = 'flex';
+        }
+
+        function applyUpdate() {
+            if (waitingWorker) {
+                waitingWorker.postMessage({ type: 'SKIP_WAITING' });
+            }
+        }
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').then(registration => {
+                    // Una versione nuova era già stata scaricata in una sessione precedente.
+                    if (registration.waiting) {
+                        showUpdateBanner(registration.waiting);
+                    }
+
+                    registration.addEventListener('updatefound', () => {
+                        const installing = registration.installing;
+                        if (!installing) return;
+                        installing.addEventListener('statechange', () => {
+                            // 'installed' con un controller già attivo = aggiornamento
+                            // di una PWA già in uso, non la prima installazione.
+                            if (installing.state === 'installed' && navigator.serviceWorker.controller) {
+                                showUpdateBanner(installing);
+                            }
+                        });
+                    });
+
+                    // Pagina statica: controlla periodicamente una nuova versione
+                    // oltre al controllo automatico che il browser fa ad ogni load.
+                    setInterval(() => registration.update(), 60 * 60 * 1000);
+                }).catch(() => {});
+
+                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                    if (reloadingAfterUpdate) return;
+                    reloadingAfterUpdate = true;
+                    location.reload();
+                });
+            });
+        }
+
+        renderAssetCards();
+        loadDashboardData();
+    </script>
 </body>
 </html>
