@@ -238,3 +238,79 @@ def test_beta_none_se_storico_insufficiente():
     asset_bars = [_bar(100 + i) for i in range(10)]
     bench_bars = [_bar(100 + i) for i in range(60)]
     assert technicals.compute_beta(asset_bars, bench_bars, lookback=60) is None
+
+
+# --- compute_bollinger_percent_b -------------------------------------
+
+
+def test_bollinger_percent_b_valore_atteso():
+    # 19 barre a 100 + 1 a 110: media e deviazione standard calcolabili a mano.
+    closes = [100] * 19 + [110]
+    bars = [_bar(c) for c in closes]
+    mean = (100 * 19 + 110) / 20
+    variance = (19 * (100 - mean) ** 2 + (110 - mean) ** 2) / 20
+    std = variance**0.5
+    upper, lower = mean + 2 * std, mean - 2 * std
+    expected = round((110 - lower) / (upper - lower), 4)
+    assert technicals.compute_bollinger_percent_b(bars, period=20) == expected
+
+
+def test_bollinger_percent_b_meta_banda_se_nessuna_volatilita():
+    bars = [_bar(100) for _ in range(20)]  # std=0 -> upper==lower
+    assert technicals.compute_bollinger_percent_b(bars, period=20) is None
+
+
+def test_bollinger_percent_b_none_se_storico_insufficiente():
+    bars = [_bar(100) for _ in range(10)]
+    assert technicals.compute_bollinger_percent_b(bars, period=20) is None
+
+
+# --- compute_52w_range_position -------------------------------------------
+
+
+def test_52w_range_position_valore_atteso():
+    # 15 barre neutre (non toccano max/min) + [90, 100, 120, 80, 96]: max=120,
+    # min=80, ultimo=96. Servono >=20 barre in totale (soglia minima).
+    closes = [95] * 15 + [90, 100, 120, 80, 96]
+    bars = [_bar(c) for c in closes]
+    result = technicals.compute_52w_range_position(bars, lookback=252)
+    assert result == {
+        "pct_from_high": round((96 - 120) / 120 * 100, 2),
+        "pct_from_low": round((96 - 80) / 80 * 100, 2),
+    }
+
+
+def test_52w_range_position_usa_solo_lookback_barre():
+    # Il massimo (200) è a 4 barre dalla fine, fuori dalla finestra di
+    # lookback=3, va ignorato. Padding iniziale per superare la soglia minima.
+    closes = [95] * 17 + [200, 90, 100, 96]
+    bars = [_bar(c) for c in closes]
+    result = technicals.compute_52w_range_position(bars, lookback=3)
+    assert result == {
+        "pct_from_high": round((96 - 100) / 100 * 100, 2),
+        "pct_from_low": round((96 - 90) / 90 * 100, 2),
+    }
+
+
+def test_52w_range_position_none_se_storico_insufficiente():
+    bars = [_bar(100) for _ in range(10)]
+    assert technicals.compute_52w_range_position(bars) is None
+
+
+# --- compute_relative_volume -----------------------------------------------
+
+
+def test_relative_volume_valore_atteso():
+    bars = [_bar(100, volume=1000) for _ in range(20)] + [_bar(101, volume=1500)]
+    # media precedente = 1000, ultima barra = 1500 -> 1.5x
+    assert technicals.compute_relative_volume(bars, period=20) == 1.5
+
+
+def test_relative_volume_none_se_manca_volume():
+    bars = [_bar(100) for _ in range(21)]
+    assert technicals.compute_relative_volume(bars, period=20) is None
+
+
+def test_relative_volume_none_se_storico_insufficiente():
+    bars = [_bar(100, volume=1000) for _ in range(10)]
+    assert technicals.compute_relative_volume(bars, period=20) is None

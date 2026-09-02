@@ -190,6 +190,61 @@ def compute_atr_pct(bars: list[DailyBar], period: int = 14) -> float | None:
     return round(atr / last_close * 100, 2)
 
 
+def compute_bollinger_percent_b(bars: list[DailyBar], period: int = 20, num_std: float = 2.0) -> float | None:
+    """%B delle Bande di Bollinger: posizione del prezzo rispetto alla banda
+    (SMA ± num_std deviazioni standard) sulle ultime `period` chiusure.
+    0 = sul bordo inferiore, 1 = sul bordo superiore, >1/<0 = fuori banda.
+    None se lo storico è insufficiente."""
+    closes = [b["close"] for b in bars]
+    if len(closes) < period:
+        return None
+    window = closes[-period:]
+    mean = sum(window) / period
+    variance = sum((c - mean) ** 2 for c in window) / period
+    std = variance**0.5
+    upper = mean + num_std * std
+    lower = mean - num_std * std
+    if upper == lower:
+        return None
+    return round((closes[-1] - lower) / (upper - lower), 4)
+
+
+def compute_52w_range_position(bars: list[DailyBar], lookback: int = 252) -> dict | None:
+    """Posizione della chiusura attuale rispetto a massimo e minimo delle
+    ultime `lookback` barre (52 settimane di borsa di default): % di
+    distanza da ciascuno (0 = coincide, negativo = sotto il massimo,
+    positivo = sopra il minimo). Usa solo le barre effettivamente
+    disponibili se sono meno di `lookback`. None se lo storico è troppo
+    corto per essere significativo (< 20 barre)."""
+    if len(bars) < 20:
+        return None
+    window = bars[-lookback:]
+    closes = [b["close"] for b in window]
+    period_high = max(closes)
+    period_low = min(closes)
+    last_close = closes[-1]
+    if period_high == 0 or period_low == 0:
+        return None
+    return {
+        "pct_from_high": round((last_close - period_high) / period_high * 100, 2),
+        "pct_from_low": round((last_close - period_low) / period_low * 100, 2),
+    }
+
+
+def compute_relative_volume(bars: list[DailyBar], period: int = 20) -> float | None:
+    """Volume dell'ultima barra rispetto alla media delle `period` barre
+    precedenti (non inclusa l'ultima): >1 = attività sopra la norma
+    recente, <1 = sotto. None se il volume non è disponibile dalla fonte
+    usata o lo storico è insufficiente."""
+    window = bars[-(period + 1) :]
+    if len(window) < period + 1 or any("volume" not in b for b in window):
+        return None
+    prior_avg = sum(b["volume"] for b in window[:-1]) / period
+    if prior_avg == 0:
+        return None
+    return round(window[-1]["volume"] / prior_avg, 2)
+
+
 def compute_beta(
     asset_bars: list[DailyBar], benchmark_bars: list[DailyBar], lookback: int = 60
 ) -> float | None:

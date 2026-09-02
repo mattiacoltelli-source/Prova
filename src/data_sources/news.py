@@ -117,6 +117,16 @@ def _gdelt_news(ticker: str, lookback_days: int, limit: int) -> list[NewsItem]:
     return out
 
 
+def average_sentiment(news_items: list[NewsItem]) -> float | None:
+    """Media dei punteggi di sentiment (-1..1) delle news che ne hanno uno
+    (solo Alpha Vantage lo fornisce, Finnhub/GDELT restituiscono None).
+    Dato già raccolto, mai buttato via: nessuna chiamata aggiuntiva."""
+    scores = [n["sentiment"] for n in news_items if n.get("sentiment") is not None]
+    if not scores:
+        return None
+    return round(sum(scores) / len(scores), 3)
+
+
 def fetch_recent_news(ticker: str, lookback_days: int = 7, limit: int = 8) -> list[NewsItem]:
     """Ritorna una lista di news recenti, vuota se tutte le fonti falliscono
     (le news sono un segnale opzionale, non bloccante per la previsione)."""

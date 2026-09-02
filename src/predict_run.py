@@ -105,6 +105,9 @@ def run(dry_run: bool, force: bool) -> None:
             "beta_vs_spy": (
                 technicals.compute_beta(bars, benchmark_bars) if benchmark_bars else None
             ),
+            "bollinger_percent_b": technicals.compute_bollinger_percent_b(bars),
+            "range_52w": technicals.compute_52w_range_position(bars),
+            "relative_volume": technicals.compute_relative_volume(bars),
         }
 
         for horizon in config.HORIZONS:
@@ -141,6 +144,7 @@ def run(dry_run: bool, force: bool) -> None:
                 "model": config.ANTHROPIC_MODEL,
                 "inputs_summary": {
                     "news_count": len(news_items),
+                    "news_sentiment_avg": news.average_sentiment(news_items),
                     "fundamentals_source": fundamentals_data["source"] if fundamentals_data else None,
                     "macro_keys": sorted(macro_data.keys()),
                     "technicals": technical_signals,

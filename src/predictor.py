@@ -9,6 +9,7 @@ import re
 import anthropic
 
 from . import config
+from .data_sources import news as news_source
 
 VALID_CLASSES = {"UP", "DOWN", "FLAT"}
 
@@ -33,6 +34,9 @@ def build_prompt(
         if news
         else "Nessuna news recente disponibile."
     )
+    sentiment_avg = news_source.average_sentiment(news)
+    if sentiment_avg is not None:
+        news_block += f"\n\nSentiment medio delle news (-1..+1): {sentiment_avg}"
     fundamentals_block = json.dumps(fundamentals["metrics"], indent=2) if fundamentals else "Non disponibili."
     macro_block = "\n".join(f"- {k}: {v['value']} (al {v['date']})" for k, v in macro.items()) or "Non disponibili."
 
@@ -69,6 +73,22 @@ def build_prompt(
         technical_lines.append(
             f"- Beta vs S&P 500 (60gg): {technicals['beta_vs_spy']} "
             "(>1 = più volatile del mercato, <1 = meno volatile)"
+        )
+    if technicals.get("bollinger_percent_b") is not None:
+        technical_lines.append(
+            f"- Bande di Bollinger (%B, 20gg): {technicals['bollinger_percent_b']} "
+            "(0 = bordo inferiore, 1 = bordo superiore, <0 o >1 = fuori banda)"
+        )
+    range_52w = technicals.get("range_52w")
+    if range_52w is not None:
+        technical_lines.append(
+            f"- Distanza da massimo 52 settimane: {range_52w['pct_from_high']}%, "
+            f"da minimo 52 settimane: {range_52w['pct_from_low']}%"
+        )
+    if technicals.get("relative_volume") is not None:
+        technical_lines.append(
+            f"- Volume relativo (ultima barra vs media 20gg): {technicals['relative_volume']}x "
+            "(>1 = attività sopra la norma recente)"
         )
     technicals_block = "\n".join(technical_lines) or "Non disponibili."
 

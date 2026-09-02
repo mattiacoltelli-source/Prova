@@ -55,8 +55,11 @@ bisogno di nessuna API in più: On-Balance Volume (trend
 accumulazione/distribuzione), Chaikin Money Flow, forza relativa e beta
 rispetto all'S&P 500 (SPY usato solo come benchmark, non più come asset
 attivo), medie mobili SMA 50/200 ed EMA 9/21 (trend di fondo e di breve
-termine), RSI 14, MACD (12/26/9) e ATR 14 (volatilità media giornaliera in
-%).
+termine), RSI 14, MACD (12/26/9), ATR 14 (volatilità media giornaliera in
+%), Bande di Bollinger (%B), distanza da massimo/minimo a 52 settimane e
+volume relativo rispetto alla propria media recente. Anche il sentiment
+delle news (-1..+1, quando la fonte è Alpha Vantage) viene incluso nel
+prompt: dato già raccolto, prima scartato.
 
 ## Secret richiesti (repo → Settings → Secrets and variables → Actions)
 
