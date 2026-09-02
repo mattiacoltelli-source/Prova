@@ -13,6 +13,11 @@ ASSETS = ["NVDA", "MSFT", "AAPL"]
 # Tutte azioni (nessun ETF attivo al momento): fondamentali via SEC EDGAR.
 ASSET_TYPE = {"NVDA": "stock", "MSFT": "stock", "AAPL": "stock"}
 
+# ETF di settore usato come secondo benchmark oltre a SPY (stessa fonte
+# Yahoo Finance già usata per i prezzi, nessuna API nuova): forza relativa
+# e beta vs il proprio settore, più specifici del solo mercato generale.
+SECTOR_BENCHMARK = {"NVDA": "SMH", "MSFT": "XLK", "AAPL": "XLK"}
+
 # Email di contatto richiesta da SEC EDGAR nell'header User-Agent (non è una API key).
 SEC_EDGAR_CONTACT_EMAIL = "mattia.coltelli@gmail.com"
 

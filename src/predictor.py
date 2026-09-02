@@ -29,6 +29,7 @@ def build_prompt(
     macro: dict,
     technicals: dict | None = None,
     analyst_outlook: dict | None = None,
+    insider_summary: dict | None = None,
 ) -> str:
     news_block = (
         "\n".join(f"- ({n['published_at']}) {n['headline']}" for n in news[:8])
@@ -59,6 +60,17 @@ def build_prompt(
             )
     analyst_block = "\n".join(analyst_lines) or "Non disponibili."
 
+    if insider_summary:
+        insider_block = (
+            f"Ultimi {insider_summary['lookback_days']}gg: "
+            f"{insider_summary['buy_transactions']} acquisti sul mercato aperto, "
+            f"{insider_summary['sell_transactions']} vendite, "
+            f"netto {insider_summary['net_shares']:+} azioni "
+            "(solo transazioni discrezionali, escluse vesting/opzioni/donazioni)"
+        )
+    else:
+        insider_block = "Nessuna transazione insider rilevante nella finestra osservata."
+
     technicals = technicals or {}
     technical_lines = []
     if technicals.get("obv_trend"):
@@ -69,6 +81,13 @@ def build_prompt(
         technical_lines.append(
             f"- Forza relativa vs S&P 500 (60gg): {technicals['relative_strength_vs_spy_pct']}% "
             "(positivo = sta sovraperformando il mercato)"
+        )
+    sector_ticker = technicals.get("sector_benchmark")
+    if technicals.get("relative_strength_vs_sector_pct") is not None and sector_ticker:
+        technical_lines.append(
+            f"- Forza relativa vs settore {sector_ticker} (60gg): "
+            f"{technicals['relative_strength_vs_sector_pct']}% "
+            "(positivo = sta sovraperformando il proprio settore, non solo il mercato generale)"
         )
     if technicals.get("sma_trend"):
         technical_lines.append(f"- Trend di fondo (SMA 50/200): {technicals['sma_trend']}")
@@ -92,6 +111,11 @@ def build_prompt(
         technical_lines.append(
             f"- Beta vs S&P 500 (60gg): {technicals['beta_vs_spy']} "
             "(>1 = più volatile del mercato, <1 = meno volatile)"
+        )
+    if technicals.get("beta_vs_sector") is not None and sector_ticker:
+        technical_lines.append(
+            f"- Beta vs settore {sector_ticker} (60gg): {technicals['beta_vs_sector']} "
+            "(>1 = più volatile del proprio settore, <1 = meno volatile)"
         )
     if technicals.get("bollinger_percent_b") is not None:
         technical_lines.append(
@@ -128,6 +152,9 @@ Fondamentali/dati ETF disponibili:
 
 Consenso analisti/prossimo bilancio:
 {analyst_block}
+
+Transazioni insider (dirigenti/amministratori, solo mercato aperto):
+{insider_block}
 
 Contesto macro:
 {macro_block}
@@ -185,10 +212,11 @@ def generate_prediction(
     macro: dict,
     technicals: dict | None = None,
     analyst_outlook: dict | None = None,
+    insider_summary: dict | None = None,
 ) -> dict:
     prompt = build_prompt(
         asset, horizon_code, price, price_asof, threshold_pct, news, fundamentals, macro,
-        technicals, analyst_outlook,
+        technicals, analyst_outlook, insider_summary,
     )
     raw = call_model(prompt)
     return parse_prediction(raw)

@@ -31,7 +31,7 @@ class FundamentalsUnavailableError(RuntimeError):
     pass
 
 
-def _sec_cik_for_ticker(ticker: str) -> str:
+def sec_cik_for_ticker(ticker: str) -> str:
     resp = http.get(
         "https://www.sec.gov/files/company_tickers.json", headers=SEC_HEADERS, timeout=TIMEOUT
     )
@@ -43,7 +43,7 @@ def _sec_cik_for_ticker(ticker: str) -> str:
 
 
 def _sec_edgar_fundamentals(ticker: str) -> dict:
-    cik = _sec_cik_for_ticker(ticker)
+    cik = sec_cik_for_ticker(ticker)
     resp = http.get(
         f"https://data.sec.gov/api/xbrl/companyfacts/CIK{cik}.json",
         headers=SEC_HEADERS,

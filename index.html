@@ -405,14 +405,17 @@
             <strong>Consenso analisti:</strong> Alpha Vantage — prossima data di bilancio, stima EPS
             media, numero di analisti e revisioni al rialzo/ribasso negli ultimi 30gg (aggiornato al
             massimo una volta al giorno per asset).<br>
+            <strong>Transazioni insider:</strong> SEC EDGAR (Form 4) — acquisti/vendite sul mercato
+            aperto di dirigenti e amministratori negli ultimi 30gg, escluse deliberatamente vesting
+            di RSU, esercizio di opzioni e altre transazioni non discrezionali.<br>
             <strong>Macro:</strong> FRED — tassi a 10 e 2 anni, spread di curva, inflazione (CPI),
             disoccupazione, VIX, indice del dollaro.<br>
             <strong>Indicatori tecnici:</strong> On-Balance Volume (accumulazione/distribuzione),
             Chaikin Money Flow (pressione acquisto/vendita), forza relativa e beta rispetto
-            all'S&P 500, medie mobili SMA 50/200 ed EMA 9/21 (trend di fondo e di breve termine),
-            RSI 14, MACD, ATR 14 (volatilità media giornaliera), Bande di Bollinger (%B),
-            distanza da massimo/minimo a 52 settimane, volume relativo rispetto alla media
-            recente.<br>
+            all'S&P 500 e al proprio settore (SMH per NVDA, XLK per MSFT/AAPL), medie mobili
+            SMA 50/200 ed EMA 9/21 (trend di fondo e di breve termine), RSI 14, MACD, ATR 14
+            (volatilità media giornaliera), Bande di Bollinger (%B), distanza da massimo/minimo
+            a 52 settimane, volume relativo rispetto alla media recente.<br>
             <strong>Orizzonti previsti:</strong> 1 giorno, 7 giorni, 1 mese — con una banda neutra
             (FLAT) calcolata sulla volatilità storica recente di ciascun titolo.<br>
             <strong>Orario della previsione giornaliera (ora italiana):</strong>
@@ -613,6 +616,9 @@
             if (t.relative_strength_vs_spy_pct !== undefined && t.relative_strength_vs_spy_pct !== null) {
                 lines.push(`Forza relativa vs S&P 500: <strong>${t.relative_strength_vs_spy_pct}%</strong>`);
             }
+            if (t.relative_strength_vs_sector_pct !== undefined && t.relative_strength_vs_sector_pct !== null && t.sector_benchmark) {
+                lines.push(`Forza relativa vs settore (${escapeHtml(t.sector_benchmark)}): <strong>${t.relative_strength_vs_sector_pct}%</strong>`);
+            }
             if (t.sma_trend) lines.push(`Trend di fondo (SMA 50/200): <strong>${escapeHtml(t.sma_trend)}</strong>`);
             if (t.ema_trend) lines.push(`Trend di breve termine (EMA 9/21): <strong>${escapeHtml(t.ema_trend)}</strong>`);
             if (t.rsi_14 !== undefined && t.rsi_14 !== null) lines.push(`RSI (14gg): <strong>${t.rsi_14}</strong>`);
@@ -621,6 +627,9 @@
             }
             if (t.atr_pct !== undefined && t.atr_pct !== null) lines.push(`ATR (14gg): <strong>${t.atr_pct}%</strong>`);
             if (t.beta_vs_spy !== undefined && t.beta_vs_spy !== null) lines.push(`Beta vs S&P 500: <strong>${t.beta_vs_spy}</strong>`);
+            if (t.beta_vs_sector !== undefined && t.beta_vs_sector !== null && t.sector_benchmark) {
+                lines.push(`Beta vs settore (${escapeHtml(t.sector_benchmark)}): <strong>${t.beta_vs_sector}</strong>`);
+            }
             if (t.bollinger_percent_b !== undefined && t.bollinger_percent_b !== null) {
                 lines.push(`Bande di Bollinger (%B): <strong>${t.bollinger_percent_b}</strong>`);
             }
@@ -645,6 +654,17 @@
                 lines.push(`Revisioni stima EPS (30gg): <strong>${a.eps_revisions_up_30d ?? 0} al rialzo</strong>, <strong>${a.eps_revisions_down_30d ?? 0} al ribasso</strong>`);
             }
             return lines;
+        }
+
+        function insiderSummaryLines(inputsSummary) {
+            const i = (inputsSummary && inputsSummary.insider_summary) || null;
+            if (!i) return [];
+            const netLabel = i.net_shares > 0 ? `+${i.net_shares}` : `${i.net_shares}`;
+            return [
+                `Transazioni insider (${i.lookback_days}gg, solo mercato aperto): `
+                + `<strong>${i.buy_transactions} acquisti</strong>, <strong>${i.sell_transactions} vendite</strong>, `
+                + `netto <strong>${netLabel} azioni</strong>`
+            ];
         }
 
         // Segnala se nell'ultimo segnale generato mancava un dato opzionale
@@ -694,6 +714,7 @@
                 `Fondamentali: <strong>${escapeHtml(s.fundamentals_source || 'non disponibili')}</strong>`,
                 `Dati macro usati: <strong>${escapeHtml((s.macro_keys || []).join(', ') || 'nessuno')}</strong>`,
                 ...analystOutlookLines(s),
+                ...insiderSummaryLines(s),
                 ...technicalsLines(s)
             ];
             return lines.filter(line => line !== null).join('<br>');

@@ -57,16 +57,39 @@ def compute_cmf(bars: list[DailyBar], period: int = 20) -> float | None:
     return round(mfv_sum / vol_sum, 4)
 
 
+def _common_trading_dates(
+    asset_bars: list[DailyBar], benchmark_bars: list[DailyBar], lookback: int
+) -> list[str] | None:
+    """Ultime `lookback + 1` date presenti in ENTRAMBE le serie, ordinate.
+    Due ticker distinti non hanno sempre lo stesso identico calendario di
+    barre (una fonte gratuita può mancare un singolo giorno per un titolo
+    e non per l'altro): allineare per indice posizionale invece che per
+    data sfaserebbe silenziosamente tutto il confronto. None se le date in
+    comune non bastano per la finestra richiesta."""
+    asset_dates = {b["date"] for b in asset_bars}
+    benchmark_dates = {b["date"] for b in benchmark_bars}
+    common = sorted(asset_dates & benchmark_dates)
+    if len(common) < lookback + 1:
+        return None
+    return common[-(lookback + 1) :]
+
+
 def compute_relative_strength_pct(
     asset_bars: list[DailyBar], benchmark_bars: list[DailyBar], lookback: int = 60
 ) -> float | None:
-    """Rendimento % dell'asset meno quello del benchmark (S&P 500) sullo
-    stesso periodo: positivo = l'asset sta sovraperformando il mercato
-    (Mansfield Relative Strength semplificata)."""
-    if len(asset_bars) < lookback + 1 or len(benchmark_bars) < lookback + 1:
+    """Rendimento % dell'asset meno quello del benchmark (es. S&P 500 o un
+    ETF di settore) sullo stesso periodo: positivo = l'asset sta
+    sovraperformando il benchmark (Mansfield Relative Strength
+    semplificata). Le date confrontate sono quelle in comune tra le due
+    serie, mai un semplice allineamento per indice."""
+    common_dates = _common_trading_dates(asset_bars, benchmark_bars, lookback)
+    if common_dates is None:
         return None
-    a0, a1 = asset_bars[-1 - lookback]["close"], asset_bars[-1]["close"]
-    b0, b1 = benchmark_bars[-1 - lookback]["close"], benchmark_bars[-1]["close"]
+    asset_by_date = {b["date"]: b["close"] for b in asset_bars}
+    bench_by_date = {b["date"]: b["close"] for b in benchmark_bars}
+    d0, d1 = common_dates[0], common_dates[-1]
+    a0, a1 = asset_by_date[d0], asset_by_date[d1]
+    b0, b1 = bench_by_date[d0], bench_by_date[d1]
     if a0 == 0 or b0 == 0:
         return None
     asset_ret = (a1 - a0) / a0 * 100
@@ -248,14 +271,20 @@ def compute_relative_volume(bars: list[DailyBar], period: int = 20) -> float | N
 def compute_beta(
     asset_bars: list[DailyBar], benchmark_bars: list[DailyBar], lookback: int = 60
 ) -> float | None:
-    """Beta vs benchmark (S&P 500): sensibilità dei rendimenti giornalieri
-    dell'asset a quelli del benchmark sulle ultime `lookback` barre.
-    >1 = più volatile del mercato, <1 = meno volatile, ~1 = in linea.
-    None se lo storico è insufficiente o il benchmark non si muove mai."""
-    if len(asset_bars) < lookback + 1 or len(benchmark_bars) < lookback + 1:
+    """Beta vs benchmark (es. S&P 500 o un ETF di settore): sensibilità dei
+    rendimenti giornalieri dell'asset a quelli del benchmark sulle ultime
+    `lookback` barre in comune tra le due serie (mai un allineamento per
+    indice: due ticker possono avere calendari di barre leggermente
+    diversi). >1 = più volatile del benchmark, <1 = meno volatile, ~1 = in
+    linea. None se lo storico in comune è insufficiente o il benchmark non
+    si muove mai."""
+    common_dates = _common_trading_dates(asset_bars, benchmark_bars, lookback)
+    if common_dates is None:
         return None
-    asset_closes = [b["close"] for b in asset_bars[-(lookback + 1) :]]
-    bench_closes = [b["close"] for b in benchmark_bars[-(lookback + 1) :]]
+    asset_by_date = {b["date"]: b["close"] for b in asset_bars}
+    bench_by_date = {b["date"]: b["close"] for b in benchmark_bars}
+    asset_closes = [asset_by_date[d] for d in common_dates]
+    bench_closes = [bench_by_date[d] for d in common_dates]
     asset_returns = [
         (asset_closes[i] - asset_closes[i - 1]) / asset_closes[i - 1]
         for i in range(1, len(asset_closes))

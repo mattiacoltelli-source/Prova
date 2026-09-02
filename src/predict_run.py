@@ -14,7 +14,7 @@ import sys
 import uuid
 
 from . import budget, config, predictor, storage, technicals, volatility
-from .data_sources import fundamentals, macro, news, prices
+from .data_sources import fundamentals, insider, macro, news, prices
 
 BENCHMARK_TICKER = "SPY"
 
@@ -118,6 +118,13 @@ def run(dry_run: bool, force: bool) -> None:
     except Exception:  # noqa: BLE001 - la forza relativa è un segnale opzionale
         benchmark_bars = None
 
+    sector_bars_by_ticker: dict[str, list] = {}
+    for sector_ticker in set(config.SECTOR_BENCHMARK.values()):
+        try:
+            sector_bars_by_ticker[sector_ticker] = prices.fetch_daily_history(sector_ticker)
+        except Exception:  # noqa: BLE001 - segnale opzionale, mai bloccante
+            continue
+
     for asset in config.ASSETS:
         try:
             bars = prices.fetch_daily_history(asset)
@@ -130,6 +137,10 @@ def run(dry_run: bool, force: bool) -> None:
         fundamentals_data = fundamentals.fetch_fundamentals(asset)
         macro_data = macro.fetch_macro_snapshot() if _macro_key_present() else {}
         analyst_outlook = _get_analyst_outlook(asset, now_et.date(), dry_run)
+        insider_summary = insider.fetch_insider_summary(asset)
+
+        sector_ticker = config.SECTOR_BENCHMARK.get(asset)
+        sector_bars = sector_bars_by_ticker.get(sector_ticker) if sector_ticker else None
 
         technical_signals = {
             "obv_trend": technicals.compute_obv_trend(bars),
@@ -150,6 +161,15 @@ def run(dry_run: bool, force: bool) -> None:
             "bollinger_percent_b": technicals.compute_bollinger_percent_b(bars),
             "range_52w": technicals.compute_52w_range_position(bars),
             "relative_volume": technicals.compute_relative_volume(bars),
+            "sector_benchmark": sector_ticker,
+            "relative_strength_vs_sector_pct": (
+                technicals.compute_relative_strength_pct(bars, sector_bars)
+                if sector_bars
+                else None
+            ),
+            "beta_vs_sector": (
+                technicals.compute_beta(bars, sector_bars) if sector_bars else None
+            ),
         }
 
         for horizon in config.HORIZONS:
@@ -167,6 +187,7 @@ def run(dry_run: bool, force: bool) -> None:
                 pred = predictor.generate_prediction(
                     asset, horizon.code, price, price_asof, threshold_pct,
                     news_items, fundamentals_data, macro_data, technical_signals, analyst_outlook,
+                    insider_summary,
                 )
             except Exception as exc:  # noqa: BLE001
                 print(f"[{asset}/{horizon.code}] skipped_model_error: {exc}")
@@ -191,6 +212,7 @@ def run(dry_run: bool, force: bool) -> None:
                     "macro_keys": sorted(macro_data.keys()),
                     "technicals": technical_signals,
                     "analyst_outlook": analyst_outlook,
+                    "insider_summary": insider_summary,
                 },
                 "reasoning_short": pred["reasoning_short"],
             }

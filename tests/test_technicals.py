@@ -3,6 +3,8 @@ relativa vs benchmark, con fixture OHLCV sintetiche e valori attesi
 calcolati a mano dalle stesse formule."""
 from __future__ import annotations
 
+import datetime as dt
+
 from src import technicals
 
 
@@ -15,6 +17,24 @@ def _bar(close, volume=None, high=None, low=None):
     if low is not None:
         bar["low"] = low
     return bar
+
+
+def _dated_bars(closes, start="2026-01-01", skip_dates: set[str] = frozenset()):
+    """Barre con date sequenziali distinte (una al giorno), a differenza di
+    _bar() che le vuole tutte identiche: serve solo per relative_strength e
+    beta, le uniche funzioni che confrontano due serie per data invece che
+    per indice posizionale. `skip_dates` simula un giorno mancante in una
+    delle due serie (es. il gap reale osservato tra NVDA e l'ETF di settore
+    SMH), senza sfasare le date successive."""
+    start_date = dt.date.fromisoformat(start)
+    bars = []
+    d = start_date
+    for close in closes:
+        while d.isoformat() in skip_dates:
+            d += dt.timedelta(days=1)
+        bars.append({"date": d.isoformat(), "close": close})
+        d += dt.timedelta(days=1)
+    return bars
 
 
 # --- compute_obv_trend -------------------------------------------------
@@ -88,21 +108,35 @@ def test_cmf_none_se_storico_insufficiente():
 
 
 def test_relative_strength_valore_atteso():
-    asset_bars = [_bar(100 + i * 2) for i in range(6)]  # 100 -> 110, +10%
-    benchmark_bars = [_bar(100 + i * 1) for i in range(6)]  # 100 -> 105, +5%
+    asset_bars = _dated_bars([100 + i * 2 for i in range(6)])  # 100 -> 110, +10%
+    benchmark_bars = _dated_bars([100 + i for i in range(6)])  # 100 -> 105, +5%
     assert technicals.compute_relative_strength_pct(asset_bars, benchmark_bars, lookback=5) == 5.0
 
 
 def test_relative_strength_none_se_storico_insufficiente():
-    asset_bars = [_bar(100 + i) for i in range(3)]
-    benchmark_bars = [_bar(100 + i) for i in range(6)]
+    asset_bars = _dated_bars([100 + i for i in range(3)])
+    benchmark_bars = _dated_bars([100 + i for i in range(6)])
     assert technicals.compute_relative_strength_pct(asset_bars, benchmark_bars, lookback=5) is None
 
 
 def test_relative_strength_none_se_prezzo_base_zero():
-    asset_bars = [_bar(0)] + [_bar(100 + i) for i in range(5)]
-    benchmark_bars = [_bar(100 + i) for i in range(6)]
+    asset_bars = _dated_bars([0] + [100 + i for i in range(5)])
+    benchmark_bars = _dated_bars([100 + i for i in range(6)])
     assert technicals.compute_relative_strength_pct(asset_bars, benchmark_bars, lookback=5) is None
+
+
+def test_relative_strength_allinea_per_data_non_per_indice():
+    # Regressione per il bug reale osservato tra NVDA e l'ETF di settore
+    # SMH (a cui manca il 2026-08-28 di NVDA): il benchmark salta un
+    # giorno, quindi ha una barra in meno dell'asset con le date sfasate
+    # dopo il salto. Allineare per indice posizionale (asset_bars[-6] vs
+    # benchmark_bars[-6]) confronterebbe due giorni diversi; allineare per
+    # data in comune usa correttamente il primo e l'ultimo giorno condivisi.
+    asset_bars = _dated_bars([100 + i * 2 for i in range(7)])  # 01-01..01-07
+    benchmark_bars = _dated_bars([100 + i for i in range(6)], skip_dates={"2026-01-04"})
+    # date in comune (asset ha anche 01-04, il benchmark no): 01-01,02,03,05,06,07
+    # asset: 01-01=100 .. 01-07=112 (+12%); benchmark: 01-01=100 .. 01-07=105 (+5%)
+    assert technicals.compute_relative_strength_pct(asset_bars, benchmark_bars, lookback=5) == 7.0
 
 
 # --- compute_sma_trend / compute_ema_trend --------------------------------
@@ -229,14 +263,14 @@ def test_beta_asset_due_volte_piu_volatile():
     asset_closes = [50]
     for r in returns:
         asset_closes.append(asset_closes[-1] * (1 + 2 * r))
-    asset_bars = [_bar(c) for c in asset_closes]
-    bench_bars = [_bar(c) for c in bench_closes]
+    asset_bars = _dated_bars(asset_closes)
+    bench_bars = _dated_bars(bench_closes)
     assert technicals.compute_beta(asset_bars, bench_bars, lookback=60) == 2.0
 
 
 def test_beta_none_se_storico_insufficiente():
-    asset_bars = [_bar(100 + i) for i in range(10)]
-    bench_bars = [_bar(100 + i) for i in range(60)]
+    asset_bars = _dated_bars([100 + i for i in range(10)])
+    bench_bars = _dated_bars([100 + i for i in range(60)])
     assert technicals.compute_beta(asset_bars, bench_bars, lookback=60) is None
 
 
