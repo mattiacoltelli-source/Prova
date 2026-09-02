@@ -33,10 +33,13 @@ HORIZONS = [
 ]
 
 # --- Slot di previsione giornalieri (ora locale US/Eastern) ----------------
+# Un solo slot vicino alla chiusura: rigenerare più volte nello stesso
+# giorno cambiava pochissimo la previsione (prezzo di partenza quasi
+# identico) per gli orizzonti 7g/1m, e triplicava senza un vero motivo le
+# chiamate AI e la quota sulle fonti dati (es. Alpha Vantage, 25/giorno
+# gratuite condivise con fondamentali/news/stime analisti).
 # (ora, minuto)
 PREDICTION_SLOTS_ET = [
-    (9, 45),
-    (12, 0),
     (15, 45),
 ]
 
@@ -62,8 +65,8 @@ ANTHROPIC_MODEL = "claude-haiku-4-5-20251001"
 ANTHROPIC_MAX_TOKENS = 500
 
 # --- Tetto di spesa (enforcement lato codice) ------------------------------
-# 3 asset x 3 orizzonti x 3 slot/giorno = 27 chiamate attese al massimo.
-MAX_AI_CALLS_PER_DAY = 32
+# 3 asset x 3 orizzonti x 1 slot/giorno = 9 chiamate attese al massimo.
+MAX_AI_CALLS_PER_DAY = 15
 
 # --- Percorsi ---------------------------------------------------------------
 

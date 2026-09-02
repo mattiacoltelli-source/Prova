@@ -2,7 +2,11 @@ name: Genera previsioni
 
 on:
   schedule:
-    - cron: "5 13-21 * * 1-5"
+    # Un solo slot di previsione al giorno (src/config.py: PREDICTION_SLOTS_ET
+    # = 15:45 ET). Finestra 19-23 UTC copre lo slot dovuto (19:45 UTC in EDT,
+    # 20:45 UTC in EST) più il margine di recupero di 3 ore in entrambi i
+    # regimi di ora legale/solare statunitense.
+    - cron: "5 19-23 * * 1-5"
   workflow_dispatch:
     inputs:
       dry_run:
