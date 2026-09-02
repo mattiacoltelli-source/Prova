@@ -16,6 +16,11 @@ SERIES = {
     "UNRATE": "unemployment_rate",
     "VIXCLS": "vix",
     "DTWEXBGS": "dollar_index",
+    # Indice di fiducia dei consumatori (Università del Michigan): segnale
+    # macro più rilevante per titoli sensibili alla spesa dei consumatori
+    # (es. AAPL) che per NVDA/MSFT, ma è uno snapshot generico condiviso
+    # da tutti gli asset, non un dato asset-specifico.
+    "UMCSENT": "consumer_sentiment",
 }
 
 

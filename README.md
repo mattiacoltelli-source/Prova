@@ -66,7 +66,7 @@ a finestra fissa usata in una versione precedente.
 | Prezzo | Yahoo Finance (endpoint pubblico) | Twelve Data → Finnhub |
 | News | Finnhub News | Alpha Vantage Sentiment → GDELT |
 | Fondamentali | SEC EDGAR | Alpha Vantage |
-| Macro | FRED (tassi 10Y/2Y, spread curva, CPI, disoccupazione, VIX, indice dollaro) | — |
+| Macro | FRED (tassi 10Y/2Y, spread curva, CPI, disoccupazione, VIX, indice dollaro, fiducia dei consumatori) | — |
 
 Oltre a prezzo/news/fondamentali/macro, ogni previsione include anche
 indicatori tecnici calcolati da OHLCV gratuito (`src/technicals.py`), senza
