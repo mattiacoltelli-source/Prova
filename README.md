@@ -117,6 +117,11 @@ Entrambi i workflow supportano `workflow_dispatch` con input `dry_run`
 (default `true`): esegue l'intera pipeline (raccolta dati, calcolo,
 eventuale chiamata al modello) ma non scrive nulla su `data/`, utile per
 verificare che tutto funzioni prima di affidarsi allo scheduler automatico.
+Fa eccezione la chiamata Alpha Vantage per le stime analisti: in un
+dry-run senza cache del giorno viene saltata del tutto (nessun fetch,
+nessuna cache scritta), per non consumare la quota gratuita di 25
+richieste/giorno che serve ai run reali — se la cache del giorno esiste
+già, viene comunque riusata per un test realistico a costo zero.
 
 ## Note
 

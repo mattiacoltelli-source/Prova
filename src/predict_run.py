@@ -65,10 +65,16 @@ def _save_analyst_outlook_cache(asset: str, day: dt.date, outlook: dict | None) 
         json.dump({"date": day.isoformat(), "outlook": outlook}, fh)
 
 
-def _get_analyst_outlook(asset: str, day: dt.date) -> dict | None:
+def _get_analyst_outlook(asset: str, day: dt.date, dry_run: bool) -> dict | None:
     already_fetched, cached = _cached_analyst_outlook(asset, day)
     if already_fetched:
         return cached
+    if dry_run:
+        # Un test non deve consumare la quota gratuita di Alpha Vantage
+        # (25 richieste/giorno, condivisa con fondamentali/news di riserva)
+        # che serve ai run reali: niente chiamata, niente cache scritta, così
+        # un run reale nello stesso giorno può ancora tentare il fetch vero.
+        return None
     try:
         outlook = fundamentals.fetch_analyst_outlook(asset, today=day)
     except Exception:  # noqa: BLE001 - segnale opzionale, mai bloccante
@@ -123,7 +129,7 @@ def run(dry_run: bool, force: bool) -> None:
         news_items = news.fetch_recent_news(asset)
         fundamentals_data = fundamentals.fetch_fundamentals(asset)
         macro_data = macro.fetch_macro_snapshot() if _macro_key_present() else {}
-        analyst_outlook = _get_analyst_outlook(asset, now_et.date())
+        analyst_outlook = _get_analyst_outlook(asset, now_et.date(), dry_run)
 
         technical_signals = {
             "obv_trend": technicals.compute_obv_trend(bars),
