@@ -29,11 +29,23 @@
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
 
+        html, body {
+            /* Rete di sicurezza: qualunque elemento sfori (un canvas
+               Chart.js dimensionato male, una grid che si allarga) non deve
+               mai trasformare la pagina intera in uno scroll orizzontale —
+               è esattamente il sintomo "sembra un sito, non un'app". */
+            overflow-x: hidden;
+        }
+
         body {
             background-color: var(--bg-color);
             color: var(--text-main);
             padding: 16px;
             padding-bottom: 80px;
+        }
+
+        canvas {
+            max-width: 100%;
         }
 
         header {
@@ -139,6 +151,8 @@
 
         .chart-container {
             position: relative;
+            width: 100%;
+            overflow: hidden;
             height: 200px;
             margin-bottom: 16px;
         }
@@ -153,6 +167,14 @@
             grid-template-columns: repeat(3, 1fr);
             gap: 10px;
             margin-bottom: 16px;
+        }
+
+        .horizon-charts-grid > div {
+            /* Senza questo, una colonna della grid può allargarsi oltre 1fr
+               per fare spazio al contenuto intrinseco di un figlio (es. un
+               canvas Chart.js dimensionato male), spingendo fuori le altre
+               colonne invece di restare compressa nel proprio spazio. */
+            min-width: 0;
         }
 
         .horizon-label {
