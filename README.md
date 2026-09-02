@@ -123,6 +123,24 @@ funzione di verifica).
   quelli sono attesi), viene inviato un messaggio Telegram con il link al
   run. Richiede i secret `TELEGRAM_BOT_TOKEN` e `TELEGRAM_CHAT_ID` nel repo:
   se non sono configurati, la notifica viene saltata senza far fallire il job.
+- **Isolamento per asset nella dashboard**: il rendering di ciascuna card
+  (`index.html`) è racchiuso in un `try/catch` indipendente — un errore su
+  un asset (es. Chart.js non caricato dal CDN) non blocca più il rendering
+  degli asset successivi.
+
+## Dashboard: range FLAT e filtro per orizzonte
+
+Il dettaglio di ogni previsione (tocca una riga in "Ultimi Risultati
+Valutati"/"Ultimi Segnali Generati") mostra ora l'intervallo di prezzo
+effettivo entro cui la previsione resta FLAT (es. "tra $223.72 e $229.65"),
+calcolato da `price_at_generation` e `volatility_threshold_pct` già salvati
+— nessun dato nuovo, solo più leggibile della sola percentuale ±.
+
+Un filtro per orizzonte (Tutti/1 giorno/7 giorni/1 mese) sopra le card
+degli asset ricalcola, senza nuove chiamate di rete, l'accuratezza, i
+grafici e le tabelle di ciascun asset limitandoli all'orizzonte scelto —
+utile per capire se l'AI è più affidabile su previsioni giornaliere,
+settimanali o mensili.
 
 ## Esecuzione manuale / test
 
