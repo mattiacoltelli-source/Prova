@@ -2,7 +2,7 @@ name: Valuta previsioni scadute
 
 on:
   schedule:
-    - cron: "0 22 * * *"
+    - cron: "5 22 * * *"
   workflow_dispatch:
     inputs:
       dry_run:
