@@ -61,50 +61,47 @@ a finestra fissa usata in una versione precedente.
 
 ## Fonti dati (tutte gratuite, nessun abbonamento)
 
-| Categoria | Primaria | Fallback |
-|---|---|---|
-| Prezzo | Yahoo Finance (endpoint pubblico) | Twelve Data → Finnhub |
-| News | Finnhub News | Alpha Vantage Sentiment → GDELT |
-| Fondamentali | SEC EDGAR | Alpha Vantage |
-| Macro | FRED (tassi 10Y/2Y, spread curva, CPI, disoccupazione, VIX, indice dollaro, fiducia dei consumatori) | — |
+| Categoria | Fonte | Fallback | Note |
+|---|---|---|---|
+| Prezzo (OHLCV giornaliero) | Yahoo Finance (endpoint pubblico) | Twelve Data → Finnhub | nessuna key per la primaria |
+| News | Finnhub News | Alpha Vantage Sentiment → GDELT | sentiment -1..+1 quando la fonte è Alpha Vantage |
+| Fondamentali | SEC EDGAR (XBRL company facts) | Alpha Vantage | nessuna key per la primaria |
+| Consenso analisti | Alpha Vantage (EARNINGS_ESTIMATES + EARNINGS_CALENDAR) | — | 1 fetch/giorno per asset (cache), stima EPS + revisioni + prossimo bilancio |
+| Transazioni insider | SEC EDGAR (Form 4) | — | nessuna key; solo transazioni discrezionali (P/S) |
+| Macro | FRED | — | 9 serie: tassi 10Y/2Y, spread di curva, CPI, disoccupazione, VIX, indice dollaro, fed funds rate, fiducia dei consumatori |
+| Indicatori tecnici | calcolati localmente da OHLCV già scaricato | — | nessuna fonte/key in più |
+| Benchmark di calcolo | Yahoo Finance: SPY (mercato), SMH/XLK (settore) | — | solo per forza relativa/beta, non ricevono previsioni |
 
-Oltre a prezzo/news/fondamentali/macro, ogni previsione include anche
-indicatori tecnici calcolati da OHLCV gratuito (`src/technicals.py`), senza
-bisogno di nessuna API in più: On-Balance Volume (trend
+**Indicatori tecnici** (`src/technicals.py`, tutti derivati dall'OHLCV già
+scaricato, nessuna API in più): On-Balance Volume (trend
 accumulazione/distribuzione), Chaikin Money Flow, forza relativa e beta
-rispetto all'S&P 500 e al proprio settore (SMH per NVDA, XLK per MSFT/AAPL
-— SPY e gli ETF di settore usati solo come benchmark di calcolo, non asset
-attivi), medie mobili SMA 50/200 ed EMA 9/21 (trend di fondo e di breve
-termine), RSI 14, MACD (12/26/9), ATR 14 (volatilità media giornaliera in
-%), Bande di Bollinger (%B), distanza da massimo/minimo a 52 settimane e
-volume relativo rispetto alla propria media recente. Anche il sentiment
-delle news (-1..+1, quando la fonte è Alpha Vantage) viene incluso nel
-prompt: dato già raccolto, prima scartato.
+rispetto all'S&P 500 e al proprio settore (SMH per NVDA, XLK per
+MSFT/AAPL), medie mobili SMA 50/200 ed EMA 9/21, RSI 14, MACD (12/26/9),
+ATR 14 (volatilità media giornaliera, usato anche come base della soglia
+FLAT), Bande di Bollinger (%B), distanza da massimo/minimo a 52 settimane,
+volume relativo rispetto alla propria media recente. Forza relativa e beta
+confrontano le due serie di prezzo per **data in comune**, non per indice
+posizionale: due ticker distinti non hanno sempre lo stesso identico
+calendario di barre (una fonte gratuita può mancare un singolo giorno per
+un titolo e non per l'altro — osservato realmente tra NVDA e SMH).
+Allineare per indice avrebbe sfasato silenziosamente tutto il confronto
+dopo un giorno mancante.
 
-Forza relativa e beta confrontano le due serie di prezzo per **data in
-comune**, non per indice posizionale: due ticker distinti non hanno sempre
-lo stesso identico calendario di barre (una fonte gratuita può mancare un
-singolo giorno per un titolo e non per l'altro — osservato realmente tra
-NVDA e SMH). Allineare per indice avrebbe sfasato silenziosamente tutto il
-confronto dopo un giorno mancante.
-
-Include anche il consenso analisti (`fetch_analyst_outlook()` in
-`fundamentals.py`): prossima data di bilancio, stima EPS media, numero di
-analisti e revisioni al rialzo/ribasso negli ultimi 30gg, via Alpha Vantage
-(stessa key già usata per fondamentali/news di riserva, nessuna fonte
-nuova). Aggiornato al massimo una volta al giorno per asset (cache in
+**Consenso analisti** (`fetch_analyst_outlook()` in `fundamentals.py`):
+prossima data di bilancio, stima EPS media, numero di analisti e revisioni
+al rialzo/ribasso negli ultimi 30gg. Aggiornato al massimo una volta al
+giorno per asset (cache in
 `data/_state/analyst_outlook_<asset>_<data>.json`), per restare ben sotto
-il tetto gratuito di 25 chiamate/giorno di Alpha Vantage.
+il tetto gratuito di 25 chiamate/giorno di Alpha Vantage (condiviso con
+fondamentali/news di riserva).
 
-Include anche le transazioni insider (`fetch_insider_summary()` in
+**Transazioni insider** (`fetch_insider_summary()` in
 `src/data_sources/insider.py`): acquisti/vendite sul mercato aperto di
-dirigenti, amministratori e azionisti >10% negli ultimi 30gg, via SEC
-EDGAR (Form 4, nessuna key richiesta, stessa fonte già usata per i
-fondamentali). Contano solo le transazioni discrezionali (codice P/S):
-escluse deliberatamente vesting di RSU, esercizio di opzioni, ritenute
-fiscali e donazioni (codici A/F/M/G/C), che avvengono su calendari
-predeterminati o sono automatiche e non riflettono una scelta
-dell'insider sul titolo.
+dirigenti, amministratori e azionisti >10% negli ultimi 30gg. Contano
+solo le transazioni discrezionali (codice P/S): escluse deliberatamente
+vesting di RSU, esercizio di opzioni, ritenute fiscali e donazioni (codici
+A/F/M/G/C), che avvengono su calendari predeterminati o sono automatiche e
+non riflettono una scelta dell'insider sul titolo.
 
 ## Secret richiesti (repo → Settings → Secrets and variables → Actions)
 
