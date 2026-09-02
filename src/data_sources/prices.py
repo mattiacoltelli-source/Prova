@@ -10,7 +10,7 @@ import datetime as dt
 import os
 from typing import NotRequired, TypedDict
 
-import requests
+from . import http
 
 YAHOO_UA = {"User-Agent": "Mozilla/5.0 (predictive-agent research script)"}
 TIMEOUT = 15
@@ -32,7 +32,7 @@ class DailyBar(TypedDict):
 
 def _yahoo_daily_history(ticker: str, range_: str = "1y") -> list[DailyBar]:
     url = f"https://query1.finance.yahoo.com/v8/finance/chart/{ticker}"
-    resp = requests.get(
+    resp = http.get(
         url, params={"range": range_, "interval": "1d"}, headers=YAHOO_UA, timeout=TIMEOUT
     )
     resp.raise_for_status()
@@ -60,7 +60,7 @@ def _yahoo_daily_history(ticker: str, range_: str = "1y") -> list[DailyBar]:
 
 def _yahoo_latest_price(ticker: str) -> tuple[float, str]:
     url = f"https://query1.finance.yahoo.com/v8/finance/chart/{ticker}"
-    resp = requests.get(
+    resp = http.get(
         url, params={"range": "1d", "interval": "1m"}, headers=YAHOO_UA, timeout=TIMEOUT
     )
     resp.raise_for_status()
@@ -78,7 +78,7 @@ def _twelvedata_daily_history(ticker: str, outputsize: int = 260) -> list[DailyB
     if not key:
         raise DataUnavailableError("TWELVE_DATA_KEY non impostata")
     url = "https://api.twelvedata.com/time_series"
-    resp = requests.get(
+    resp = http.get(
         url,
         params={"symbol": ticker, "interval": "1day", "outputsize": outputsize, "apikey": key},
         timeout=TIMEOUT,
@@ -105,7 +105,7 @@ def _twelvedata_latest_price(ticker: str) -> tuple[float, str]:
     key = os.environ.get("TWELVE_DATA_KEY")
     if not key:
         raise DataUnavailableError("TWELVE_DATA_KEY non impostata")
-    resp = requests.get(
+    resp = http.get(
         "https://api.twelvedata.com/quote",
         params={"symbol": ticker, "apikey": key},
         timeout=TIMEOUT,
@@ -122,7 +122,7 @@ def _finnhub_latest_price(ticker: str) -> tuple[float, str]:
     key = os.environ.get("FINNHUB_KEY")
     if not key:
         raise DataUnavailableError("FINNHUB_KEY non impostata")
-    resp = requests.get(
+    resp = http.get(
         "https://finnhub.io/api/v1/quote",
         params={"symbol": ticker, "token": key},
         timeout=TIMEOUT,

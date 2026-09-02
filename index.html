@@ -140,6 +140,13 @@
             font-weight: 700;
         }
 
+        .data-status {
+            font-size: 0.72rem;
+            color: var(--accent-yellow);
+            margin: -6px 0 10px;
+            display: none;
+        }
+
         .badge-accuracy {
             background-color: rgba(16, 185, 129, 0.15);
             color: var(--accent-green);
@@ -404,6 +411,7 @@
                         <span class="asset-title">${asset}</span>
                         <span class="badge-accuracy" id="accuracy-${asset}">Accuratezza: 0.0%</span>
                     </div>
+                    <div class="data-status" id="data-status-${asset}"></div>
                     <div class="section-title">Accuratezza nel tempo</div>
                     <div class="chart-container small" id="accuracy-wrap-${asset}">
                         <canvas id="accuracy-chart-${asset}"></canvas>
@@ -557,6 +565,22 @@
             return lines;
         }
 
+        // Segnala se nell'ultimo segnale generato mancava un dato opzionale
+        // (fonte free momentaneamente giù, key non impostata, ecc.): utile
+        // per capire a colpo d'occhio se la previsione più recente si è
+        // basata su un set di dati ridotto, senza dover aprire il dettaglio.
+        function missingDataNote(pred) {
+            if (!pred) return null;
+            const s = pred.inputs_summary || {};
+            const missing = [];
+            if (!s.news_count) missing.push('news');
+            if (!s.macro_keys || s.macro_keys.length === 0) missing.push('dati macro');
+            if (!s.fundamentals_source) missing.push('fondamentali');
+            if (!s.analyst_outlook) missing.push('stime analisti');
+            if (missing.length === 0) return null;
+            return `⚠️ Nell'ultimo segnale mancavano: ${missing.join(', ')}`;
+        }
+
         // Ricostruisce la spiegazione di una previsione dai dati già salvati
         // in predictions.jsonl: nessuna nuova chiamata al modello.
         function predictionDetailHtml(pred) {
@@ -635,6 +659,14 @@
             const recentPredictions = [...predictions].sort((a, b) => (b.generated_at || '').localeCompare(a.generated_at || '')).slice(0, 10);
             const predictionsBody = document.getElementById(`predictions-body-${asset}`);
             detailStore[`pred-${asset}`] = recentPredictions;
+
+            const statusEl = document.getElementById(`data-status-${asset}`);
+            if (statusEl) {
+                const note = missingDataNote(recentPredictions[0]);
+                statusEl.textContent = note || '';
+                statusEl.style.display = note ? 'block' : 'none';
+            }
+
             if (recentPredictions.length === 0) {
                 predictionsBody.innerHTML = '<tr><td colspan="4" style="text-align:center; color: var(--text-muted);">Nessuna predizione registrata.</td></tr>';
             } else {

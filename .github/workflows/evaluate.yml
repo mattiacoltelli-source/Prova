@@ -59,3 +59,21 @@ jobs:
             git commit -m "Valutazione automatica $(date -u +%Y-%m-%dT%H:%M:%SZ)"
             git push
           fi
+
+      # Vedi lo stesso step in predict.yml per la logica completa.
+      - name: Notifica Telegram in caso di fallimento
+        if: failure()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ]; then
+            echo "TELEGRAM_BOT_TOKEN/TELEGRAM_CHAT_ID non configurati nei secret del repo: notifica saltata."
+            exit 0
+          fi
+          MESSAGE=$'⚠️ <b>Valuta previsioni scadute fallito</b>\nRun: '"${RUN_URL}"
+          curl -sS -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "parse_mode=HTML" \
+            --data-urlencode "text=${MESSAGE}"

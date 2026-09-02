@@ -18,9 +18,8 @@ import io
 import json
 import os
 
-import requests
-
 from .. import config
+from . import http
 
 TIMEOUT = 15
 SEC_HEADERS = {"User-Agent": f"predictive-agent research ({config.SEC_EDGAR_CONTACT_EMAIL})"}
@@ -33,7 +32,7 @@ class FundamentalsUnavailableError(RuntimeError):
 
 
 def _sec_cik_for_ticker(ticker: str) -> str:
-    resp = requests.get(
+    resp = http.get(
         "https://www.sec.gov/files/company_tickers.json", headers=SEC_HEADERS, timeout=TIMEOUT
     )
     resp.raise_for_status()
@@ -45,7 +44,7 @@ def _sec_cik_for_ticker(ticker: str) -> str:
 
 def _sec_edgar_fundamentals(ticker: str) -> dict:
     cik = _sec_cik_for_ticker(ticker)
-    resp = requests.get(
+    resp = http.get(
         f"https://data.sec.gov/api/xbrl/companyfacts/CIK{cik}.json",
         headers=SEC_HEADERS,
         timeout=TIMEOUT,
@@ -73,7 +72,7 @@ def _alphavantage_overview(ticker: str) -> dict:
     key = os.environ.get("ALPHA_VANTAGE_KEY")
     if not key:
         raise FundamentalsUnavailableError("ALPHA_VANTAGE_KEY non impostata")
-    resp = requests.get(
+    resp = http.get(
         "https://www.alphavantage.co/query",
         params={"function": "OVERVIEW", "symbol": ticker, "apikey": key},
         timeout=TIMEOUT,
@@ -91,7 +90,7 @@ def _alphavantage_etf_profile(ticker: str) -> dict:
     key = os.environ.get("ALPHA_VANTAGE_KEY")
     if not key:
         raise FundamentalsUnavailableError("ALPHA_VANTAGE_KEY non impostata")
-    resp = requests.get(
+    resp = http.get(
         "https://www.alphavantage.co/query",
         params={"function": "ETF_PROFILE", "symbol": ticker, "apikey": key},
         timeout=TIMEOUT,
@@ -116,7 +115,7 @@ def _alphavantage_earnings_calendar(ticker: str) -> str | None:
     key = os.environ.get("ALPHA_VANTAGE_KEY")
     if not key:
         return None
-    resp = requests.get(
+    resp = http.get(
         "https://www.alphavantage.co/query",
         params={"function": "EARNINGS_CALENDAR", "symbol": ticker, "horizon": "3month", "apikey": key},
         timeout=TIMEOUT,
@@ -138,7 +137,7 @@ def _alphavantage_earnings_estimates(ticker: str) -> list[dict] | None:
     key = os.environ.get("ALPHA_VANTAGE_KEY")
     if not key:
         return None
-    resp = requests.get(
+    resp = http.get(
         "https://www.alphavantage.co/query",
         params={"function": "EARNINGS_ESTIMATES", "symbol": ticker, "apikey": key},
         timeout=TIMEOUT,

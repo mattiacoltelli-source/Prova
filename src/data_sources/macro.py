@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import os
 
-import requests
+from . import http
 
 TIMEOUT = 15
 
@@ -24,7 +24,7 @@ class MacroUnavailableError(RuntimeError):
 
 
 def _fetch_series_latest(series_id: str, api_key: str) -> dict | None:
-    resp = requests.get(
+    resp = http.get(
         "https://api.stlouisfed.org/fred/series/observations",
         params={
             "series_id": series_id,

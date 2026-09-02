@@ -93,6 +93,24 @@ e il proprio hash. Qualsiasi modifica retroattiva ai dati rompe la catena
 ed è immediatamente rilevabile ricalcolandola (`src/storage.py` include la
 funzione di verifica).
 
+## Robustezza & osservabilità
+
+- **Retry di rete**: tutte le chiamate alle fonti dati (`src/data_sources/http.py`)
+  ritentano una volta in caso di errore di rete (timeout, DNS, connessione
+  caduta) prima di considerare la fonte non disponibile e passare al
+  fallback successivo. Una risposta HTTP arrivata (anche un errore come
+  429/500) non viene ritentata: è già un esito definitivo.
+- **Dati mancanti nell'ultimo segnale**: se per una previsione recente una
+  fonte opzionale (news, macro, fondamentali, stime analisti) non era
+  disponibile, la dashboard lo segnala con una nota sotto il nome
+  dell'asset — nessuna previsione "silenziosamente" più povera di dati
+  senza che sia visibile.
+- **Notifica su fallimento run**: se `predict.yml` o `evaluate.yml` falliscono
+  con un errore non gestito (non i normali skip per singolo asset/orizzonte,
+  quelli sono attesi), viene inviato un messaggio Telegram con il link al
+  run. Richiede i secret `TELEGRAM_BOT_TOKEN` e `TELEGRAM_CHAT_ID` nel repo:
+  se non sono configurati, la notifica viene saltata senza far fallire il job.
+
 ## Esecuzione manuale / test
 
 Entrambi i workflow supportano `workflow_dispatch` con input `dry_run`

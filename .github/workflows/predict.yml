@@ -69,3 +69,27 @@ jobs:
             git commit -m "Previsioni automatiche $(date -u +%Y-%m-%dT%H:%M:%SZ)"
             git push
           fi
+
+      # Solo su un fallimento vero (es. "Genera previsioni" è uscito con
+      # errore non gestito) — mai per gli skip normali per singolo
+      # asset/orizzonte (dati mancanti, budget esaurito), quelli sono già
+      # attesi e loggati da predict_run.py senza far fallire il job.
+      # Nessun secret configurato = notifica saltata silenziosamente, il
+      # job non fallisce per questo (stesso pattern già usato in
+      # mattiacoltelli-source/qa-agent per Controllo Completo).
+      - name: Notifica Telegram in caso di fallimento
+        if: failure()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ]; then
+            echo "TELEGRAM_BOT_TOKEN/TELEGRAM_CHAT_ID non configurati nei secret del repo: notifica saltata."
+            exit 0
+          fi
+          MESSAGE=$'⚠️ <b>Genera previsioni fallito</b>\nRun: '"${RUN_URL}"
+          curl -sS -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "parse_mode=HTML" \
+            --data-urlencode "text=${MESSAGE}"

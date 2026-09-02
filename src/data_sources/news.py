@@ -9,7 +9,7 @@ import datetime as dt
 import os
 from typing import TypedDict
 
-import requests
+from . import http
 
 TIMEOUT = 15
 
@@ -31,7 +31,7 @@ def _finnhub_news(ticker: str, lookback_days: int, limit: int) -> list[NewsItem]
         raise NewsUnavailableError("FINNHUB_KEY non impostata")
     today = dt.date.today()
     since = today - dt.timedelta(days=lookback_days)
-    resp = requests.get(
+    resp = http.get(
         "https://finnhub.io/api/v1/company-news",
         params={"symbol": ticker, "from": since.isoformat(), "to": today.isoformat(), "token": key},
         timeout=TIMEOUT,
@@ -59,7 +59,7 @@ def _alphavantage_news(ticker: str, lookback_days: int, limit: int) -> list[News
     key = os.environ.get("ALPHA_VANTAGE_KEY")
     if not key:
         raise NewsUnavailableError("ALPHA_VANTAGE_KEY non impostata")
-    resp = requests.get(
+    resp = http.get(
         "https://www.alphavantage.co/query",
         params={"function": "NEWS_SENTIMENT", "tickers": ticker, "limit": limit, "apikey": key},
         timeout=TIMEOUT,
@@ -88,7 +88,7 @@ def _alphavantage_news(ticker: str, lookback_days: int, limit: int) -> list[News
 
 
 def _gdelt_news(ticker: str, lookback_days: int, limit: int) -> list[NewsItem]:
-    resp = requests.get(
+    resp = http.get(
         "https://api.gdeltproject.org/api/v2/doc/doc",
         params={
             "query": ticker,
