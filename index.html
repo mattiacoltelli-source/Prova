@@ -336,7 +336,9 @@
             <strong>Macro:</strong> FRED — tassi a 10 e 2 anni, spread di curva, inflazione (CPI),
             disoccupazione, VIX, indice del dollaro.<br>
             <strong>Indicatori tecnici:</strong> On-Balance Volume (accumulazione/distribuzione),
-            Chaikin Money Flow (pressione acquisto/vendita), forza relativa rispetto all'S&P 500.<br>
+            Chaikin Money Flow (pressione acquisto/vendita), forza relativa e beta rispetto
+            all'S&P 500, medie mobili SMA 50/200 ed EMA 9/21 (trend di fondo e di breve termine),
+            RSI 14, MACD, ATR 14 (volatilità media giornaliera).<br>
             <strong>Orizzonti previsti:</strong> 1 giorno, 7 giorni, 1 mese — con una banda neutra
             (FLAT) calcolata sulla volatilità storica recente di ciascun titolo.<br><br>
             Tocca una riga in "Ultimi Risultati Valutati" o "Ultimi Segnali Generati" per vedere
@@ -493,6 +495,14 @@
             if (t.relative_strength_vs_spy_pct !== undefined && t.relative_strength_vs_spy_pct !== null) {
                 lines.push(`Forza relativa vs S&P 500: <strong>${t.relative_strength_vs_spy_pct}%</strong>`);
             }
+            if (t.sma_trend) lines.push(`Trend di fondo (SMA 50/200): <strong>${escapeHtml(t.sma_trend)}</strong>`);
+            if (t.ema_trend) lines.push(`Trend di breve termine (EMA 9/21): <strong>${escapeHtml(t.ema_trend)}</strong>`);
+            if (t.rsi_14 !== undefined && t.rsi_14 !== null) lines.push(`RSI (14gg): <strong>${t.rsi_14}</strong>`);
+            if (t.macd) {
+                lines.push(`MACD: linea <strong>${t.macd.macd}</strong>, segnale <strong>${t.macd.signal}</strong>, istogramma <strong>${t.macd.histogram}</strong>`);
+            }
+            if (t.atr_pct !== undefined && t.atr_pct !== null) lines.push(`ATR (14gg): <strong>${t.atr_pct}%</strong>`);
+            if (t.beta_vs_spy !== undefined && t.beta_vs_spy !== null) lines.push(`Beta vs S&P 500: <strong>${t.beta_vs_spy}</strong>`);
             return lines;
         }
 
