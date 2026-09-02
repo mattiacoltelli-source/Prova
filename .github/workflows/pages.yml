@@ -1,5 +1,18 @@
 name: Pubblica GitHub Pages
 
+# Il trigger push (sotto) NON si attiva per i commit automatici di
+# predict.yml/evaluate.yml ("Previsioni automatiche", "Valutazione
+# automatica"): quei workflow pushano con il GITHUB_TOKEN interno, e
+# GitHub non fa scattare altri workflow basati su push per eventi
+# generati da quel token (protezione anti-loop). Risultato: senza il
+# trigger workflow_run qui sotto, il sito non si è mai aggiornato da solo
+# dopo una previsione/valutazione reale, solo dopo un push manuale — bug
+# presente fin dalla creazione di questo file, scoperto perché oggi la
+# dashboard non mostrava le previsioni appena generate.
+#
+# workflow_run si basa sul completamento del workflow (qualunque token
+# l'abbia fatto scrivere), quindi non ha questo problema. Copre sia
+# predict.yml che evaluate.yml — entrambi possono cambiare data/.
 on:
   push:
     branches: [Main]
@@ -9,6 +22,9 @@ on:
       - "sw.js"
       - "data/**"
       - "REPORT.md"
+  workflow_run:
+    workflows: ["Genera previsioni", "Valuta previsioni scadute"]
+    types: [completed]
   workflow_dispatch: {}
 
 permissions:
@@ -21,9 +37,23 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    # Con workflow_run, procedi solo se il run che ha attivato l'evento è
+    # riuscito (o è stato saltato, es. "nessuno slot dovuto" — non un
+    # fallimento) — mai pubblicare a valle di un run fallito. Sugli altri
+    # trigger (push, workflow_dispatch) non c'è un workflow_run da
+    # controllare, quindi si procede sempre.
+    if: >
+      github.event_name != 'workflow_run' ||
+      contains(fromJSON('["success", "skipped"]'), github.event.workflow_run.conclusion)
     steps:
       - uses: actions/checkout@v5
         with:
+          # Su workflow_run, senza `ref` esplicito actions/checkout
+          # prenderebbe la history del branch di default al momento del
+          # trigger, non necessariamente il commit appena scritto dal
+          # workflow a monte — lo specifichiamo per essere certi di
+          # pubblicare esattamente quel commit.
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
           path: main
 
       - uses: actions/checkout@v5
