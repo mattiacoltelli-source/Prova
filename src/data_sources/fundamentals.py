@@ -125,10 +125,11 @@ def _alphavantage_earnings_calendar(ticker: str) -> str | None:
     reader = csv.DictReader(io.StringIO(resp.text))
     rows = [row for row in reader if row.get("symbol") == ticker and row.get("reportDate")]
     if not rows:
-        # DEBUG temporaneo: capire se Alpha Vantage sta rifiutando la
-        # chiamata (rate limit / endpoint premium) invece di restituire
-        # semplicemente "nessun bilancio nei prossimi 3 mesi".
-        print(f"[debug] EARNINGS_CALENDAR {ticker}: 0 righe utili, corpo grezzo: {resp.text[:300]!r}")
+        # Log informativo, non un errore: "nessun bilancio nei prossimi 3
+        # mesi" e "tetto di 25 chiamate/giorno di Alpha Vantage esaurito"
+        # producono entrambi 0 righe utili qui — utile poter distinguere i
+        # due casi guardando il corpo grezzo nei log del run.
+        print(f"[info] EARNINGS_CALENDAR {ticker}: 0 righe utili, corpo grezzo: {resp.text[:300]!r}")
         return None
     return min(row["reportDate"] for row in rows)
 
@@ -146,8 +147,8 @@ def _alphavantage_earnings_estimates(ticker: str) -> list[dict] | None:
     payload = resp.json()
     estimates = payload.get("estimates")
     if not estimates:
-        # DEBUG temporaneo: stessa ragione del print sopra.
-        print(f"[debug] EARNINGS_ESTIMATES {ticker}: nessuna stima, corpo grezzo: {json.dumps(payload)[:300]}")
+        # Log informativo, stessa ragione del commento sopra.
+        print(f"[info] EARNINGS_ESTIMATES {ticker}: nessuna stima, corpo grezzo: {json.dumps(payload)[:300]}")
         return None
     return estimates
 
