@@ -40,6 +40,19 @@ una fase 2 successiva.
    `data/<asset>/outcomes.jsonl` e rigenera `REPORT.md` con le statistiche
    di accuratezza.
 
+La soglia di volatilità (banda FLAT) è basata sull'ATR% a 14 giorni
+(`src/volatility.py`), scalato per la radice dei giorni di trading
+dell'orizzonte — più reattivo a un cambio di regime di volatilità e include
+i gap overnight, a differenza di una deviazione standard chiusura-chiusura
+a finestra fissa usata in una versione precedente.
+
+> **Nota storica (2026-09-02)**: lo stimatore della soglia è cambiato da
+> deviazione standard a ATR. Lo storico precedente (poche previsioni/esiti
+> reali) è stato azzerato invece di essere mantenuto, perché le soglie
+> congelate con la vecchia formula non sarebbero più state confrontabili
+> con quelle nuove nello stesso report. Resta comunque recuperabile nella
+> cronologia Git (commit `4dd63e2` e precedenti su `Main`).
+
 ## Fonti dati (tutte gratuite, nessun abbonamento)
 
 | Categoria | Primaria | Fallback |

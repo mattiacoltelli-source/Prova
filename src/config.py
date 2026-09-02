@@ -47,9 +47,14 @@ PREDICTION_SLOTS_ET = [
 SLOT_CATCHUP_MINUTES = 180
 
 # --- Soglia di volatilità per UP/DOWN/FLAT ---------------------------------
-# threshold_pct = VOLATILITY_K * (std dev rendimenti giornalieri storici) * sqrt(trading_days)
+# threshold_pct = VOLATILITY_K * ATR% (14 giorni) * sqrt(trading_days)
+# ATR invece di una deviazione standard a finestra fissa: più reattivo a un
+# cambio di regime di volatilità recente e include i gap overnight, che una
+# misura chiusura-chiusura ignora. K=0.5 è un punto di partenza ragionevole
+# ma arbitrario, da ricalibrare in futuro sulla base dei risultati reali in
+# REPORT.md (nessuna previsione storica precedente a questo cambio è rimasta
+# valida da confrontare: lo storico è stato azzerato insieme al cambio).
 VOLATILITY_K = 0.5
-VOLATILITY_LOOKBACK_DAYS = 60
 
 # --- Modello Anthropic ------------------------------------------------------
 
