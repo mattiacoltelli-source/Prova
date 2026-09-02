@@ -13,6 +13,20 @@ name: Pubblica GitHub Pages
 # workflow_run si basa sul completamento del workflow (qualunque token
 # l'abbia fatto scrivere), quindi non ha questo problema. Copre sia
 # predict.yml che evaluate.yml — entrambi possono cambiare data/.
+#
+# BUG SCOPERTO IL 2026-09-02 (dashboard senza le previsioni del giorno
+# nonostante un "Genera previsioni" concluso con successo poco prima):
+# `github.event.workflow_run.head_sha` NON è il commit che predict.yml/
+# evaluate.yml hanno scritto e pushato durante la propria esecuzione — è
+# lo SHA su cui quel workflow è PARTITO, cioè il commit precedente. Usarlo
+# come `ref` qui sotto faceva quindi checkout del codice di PRIMA della
+# previsione: rsync non trovava differenze e "Commit e push su gh-pages"
+# stampava "Nessuna modifica da pubblicare", sempre, silenziosamente. Il
+# job risultava comunque "success" perché nessuno step falliva davvero.
+# Fix: su workflow_run si fa checkout del BRANCH (`head_branch`, cioè
+# `Main`) invece dello SHA congelato — quando questo job parte, il
+# workflow a monte ha già finito di pushare, quindi il branch è già
+# aggiornato.
 on:
   push:
     branches: [Main]
@@ -48,12 +62,11 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
-          # Su workflow_run, senza `ref` esplicito actions/checkout
-          # prenderebbe la history del branch di default al momento del
-          # trigger, non necessariamente il commit appena scritto dal
-          # workflow a monte — lo specifichiamo per essere certi di
-          # pubblicare esattamente quel commit.
-          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+          # Su workflow_run: head_branch (non head_sha, vedi commento
+          # sopra) — è già aggiornato al commit appena pushato dal
+          # workflow a monte. Su push/workflow_dispatch: github.sha va
+          # bene, è già il commit esatto dell'evento.
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_branch || github.sha }}
           path: main
 
       - uses: actions/checkout@v5
@@ -70,6 +83,7 @@ jobs:
 
       - name: Commit e push su gh-pages
         run: |
+          DEPLOYED_SHA="$(git -C main rev-parse HEAD)"
           cd pages
           git config user.name "predictive-agent-bot"
           git config user.email "actions@users.noreply.github.com"
@@ -77,6 +91,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "Nessuna modifica da pubblicare."
           else
-            git commit -m "deploy: ${{ github.sha }}"
+            git commit -m "deploy: $DEPLOYED_SHA"
             git push
           fi
