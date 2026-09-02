@@ -49,10 +49,15 @@ PREDICTION_SLOTS_ET = [
 ]
 
 # Una scheduled run di GitHub Actions può partire in ritardo rispetto al
-# cron (anche di ore, su repo pubblici in orari di picco). Uno slot resta
-# "recuperabile" fino a questa finestra dopo l'orario nominale, così un
-# run in ritardo esegue comunque il prossimo slot dovuto invece di saltarlo.
-SLOT_CATCHUP_MINUTES = 180
+# cron (anche di ore, su repo pubblici in orari di picco) o, come successo
+# il 2026-09-02, non partire affatto per l'intera giornata (nessuno dei 5
+# tick schedulati di predict.yml è scattato). Uno slot resta "recuperabile"
+# fino a questa finestra dopo l'orario nominale, così un run in ritardo
+# esegue comunque il prossimo slot dovuto invece di saltarlo — allargata da
+# 180 a 480 minuti (8h) per coprire l'intera finestra utile dell'orario di
+# mercato USA fino a sera, restando comunque nello stesso giorno di
+# calendario ET (find_due_slot confronta sempre rispetto a "oggi" ET).
+SLOT_CATCHUP_MINUTES = 480
 
 # --- Soglia di volatilità per UP/DOWN/FLAT ---------------------------------
 # threshold_pct = VOLATILITY_K * ATR% (14 giorni) * sqrt(trading_days)

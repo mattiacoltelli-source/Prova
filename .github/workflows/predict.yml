@@ -4,9 +4,20 @@ on:
   schedule:
     # Un solo slot di previsione al giorno (src/config.py: PREDICTION_SLOTS_ET
     # = 15:45 ET). Finestra 19-23 UTC copre lo slot dovuto (19:45 UTC in EDT,
-    # 20:45 UTC in EST) più il margine di recupero di 3 ore in entrambi i
-    # regimi di ora legale/solare statunitense.
+    # 20:45 UTC in EST) più il margine di recupero di 8 ore (SLOT_CATCHUP_MINUTES)
+    # in entrambi i regimi di ora legale/solare statunitense.
+    #
+    # Due cron separati, sfalsati di 30 minuti (:05 e :35), invece di uno
+    # solo: il 2026-09-02 nessuno dei 5 tick di un singolo cron è scattato
+    # per l'intera giornata (bug/rallentamento della piattaforma GitHub
+    # Actions, non del codice) e la previsione è dovuta partire a mano.
+    # predict_run.py è già idempotente per il giorno (_done_slots): un
+    # secondo tick che trova lo slot già fatto esce subito gratis
+    # ("Nessuno slot dovuto"), quindi raddoppiare i tentativi non ha
+    # controindicazioni, solo più occasioni indipendenti perché GitHub
+    # riesca a farne partire almeno uno.
     - cron: "5 19-23 * * 1-5"
+    - cron: "35 19-23 * * 1-5"
   workflow_dispatch:
     inputs:
       dry_run:

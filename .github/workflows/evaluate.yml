@@ -2,7 +2,14 @@ name: Valuta previsioni scadute
 
 on:
   schedule:
+    # Due tick al giorno invece di uno, sfalsati di ~6 ore: evaluate_run.py
+    # è già idempotente (rilegge data/pending.json ad ogni run e valuta solo
+    # ciò che non è ancora stato tolto da lì), quindi un secondo tick che
+    # non trova nulla di nuovo da valutare è un no-op gratuito. Stessa
+    # motivazione del doppio cron in predict.yml: più occasioni indipendenti
+    # nel caso GitHub Actions non faccia scattare uno dei due tick.
     - cron: "5 22 * * *"
+    - cron: "35 3 * * *"
   workflow_dispatch:
     inputs:
       dry_run:
