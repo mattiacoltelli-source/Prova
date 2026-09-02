@@ -777,7 +777,26 @@
             });
         }
 
+        // Chart.js misura il contenitore al momento in cui il grafico viene
+        // creato: dentro un <details> ancora chiuso quella larghezza è 0 (il
+        // browser lo nasconde nativamente), quindi il canvas nasce con una
+        // dimensione sbagliata e non si aggiusta da solo quando poi la
+        // sezione si apre — su mobile questo si traduce in scroll orizzontale
+        // della pagina, l'effetto "sembra un sito, non un'app". Forziamo un
+        // resize dei grafici già esistenti ogni volta che una sezione
+        // "Grafici prezzo dettagliati" viene aperta.
+        function setupChartDetailsResize() {
+            document.querySelectorAll("details.chart-details").forEach((details) => {
+                details.addEventListener("toggle", () => {
+                    if (details.open) {
+                        Object.values(chartInstances).forEach((chart) => chart.resize());
+                    }
+                });
+            });
+        }
+
         renderAssetCards();
+        setupChartDetailsResize();
         loadDashboardData();
     </script>
 </body>
