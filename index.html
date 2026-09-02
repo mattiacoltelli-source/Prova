@@ -112,25 +112,34 @@
         .horizon-filter {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
             margin-bottom: 20px;
-            flex-wrap: wrap;
+            /* Tutto su una riga sola anche su schermi stretti: se proprio non
+               ci sta, scorre solo questa riga (come .table-wrapper), mai la
+               pagina intera. */
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            padding-bottom: 2px;
         }
 
         .horizon-filter-label {
-            font-size: 0.8rem;
+            font-size: 0.78rem;
             color: var(--text-muted);
+            white-space: nowrap;
+            flex-shrink: 0;
         }
 
         .horizon-filter-btn {
             background: var(--card-bg);
             color: var(--text-muted);
             border: 1px solid var(--card-border);
-            padding: 6px 14px;
+            padding: 6px 12px;
             border-radius: 20px;
-            font-size: 0.8rem;
+            font-size: 0.78rem;
             font-weight: 600;
             cursor: pointer;
+            white-space: nowrap;
+            flex-shrink: 0;
         }
 
         .horizon-filter-btn.active {
@@ -405,7 +414,9 @@
             distanza da massimo/minimo a 52 settimane, volume relativo rispetto alla media
             recente.<br>
             <strong>Orizzonti previsti:</strong> 1 giorno, 7 giorni, 1 mese — con una banda neutra
-            (FLAT) calcolata sulla volatilità storica recente di ciascun titolo.<br><br>
+            (FLAT) calcolata sulla volatilità storica recente di ciascun titolo.<br>
+            <strong>Orari delle previsioni (ora italiana):</strong> <span id="prediction-times-it">—</span>,
+            nei giorni di borsa aperta (lun-ven).<br><br>
             Tocca una riga in "Ultimi Risultati Valutati" o "Ultimi Segnali Generati" per vedere
             i dati specifici usati in quella previsione.
         </div>
@@ -429,9 +440,9 @@
     <div class="horizon-filter" id="horizon-filter">
         <span class="horizon-filter-label">Orizzonte:</span>
         <button class="horizon-filter-btn active" data-horizon="all" onclick="setHorizonFilter('all')">Tutti</button>
-        <button class="horizon-filter-btn" data-horizon="1d" onclick="setHorizonFilter('1d')">1 giorno</button>
-        <button class="horizon-filter-btn" data-horizon="7d" onclick="setHorizonFilter('7d')">7 giorni</button>
-        <button class="horizon-filter-btn" data-horizon="1m" onclick="setHorizonFilter('1m')">1 mese</button>
+        <button class="horizon-filter-btn" data-horizon="1d" onclick="setHorizonFilter('1d')">1g</button>
+        <button class="horizon-filter-btn" data-horizon="7d" onclick="setHorizonFilter('7d')">7g</button>
+        <button class="horizon-filter-btn" data-horizon="1m" onclick="setHorizonFilter('1m')">1m</button>
     </div>
 
     <div class="grid-two-assets" id="assets-grid"></div>
@@ -980,8 +991,46 @@
             });
         }
 
+        // Slot di previsione in ora US/Eastern (src/config.py:
+        // PREDICTION_SLOTS_ET, va tenuto allineato manualmente qui perché
+        // questa è una pagina statica senza build step condiviso col backend).
+        const PREDICTION_SLOTS_ET = [[9, 45], [12, 0], [15, 45]];
+
+        // Converte un orario del giorno corrente da un fuso IANA a un altro
+        // (es. 9:45 a New York -> equivalente a Roma), senza librerie:
+        // sfrutta Intl e converge in poche iterazioni perché Date è sempre
+        // UTC internamente. Ricalcolato ad ogni caricamento pagina, così
+        // resta corretto anche nelle settimane in cui USA e Italia non sono
+        // ancora allineate sul cambio ora legale/solare (offset non fisso).
+        function convertTodayWallTime(hour, minute, fromZone, toZone) {
+            const now = new Date();
+            const y = now.getFullYear(), m = now.getMonth() + 1, d = now.getDate();
+            const target = Date.UTC(y, m - 1, d, hour, minute);
+            const fmt = new Intl.DateTimeFormat('en-US', {
+                timeZone: fromZone, hour12: false,
+                year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
+            });
+            let guess = new Date(target);
+            for (let i = 0; i < 2; i++) {
+                const parts = Object.fromEntries(fmt.formatToParts(guess).map(p => [p.type, p.value]));
+                const hour24 = parts.hour === '24' ? '0' : parts.hour;
+                const asIfFromZone = Date.UTC(parts.year, parts.month - 1, parts.day, hour24, parts.minute);
+                guess = new Date(guess.getTime() + (target - asIfFromZone));
+            }
+            return new Intl.DateTimeFormat('it-IT', { timeZone: toZone, hour: '2-digit', minute: '2-digit' }).format(guess);
+        }
+
+        function showPredictionTimesInItalianTime() {
+            const el = document.getElementById('prediction-times-it');
+            if (!el) return;
+            el.textContent = PREDICTION_SLOTS_ET
+                .map(([h, m]) => convertTodayWallTime(h, m, 'America/New_York', 'Europe/Rome'))
+                .join(', ');
+        }
+
         renderAssetCards();
         setupChartDetailsResize();
+        showPredictionTimesInItalianTime();
         loadDashboardData();
     </script>
 </body>

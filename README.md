@@ -142,6 +142,13 @@ grafici e le tabelle di ciascun asset limitandoli all'orizzonte scelto —
 utile per capire se l'AI è più affidabile su previsioni giornaliere,
 settimanali o mensili.
 
+Il pannello informativo ("Che dati analizza l'AI?") mostra anche gli orari
+delle previsioni convertiti in ora italiana, ricalcolati dinamicamente ad
+ogni caricamento a partire dagli slot in ora US/Eastern
+(`src/config.py: PREDICTION_SLOTS_ET`) — restano corretti anche nelle
+settimane in cui USA e Italia non hanno ancora fatto entrambe il cambio
+tra ora legale e solare (offset non sempre fisso a 6 ore).
+
 ## Esecuzione manuale / test
 
 Entrambi i workflow supportano `workflow_dispatch` con input `dry_run`
