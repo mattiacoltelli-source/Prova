@@ -356,6 +356,9 @@
             <strong>News:</strong> Finnhub, con Alpha Vantage Sentiment (include un punteggio di
             sentiment -1..+1) e GDELT come riserva.<br>
             <strong>Fondamentali:</strong> SEC EDGAR (bilanci ufficiali), con Alpha Vantage come riserva.<br>
+            <strong>Consenso analisti:</strong> Alpha Vantage — prossima data di bilancio, stima EPS
+            media, numero di analisti e revisioni al rialzo/ribasso negli ultimi 30gg (aggiornato al
+            massimo una volta al giorno per asset).<br>
             <strong>Macro:</strong> FRED — tassi a 10 e 2 anni, spread di curva, inflazione (CPI),
             disoccupazione, VIX, indice del dollaro.<br>
             <strong>Indicatori tecnici:</strong> On-Balance Volume (accumulazione/distribuzione),
@@ -540,6 +543,20 @@
             return lines;
         }
 
+        function analystOutlookLines(inputsSummary) {
+            const a = (inputsSummary && inputsSummary.analyst_outlook) || null;
+            if (!a) return [];
+            const lines = [];
+            if (a.next_report_date) lines.push(`Prossima data di bilancio: <strong>${escapeHtml(a.next_report_date)}</strong>`);
+            if (a.eps_estimate_average !== undefined && a.eps_estimate_average !== null) {
+                lines.push(`Stima EPS consenso analisti: <strong>${a.eps_estimate_average}</strong> (${a.eps_estimate_analyst_count ?? '?'} analisti, trimestre al ${escapeHtml(a.fiscal_quarter_ending || '?')})`);
+            }
+            if (a.eps_revisions_up_30d !== undefined || a.eps_revisions_down_30d !== undefined) {
+                lines.push(`Revisioni stima EPS (30gg): <strong>${a.eps_revisions_up_30d ?? 0} al rialzo</strong>, <strong>${a.eps_revisions_down_30d ?? 0} al ribasso</strong>`);
+            }
+            return lines;
+        }
+
         // Ricostruisce la spiegazione di una previsione dai dati già salvati
         // in predictions.jsonl: nessuna nuova chiamata al modello.
         function predictionDetailHtml(pred) {
@@ -554,6 +571,7 @@
                     : []),
                 `Fondamentali: <strong>${escapeHtml(s.fundamentals_source || 'non disponibili')}</strong>`,
                 `Dati macro usati: <strong>${escapeHtml((s.macro_keys || []).join(', ') || 'nessuno')}</strong>`,
+                ...analystOutlookLines(s),
                 ...technicalsLines(s)
             ];
             return lines.join('<br>');
