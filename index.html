@@ -331,14 +331,17 @@
         <summary>ℹ️ Che dati analizza l'AI?</summary>
         <div class="info-panel-body">
             <strong>Prezzo:</strong> Yahoo Finance, con Twelve Data e Finnhub come riserva.<br>
-            <strong>News:</strong> Finnhub, con Alpha Vantage Sentiment e GDELT come riserva.<br>
+            <strong>News:</strong> Finnhub, con Alpha Vantage Sentiment (include un punteggio di
+            sentiment -1..+1) e GDELT come riserva.<br>
             <strong>Fondamentali:</strong> SEC EDGAR (bilanci ufficiali), con Alpha Vantage come riserva.<br>
             <strong>Macro:</strong> FRED — tassi a 10 e 2 anni, spread di curva, inflazione (CPI),
             disoccupazione, VIX, indice del dollaro.<br>
             <strong>Indicatori tecnici:</strong> On-Balance Volume (accumulazione/distribuzione),
             Chaikin Money Flow (pressione acquisto/vendita), forza relativa e beta rispetto
             all'S&P 500, medie mobili SMA 50/200 ed EMA 9/21 (trend di fondo e di breve termine),
-            RSI 14, MACD, ATR 14 (volatilità media giornaliera).<br>
+            RSI 14, MACD, ATR 14 (volatilità media giornaliera), Bande di Bollinger (%B),
+            distanza da massimo/minimo a 52 settimane, volume relativo rispetto alla media
+            recente.<br>
             <strong>Orizzonti previsti:</strong> 1 giorno, 7 giorni, 1 mese — con una banda neutra
             (FLAT) calcolata sulla volatilità storica recente di ciascun titolo.<br><br>
             Tocca una riga in "Ultimi Risultati Valutati" o "Ultimi Segnali Generati" per vedere
@@ -503,6 +506,15 @@
             }
             if (t.atr_pct !== undefined && t.atr_pct !== null) lines.push(`ATR (14gg): <strong>${t.atr_pct}%</strong>`);
             if (t.beta_vs_spy !== undefined && t.beta_vs_spy !== null) lines.push(`Beta vs S&P 500: <strong>${t.beta_vs_spy}</strong>`);
+            if (t.bollinger_percent_b !== undefined && t.bollinger_percent_b !== null) {
+                lines.push(`Bande di Bollinger (%B): <strong>${t.bollinger_percent_b}</strong>`);
+            }
+            if (t.range_52w) {
+                lines.push(`Da massimo 52 sett.: <strong>${t.range_52w.pct_from_high}%</strong>, da minimo: <strong>${t.range_52w.pct_from_low}%</strong>`);
+            }
+            if (t.relative_volume !== undefined && t.relative_volume !== null) {
+                lines.push(`Volume relativo: <strong>${t.relative_volume}x</strong>`);
+            }
             return lines;
         }
 
@@ -515,6 +527,9 @@
                 `<strong>Motivazione del modello:</strong> ${escapeHtml(pred.reasoning_short || '-')}`,
                 `Soglia di volatilità (banda FLAT): <strong>±${pred.volatility_threshold_pct}%</strong>`,
                 `News analizzate: <strong>${s.news_count ?? 0}</strong>`,
+                ...(s.news_sentiment_avg !== undefined && s.news_sentiment_avg !== null
+                    ? [`Sentiment medio news: <strong>${s.news_sentiment_avg}</strong>`]
+                    : []),
                 `Fondamentali: <strong>${escapeHtml(s.fundamentals_source || 'non disponibili')}</strong>`,
                 `Dati macro usati: <strong>${escapeHtml((s.macro_keys || []).join(', ') || 'nessuno')}</strong>`,
                 ...technicalsLines(s)
