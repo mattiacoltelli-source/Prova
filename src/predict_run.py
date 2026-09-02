@@ -42,6 +42,41 @@ def _mark_slot_done(day: dt.date, label: str) -> None:
         json.dump({"date": day.isoformat(), "done_slots": sorted(done)}, fh)
 
 
+def _analyst_outlook_state_path(asset: str, day: dt.date) -> str:
+    return f"{config.STATE_DIR}/analyst_outlook_{asset.lower()}_{day.isoformat()}.json"
+
+
+def _cached_analyst_outlook(asset: str, day: dt.date) -> tuple[bool, dict | None]:
+    """(già recuperato oggi?, outlook-o-None). fetch_analyst_outlook costa 2
+    chiamate Alpha Vantage (tetto gratuito 25/giorno condiviso con
+    fondamentali/news di riserva): va richiamata al più una volta al giorno
+    per asset, non ad ogni previsione — da cui questa cache su file, stesso
+    pattern degli slot in _done_slots."""
+    path = _analyst_outlook_state_path(asset, day)
+    if not os.path.exists(path):
+        return False, None
+    with open(path, "r", encoding="utf-8") as fh:
+        return True, json.load(fh).get("outlook")
+
+
+def _save_analyst_outlook_cache(asset: str, day: dt.date, outlook: dict | None) -> None:
+    os.makedirs(config.STATE_DIR, exist_ok=True)
+    with open(_analyst_outlook_state_path(asset, day), "w", encoding="utf-8") as fh:
+        json.dump({"date": day.isoformat(), "outlook": outlook}, fh)
+
+
+def _get_analyst_outlook(asset: str, day: dt.date) -> dict | None:
+    already_fetched, cached = _cached_analyst_outlook(asset, day)
+    if already_fetched:
+        return cached
+    try:
+        outlook = fundamentals.fetch_analyst_outlook(asset, today=day)
+    except Exception:  # noqa: BLE001 - segnale opzionale, mai bloccante
+        outlook = None
+    _save_analyst_outlook_cache(asset, day, outlook)
+    return outlook
+
+
 def find_due_slot(now_et: dt.datetime) -> str | None:
     """Ritorna il primo slot del giorno già scattato e non ancora eseguito,
     entro la finestra di recupero. Robusto a run schedulate in ritardo:
@@ -88,6 +123,7 @@ def run(dry_run: bool, force: bool) -> None:
         news_items = news.fetch_recent_news(asset)
         fundamentals_data = fundamentals.fetch_fundamentals(asset)
         macro_data = macro.fetch_macro_snapshot() if _macro_key_present() else {}
+        analyst_outlook = _get_analyst_outlook(asset, now_et.date())
 
         technical_signals = {
             "obv_trend": technicals.compute_obv_trend(bars),
@@ -124,7 +160,7 @@ def run(dry_run: bool, force: bool) -> None:
             try:
                 pred = predictor.generate_prediction(
                     asset, horizon.code, price, price_asof, threshold_pct,
-                    news_items, fundamentals_data, macro_data, technical_signals,
+                    news_items, fundamentals_data, macro_data, technical_signals, analyst_outlook,
                 )
             except Exception as exc:  # noqa: BLE001
                 print(f"[{asset}/{horizon.code}] skipped_model_error: {exc}")
@@ -148,6 +184,7 @@ def run(dry_run: bool, force: bool) -> None:
                     "fundamentals_source": fundamentals_data["source"] if fundamentals_data else None,
                     "macro_keys": sorted(macro_data.keys()),
                     "technicals": technical_signals,
+                    "analyst_outlook": analyst_outlook,
                 },
                 "reasoning_short": pred["reasoning_short"],
             }

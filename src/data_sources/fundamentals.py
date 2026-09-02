@@ -4,9 +4,17 @@ Per un'azione (es. AAPL): SEC EDGAR (XBRL company facts, nessuna key,
 richiede solo un contatto nell'User-Agent) come primaria, Alpha Vantage
 come fallback. Per un ETF (es. SPY) SEC EDGAR non pubblica XBRL company
 facts standard: si usa direttamente il profilo ETF di Alpha Vantage.
+
+In più, fetch_analyst_outlook() dà consenso analisti (stima EPS, numero di
+analisti, revisioni) e prossima data di bilancio via Alpha Vantage
+(EARNINGS_ESTIMATES + EARNINGS_CALENDAR) — stessa key già usata sopra,
+nessuna fonte nuova.
 """
 from __future__ import annotations
 
+import csv
+import datetime as dt
+import io
 import os
 
 import requests
@@ -98,6 +106,88 @@ def _alphavantage_etf_profile(ticker: str) -> dict:
     }
     top_holdings = payload.get("holdings", [])[:5]
     return {"source": "alphavantage_etf_profile", "metrics": metrics, "top_holdings": top_holdings}
+
+
+def _alphavantage_earnings_calendar(ticker: str) -> str | None:
+    """Prossima data di uscita del bilancio (function=EARNINGS_CALENDAR,
+    unica risposta CSV di Alpha Vantage, orizzonte 3 mesi). None se non
+    programmata entro 3 mesi o se la fonte fallisce."""
+    key = os.environ.get("ALPHA_VANTAGE_KEY")
+    if not key:
+        return None
+    resp = requests.get(
+        "https://www.alphavantage.co/query",
+        params={"function": "EARNINGS_CALENDAR", "symbol": ticker, "horizon": "3month", "apikey": key},
+        timeout=TIMEOUT,
+    )
+    resp.raise_for_status()
+    reader = csv.DictReader(io.StringIO(resp.text))
+    rows = [row for row in reader if row.get("symbol") == ticker and row.get("reportDate")]
+    if not rows:
+        return None
+    return min(row["reportDate"] for row in rows)
+
+
+def _alphavantage_earnings_estimates(ticker: str) -> list[dict] | None:
+    key = os.environ.get("ALPHA_VANTAGE_KEY")
+    if not key:
+        return None
+    resp = requests.get(
+        "https://www.alphavantage.co/query",
+        params={"function": "EARNINGS_ESTIMATES", "symbol": ticker, "apikey": key},
+        timeout=TIMEOUT,
+    )
+    resp.raise_for_status()
+    payload = resp.json()
+    estimates = payload.get("estimates")
+    return estimates if estimates else None
+
+
+def select_next_quarter_estimate(estimates: list[dict], today: dt.date) -> dict | None:
+    """Tra le stime trimestrali (escluse quelle annuali), sceglie quella col
+    fiscalDateEnding più vicino ma non passato rispetto a `today` — le stime
+    Alpha Vantage non sono ordinate per data, solo raggruppate per orizzonte.
+    None se non ce n'è nessuna futura (tutte le trimestrali sono già passate)."""
+    upcoming = []
+    for e in estimates:
+        if e.get("horizon") != "fiscal quarter":
+            continue
+        try:
+            period_end = dt.date.fromisoformat(e["date"])
+        except (KeyError, ValueError):
+            continue
+        if period_end >= today:
+            upcoming.append((period_end, e))
+    if not upcoming:
+        return None
+    return min(upcoming, key=lambda pair: pair[0])[1]
+
+
+def fetch_analyst_outlook(ticker: str, today: dt.date | None = None) -> dict | None:
+    """Prossima data di bilancio + consenso analisti (stima EPS media, numero
+    di analisti, revisioni al rialzo/ribasso negli ultimi 30gg) per il
+    trimestre fiscale più vicino. None se Alpha Vantage non ha nulla di
+    utile (fonte opzionale, mai bloccante). 2 chiamate Alpha Vantage per
+    ticker: va richiamata al più una volta al giorno per asset (vedi la
+    cache in predict_run.py), non ad ogni previsione — il tetto gratuito è
+    di 25 chiamate/giorno in totale, condiviso con fondamentali/news di
+    riserva."""
+    today = today or dt.date.today()
+    next_report_date = _alphavantage_earnings_calendar(ticker)
+    estimates = _alphavantage_earnings_estimates(ticker)
+    if estimates is None:
+        return None
+    picked = select_next_quarter_estimate(estimates, today)
+    if picked is None:
+        return None
+    return {
+        "next_report_date": next_report_date,
+        "fiscal_quarter_ending": picked["date"],
+        "eps_estimate_average": picked.get("eps_estimate_average"),
+        "eps_estimate_analyst_count": picked.get("eps_estimate_analyst_count"),
+        "eps_revisions_up_30d": picked.get("eps_estimate_revision_up_trailing_30_days"),
+        "eps_revisions_down_30d": picked.get("eps_estimate_revision_down_trailing_30_days"),
+    }
 
 
 def fetch_fundamentals(ticker: str) -> dict | None:

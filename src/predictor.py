@@ -28,6 +28,7 @@ def build_prompt(
     fundamentals: dict | None,
     macro: dict,
     technicals: dict | None = None,
+    analyst_outlook: dict | None = None,
 ) -> str:
     news_block = (
         "\n".join(f"- ({n['published_at']}) {n['headline']}" for n in news[:8])
@@ -39,6 +40,24 @@ def build_prompt(
         news_block += f"\n\nSentiment medio delle news (-1..+1): {sentiment_avg}"
     fundamentals_block = json.dumps(fundamentals["metrics"], indent=2) if fundamentals else "Non disponibili."
     macro_block = "\n".join(f"- {k}: {v['value']} (al {v['date']})" for k, v in macro.items()) or "Non disponibili."
+
+    analyst_lines = []
+    if analyst_outlook:
+        if analyst_outlook.get("next_report_date"):
+            analyst_lines.append(f"- Prossima data di bilancio: {analyst_outlook['next_report_date']}")
+        if analyst_outlook.get("eps_estimate_average") is not None:
+            analyst_lines.append(
+                f"- Stima EPS media consenso analisti (trimestre chiuso al "
+                f"{analyst_outlook.get('fiscal_quarter_ending')}): {analyst_outlook['eps_estimate_average']} "
+                f"({analyst_outlook.get('eps_estimate_analyst_count')} analisti)"
+            )
+        up = analyst_outlook.get("eps_revisions_up_30d")
+        down = analyst_outlook.get("eps_revisions_down_30d")
+        if up is not None or down is not None:
+            analyst_lines.append(
+                f"- Revisioni stima EPS ultimi 30gg: {up or 0} al rialzo, {down or 0} al ribasso"
+            )
+    analyst_block = "\n".join(analyst_lines) or "Non disponibili."
 
     technicals = technicals or {}
     technical_lines = []
@@ -107,6 +126,9 @@ News recenti:
 Fondamentali/dati ETF disponibili:
 {fundamentals_block}
 
+Consenso analisti/prossimo bilancio:
+{analyst_block}
+
 Contesto macro:
 {macro_block}
 
@@ -162,9 +184,11 @@ def generate_prediction(
     fundamentals: dict | None,
     macro: dict,
     technicals: dict | None = None,
+    analyst_outlook: dict | None = None,
 ) -> dict:
     prompt = build_prompt(
-        asset, horizon_code, price, price_asof, threshold_pct, news, fundamentals, macro, technicals
+        asset, horizon_code, price, price_asof, threshold_pct, news, fundamentals, macro,
+        technicals, analyst_outlook,
     )
     raw = call_model(prompt)
     return parse_prediction(raw)

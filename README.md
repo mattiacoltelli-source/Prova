@@ -61,6 +61,14 @@ volume relativo rispetto alla propria media recente. Anche il sentiment
 delle news (-1..+1, quando la fonte è Alpha Vantage) viene incluso nel
 prompt: dato già raccolto, prima scartato.
 
+Include anche il consenso analisti (`fetch_analyst_outlook()` in
+`fundamentals.py`): prossima data di bilancio, stima EPS media, numero di
+analisti e revisioni al rialzo/ribasso negli ultimi 30gg, via Alpha Vantage
+(stessa key già usata per fondamentali/news di riserva, nessuna fonte
+nuova). Aggiornato al massimo una volta al giorno per asset (cache in
+`data/_state/analyst_outlook_<asset>_<data>.json`), per restare ben sotto
+il tetto gratuito di 25 chiamate/giorno di Alpha Vantage.
+
 ## Secret richiesti (repo → Settings → Secrets and variables → Actions)
 
 - `FRED_API_KEY`
