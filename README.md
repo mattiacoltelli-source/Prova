@@ -50,10 +50,13 @@ una fase 2 successiva.
 | Macro | FRED (tassi 10Y/2Y, spread curva, CPI, disoccupazione, VIX, indice dollaro) | — |
 
 Oltre a prezzo/news/fondamentali/macro, ogni previsione include anche
-indicatori tecnici calcolati da OHLCV gratuito (`src/technicals.py`):
-On-Balance Volume (trend accumulazione/distribuzione), Chaikin Money Flow
-e forza relativa rispetto all'S&P 500 (SPY usato solo come benchmark,
-non più come asset attivo).
+indicatori tecnici calcolati da OHLCV gratuito (`src/technicals.py`), senza
+bisogno di nessuna API in più: On-Balance Volume (trend
+accumulazione/distribuzione), Chaikin Money Flow, forza relativa e beta
+rispetto all'S&P 500 (SPY usato solo come benchmark, non più come asset
+attivo), medie mobili SMA 50/200 ed EMA 9/21 (trend di fondo e di breve
+termine), RSI 14, MACD (12/26/9) e ATR 14 (volatilità media giornaliera in
+%).
 
 ## Secret richiesti (repo → Settings → Secrets and variables → Actions)
 

@@ -47,6 +47,29 @@ def build_prompt(
             f"- Forza relativa vs S&P 500 (60gg): {technicals['relative_strength_vs_spy_pct']}% "
             "(positivo = sta sovraperformando il mercato)"
         )
+    if technicals.get("sma_trend"):
+        technical_lines.append(f"- Trend di fondo (SMA 50/200): {technicals['sma_trend']}")
+    if technicals.get("ema_trend"):
+        technical_lines.append(f"- Trend di breve termine (EMA 9/21): {technicals['ema_trend']}")
+    if technicals.get("rsi_14") is not None:
+        technical_lines.append(
+            f"- RSI (14gg): {technicals['rsi_14']} (>70 ipercomprato, <30 ipervenduto)"
+        )
+    macd = technicals.get("macd")
+    if macd is not None:
+        technical_lines.append(
+            f"- MACD (12/26/9): linea {macd['macd']}, segnale {macd['signal']}, "
+            f"istogramma {macd['histogram']} (istogramma >0 = momentum rialzista)"
+        )
+    if technicals.get("atr_pct") is not None:
+        technical_lines.append(
+            f"- ATR (14gg): {technicals['atr_pct']}% del prezzo attuale (ampiezza media di movimento giornaliero)"
+        )
+    if technicals.get("beta_vs_spy") is not None:
+        technical_lines.append(
+            f"- Beta vs S&P 500 (60gg): {technicals['beta_vs_spy']} "
+            "(>1 = più volatile del mercato, <1 = meno volatile)"
+        )
     technicals_block = "\n".join(technical_lines) or "Non disponibili."
 
     return f"""Sei un analista quantitativo che deve emettere una previsione REALE e verificabile

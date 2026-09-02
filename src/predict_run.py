@@ -97,6 +97,14 @@ def run(dry_run: bool, force: bool) -> None:
                 if benchmark_bars
                 else None
             ),
+            "sma_trend": technicals.compute_sma_trend(bars),
+            "ema_trend": technicals.compute_ema_trend(bars),
+            "rsi_14": technicals.compute_rsi(bars),
+            "macd": technicals.compute_macd(bars),
+            "atr_pct": technicals.compute_atr_pct(bars),
+            "beta_vs_spy": (
+                technicals.compute_beta(bars, benchmark_bars) if benchmark_bars else None
+            ),
         }
 
         for horizon in config.HORIZONS:
