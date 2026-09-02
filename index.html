@@ -109,6 +109,36 @@
         .stat-value.green { color: var(--accent-green); }
         .stat-value.blue { color: var(--accent-blue); }
 
+        .horizon-filter {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .horizon-filter-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .horizon-filter-btn {
+            background: var(--card-bg);
+            color: var(--text-muted);
+            border: 1px solid var(--card-border);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .horizon-filter-btn.active {
+            background: var(--accent-blue);
+            color: white;
+            border-color: var(--accent-blue);
+        }
+
         .grid-two-assets {
             display: grid;
             grid-template-columns: 1fr;
@@ -396,6 +426,14 @@
         </div>
     </div>
 
+    <div class="horizon-filter" id="horizon-filter">
+        <span class="horizon-filter-label">Orizzonte:</span>
+        <button class="horizon-filter-btn active" data-horizon="all" onclick="setHorizonFilter('all')">Tutti</button>
+        <button class="horizon-filter-btn" data-horizon="1d" onclick="setHorizonFilter('1d')">1 giorno</button>
+        <button class="horizon-filter-btn" data-horizon="7d" onclick="setHorizonFilter('7d')">7 giorni</button>
+        <button class="horizon-filter-btn" data-horizon="1m" onclick="setHorizonFilter('1m')">1 mese</button>
+    </div>
+
     <div class="grid-two-assets" id="assets-grid"></div>
 
     <script>
@@ -491,25 +529,58 @@
             }
         }
 
+        // Dati grezzi (tutti gli orizzonti) presi una sola volta dal server;
+        // il filtro per orizzonte lavora solo su questi, senza rifare fetch.
+        let rawPerAsset = [];
+        let rawPending = [];
+        let currentHorizonFilter = 'all';
+
+        function setHorizonFilter(horizon) {
+            currentHorizonFilter = horizon;
+            document.querySelectorAll('.horizon-filter-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.horizon === horizon);
+            });
+            renderDashboard();
+        }
+
         async function loadDashboardData() {
-            const perAsset = await Promise.all(ASSETS.map(asset => Promise.all([
+            rawPerAsset = await Promise.all(ASSETS.map(asset => Promise.all([
                 parseJsonl(`data/${asset.toLowerCase()}/predictions.jsonl`),
                 parseJsonl(`data/${asset.toLowerCase()}/outcomes.jsonl`)
             ])));
-            const pending = await fetchPending();
+            rawPending = await fetchPending();
+            renderDashboard();
+        }
 
-            const allOutcomes = perAsset.flatMap(([, outcomes]) => outcomes);
+        function renderDashboard() {
+            const h = currentHorizonFilter;
+            const matchesHorizon = (row) => h === 'all' || row.horizon === h;
+
+            const filteredPerAsset = rawPerAsset.map(([predictions, outcomes]) => [
+                predictions.filter(matchesHorizon),
+                outcomes.filter(matchesHorizon)
+            ]);
+            const filteredPending = rawPending.filter(matchesHorizon);
+
+            const allOutcomes = filteredPerAsset.flatMap(([, outcomes]) => outcomes);
             const totalOutcomes = allOutcomes.length;
             const correctOutcomes = allOutcomes.filter(o => o.correct === true).length;
             const overallAccuracy = totalOutcomes > 0 ? ((correctOutcomes / totalOutcomes) * 100).toFixed(1) : "0.0";
 
             document.getElementById('stat-accuracy').innerText = overallAccuracy + '%';
             document.getElementById('stat-outcomes').innerText = totalOutcomes;
-            document.getElementById('stat-pending').innerText = pending.length;
+            document.getElementById('stat-pending').innerText = filteredPending.length;
 
             ASSETS.forEach((asset, i) => {
-                const [predictions, outcomes] = perAsset[i];
-                renderAssetData(asset, predictions, outcomes);
+                const [predictions, outcomes] = filteredPerAsset[i];
+                try {
+                    renderAssetData(asset, predictions, outcomes);
+                } catch (err) {
+                    // Un errore per un solo asset (es. Chart.js non caricato
+                    // dal CDN) non deve bloccare il forEach e lasciare gli
+                    // asset successivi bloccati su "Caricamento dati...".
+                    console.error(`Errore nel render di ${asset}:`, err);
+                }
             });
         }
 
@@ -583,12 +654,28 @@
 
         // Ricostruisce la spiegazione di una previsione dai dati già salvati
         // in predictions.jsonl: nessuna nuova chiamata al modello.
+        // Il prezzo target resta FLAT se cade dentro questo intervallo
+        // (prezzo alla previsione ± soglia di volatilità congelata quel
+        // giorno); fuori dall'intervallo è UP sopra, DOWN sotto.
+        function flatRangeLine(pred) {
+            const pct = pred.volatility_threshold_pct;
+            if (pct === undefined || pct === null) return null;
+            const price = pred.price_at_generation;
+            if (price === undefined || price === null) {
+                return `Banda neutra (FLAT): <strong>±${pct}%</strong>`;
+            }
+            const low = (price * (1 - pct / 100)).toFixed(2);
+            const high = (price * (1 + pct / 100)).toFixed(2);
+            return `Resta <strong>FLAT</strong> se il prezzo è tra <strong>$${low}</strong> e <strong>$${high}</strong> `
+                + `(±${pct}% da $${price.toFixed(2)}) — sopra è UP, sotto è DOWN`;
+        }
+
         function predictionDetailHtml(pred) {
             if (!pred) return '<em>Previsione originale non trovata.</em>';
             const s = pred.inputs_summary || {};
             const lines = [
                 `<strong>Motivazione del modello:</strong> ${escapeHtml(pred.reasoning_short || '-')}`,
-                `Soglia di volatilità (banda FLAT): <strong>±${pred.volatility_threshold_pct}%</strong>`,
+                flatRangeLine(pred),
                 `News analizzate: <strong>${s.news_count ?? 0}</strong>`,
                 ...(s.news_sentiment_avg !== undefined && s.news_sentiment_avg !== null
                     ? [`Sentiment medio news: <strong>${s.news_sentiment_avg}</strong>`]
@@ -598,7 +685,7 @@
                 ...analystOutlookLines(s),
                 ...technicalsLines(s)
             ];
-            return lines.join('<br>');
+            return lines.filter(line => line !== null).join('<br>');
         }
 
         function toggleDetail(storeKey, index) {
@@ -631,7 +718,8 @@
             const correct = outcomes.filter(o => o.correct === true).length;
             const accuracy = total > 0 ? ((correct / total) * 100).toFixed(1) : "0.0";
 
-            document.getElementById(`accuracy-${asset}`).innerText = `Accuratezza: ${accuracy}%`;
+            const horizonLabel = { '1d': ' (1g)', '7d': ' (7g)', '1m': ' (1m)' }[currentHorizonFilter] || '';
+            document.getElementById(`accuracy-${asset}`).innerText = `Accuratezza${horizonLabel}: ${accuracy}%`;
 
             const predsMap = {};
             predictions.forEach(p => { if (p.id) predsMap[p.id] = p; });
