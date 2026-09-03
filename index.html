@@ -179,6 +179,13 @@
             font-weight: 700;
         }
 
+        .asset-price {
+            font-size: 0.85rem;
+            font-weight: 400;
+            color: var(--text-muted);
+            margin-left: 6px;
+        }
+
         .data-status {
             font-size: 0.72rem;
             color: var(--accent-yellow);
@@ -461,7 +468,7 @@
             grid.innerHTML = ASSETS.map(asset => `
                 <div class="asset-card">
                     <div class="asset-header">
-                        <span class="asset-title">${asset}</span>
+                        <span class="asset-title">${asset}<span class="asset-price" id="price-${asset}"></span></span>
                         <span class="badge-accuracy" id="accuracy-${asset}">Accuratezza: 0.0%</span>
                     </div>
                     <div class="data-status" id="data-status-${asset}"></div>
@@ -786,6 +793,16 @@
             const recentPredictions = [...predictions].sort((a, b) => (b.generated_at || '').localeCompare(a.generated_at || '')).slice(0, 10);
             const predictionsBody = document.getElementById(`predictions-body-${asset}`);
             detailStore[`pred-${asset}`] = recentPredictions;
+
+            // Prezzo di riferimento dell'ultima previsione: lo stesso valore
+            // (price_at_generation) rispetto al quale UP/DOWN/FLAT viene
+            // giudicato — vederlo accanto al titolo evita di dover aprire il
+            // dettaglio per capire "UP rispetto a cosa?".
+            const priceEl = document.getElementById(`price-${asset}`);
+            if (priceEl) {
+                const lastPrice = recentPredictions[0]?.price_at_generation;
+                priceEl.textContent = typeof lastPrice === 'number' ? `$${lastPrice.toFixed(2)}` : '';
+            }
 
             const statusEl = document.getElementById(`data-status-${asset}`);
             if (statusEl) {
