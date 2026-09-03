@@ -75,6 +75,16 @@ jobs:
           if [ "${{ steps.mode.outputs.force }}" = "true" ]; then ARGS="$ARGS --force"; fi
           python -m src.predict_run $ARGS
 
+      # Retry con rebase su push rifiutato: predict.yml, evaluate.yml e
+      # snapshot.yml scrivono tutti su data/ in modo indipendente (proprio
+      # gruppo di concorrenza ciascuno, non si bloccano a vicenda), quindi
+      # due run di workflow diversi possono finire quasi insieme — il
+      # secondo push, senza retry, veniva respinto (remote non fast-forward)
+      # e quel run andava perso silenziosamente, con solo l'alert Telegram
+      # del job fallito ad accorgersene. Il rebase è sicuro qui: ogni
+      # workflow tocca file distinti (predictions.jsonl, pending.json,
+      # data/_state/*), un vero conflitto di riga è il caso raro, non quello
+      # atteso.
       - name: Commit e push
         if: steps.mode.outputs.dry_run != 'true'
         run: |
@@ -83,10 +93,24 @@ jobs:
           git add data/
           if git diff --cached --quiet; then
             echo "Nessuna modifica da committare."
-          else
-            git commit -m "Previsioni automatiche $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-            git push
+            exit 0
           fi
+          git commit -m "Previsioni automatiche $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          for i in 1 2 3 4 5; do
+            if git push; then
+              exit 0
+            fi
+            echo "Push rifiutato (probabile push concorrente di un altro workflow), tentativo $i/5: fetch + rebase e riprovo..."
+            git fetch origin "$GITHUB_REF_NAME"
+            if ! git rebase "origin/$GITHUB_REF_NAME"; then
+              echo "::error::Rebase fallito: conflitto reale con un commit concorrente, serve intervento manuale."
+              git rebase --abort
+              exit 1
+            fi
+            sleep $((i * 3))
+          done
+          echo "::error::Push fallito dopo 5 tentativi di rebase."
+          exit 1
 
       # Solo su un fallimento vero (es. "Genera previsioni" è uscito con
       # errore non gestito) — mai per gli skip normali per singolo

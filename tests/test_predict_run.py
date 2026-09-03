@@ -89,15 +89,41 @@ def test_dopo_un_force_reale_un_tick_schedulato_lo_stesso_giorno_non_trova_altro
 # diventerebbe silenziosamente di due giorni di trading invece di uno.
 def test_reference_price_prima_dell_apertura_usa_il_prezzo_congelato():
     now_et = dt.datetime(2026, 9, 3, 7, 0, tzinfo=predict_run.config.EASTERN)
+    bars = [
+        {"date": "2026-09-01", "close": 220.0},
+        {"date": "2026-09-02", "close": 224.31},
+    ]
     with patch(
         "src.predict_run.prices.fetch_latest_price",
         return_value=(224.31, "2026-09-02T20:00:00+00:00", "yahoo"),
     ) as mock_fetch:
-        price, asof, source, session_date = predict_run._reference_price("NVDA", bars=[], now_et=now_et)
+        price, asof, source, session_date = predict_run._reference_price("NVDA", bars=bars, now_et=now_et)
     mock_fetch.assert_called_once_with("NVDA")
     assert price == 224.31
     assert source == "yahoo"
     assert session_date == dt.date(2026, 9, 2)
+
+
+# Regressione reale trovata da revisione del codice il 2026-09-03: il ramo
+# pre-apertura calcolava la data di sessione come "oggi - 1 giorno" senza
+# controllare se ieri fosse un vero giorno di borsa. Un lunedì l'ultima
+# chiusura vera è venerdì, non domenica — per 7g/1m l'orizzonte finiva
+# ancorato 2-3 giorni più avanti del dovuto ogni lunedì e dopo ogni
+# festività, sballando silenziosamente l'accuratezza misurata su quei
+# orizzonti. now_et qui è lunedì 2026-09-07 (venerdì 2026-09-04 è l'ultima
+# barra storica, sabato/domenica non compaiono affatto in bars).
+def test_reference_price_di_lunedi_usa_la_chiusura_di_venerdi_non_domenica():
+    now_et = dt.datetime(2026, 9, 7, 7, 0, tzinfo=predict_run.config.EASTERN)
+    bars = [
+        {"date": "2026-09-03", "close": 226.0},
+        {"date": "2026-09-04", "close": 228.9},
+    ]
+    with patch(
+        "src.predict_run.prices.fetch_latest_price",
+        return_value=(228.9, "2026-09-04T20:00:00+00:00", "yahoo"),
+    ):
+        _, _, _, session_date = predict_run._reference_price("NVDA", bars=bars, now_et=now_et)
+    assert session_date == dt.date(2026, 9, 4)
 
 
 # Regressione reale del 2026-09-03: un run manuale partito 1 minuto dopo

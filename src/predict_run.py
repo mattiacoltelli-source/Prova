@@ -43,22 +43,33 @@ def _reference_price(asset: str, bars: list, now_et: dt.datetime) -> tuple[float
     l'intera sessione di domani, quasi due giorni di trading invece di
     uno. La data di sessione ritornata qui è sempre quella VERA del
     prezzo usato, cosicché target_at (vedi _target_at()) resti sempre
-    coerente con esso, indipendentemente dall'orario di esecuzione."""
-    if now_et.time() < MARKET_OPEN_ET:
-        price, asof, source = prices.fetch_latest_price(asset)
-        # Non deve necessariamente essere un vero giorno di trading (es. un
-        # sabato prima dell'apertura di lunedì): price_on_or_after() in
-        # fase di valutazione avanza comunque al primo giorno reale.
-        session_date = now_et.date() - dt.timedelta(days=1)
-        return price, asof, source, session_date
+    coerente con esso, indipendentemente dall'orario di esecuzione.
 
+    Secondo bug reale, stessa famiglia, trovato il 2026-09-03 da revisione
+    del codice: il ramo pre-apertura calcolava la data di sessione come
+    "oggi - 1 giorno" senza controllare se ieri fosse un vero giorno di
+    borsa. Un lunedì l'ultima chiusura vera è venerdì, non domenica — per
+    l'orizzonte 1g il calcolo si autocorreggeva per puro caso (arrotondato
+    comunque al lunedì da price_on_or_after in fase di valutazione), ma
+    per 7g/1m l'orizzonte finiva ancorato 2-3 giorni più avanti del
+    dovuto, ogni lunedì e dopo ogni festività, sballando silenziosamente
+    l'accuratezza misurata su quei due orizzonti. Fix: la data di sessione
+    si legge sempre dall'ultima barra storica reale precedente a oggi
+    (stessa fonte usata dal ramo post-apertura), mai da un'aritmetica sul
+    calendario."""
     today_iso = now_et.date().isoformat()
     completed = [bar for bar in bars if bar["date"] < today_iso]
     if not completed:
         raise ValueError(f"Nessuna chiusura storica precedente a oggi per {asset}")
+    session_date = dt.date.fromisoformat(completed[-1]["date"])
+
+    if now_et.time() < MARKET_OPEN_ET:
+        price, asof, source = prices.fetch_latest_price(asset)
+        return price, asof, source, session_date
+
     last_bar = completed[-1]
     asof = f"{last_bar['date']}T00:00:00+00:00"
-    return last_bar["close"], asof, "historical_bar", dt.date.fromisoformat(last_bar["date"])
+    return last_bar["close"], asof, "historical_bar", session_date
 
 
 def _target_at(session_date: dt.date, horizon_days: int) -> dt.datetime:

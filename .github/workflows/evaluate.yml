@@ -54,6 +54,10 @@ jobs:
           if [ "${{ steps.mode.outputs.dry_run }}" = "true" ]; then ARGS="--dry-run"; fi
           python -m src.evaluate_run $ARGS
 
+      # Retry con rebase su push rifiutato: vedi lo stesso commento in
+      # predict.yml — predict.yml/evaluate.yml/snapshot.yml scrivono su
+      # data/ in modo indipendente e senza retry un push respinto per un
+      # run concorrente andava perso silenziosamente.
       - name: Commit e push
         if: steps.mode.outputs.dry_run != 'true'
         run: |
@@ -62,10 +66,24 @@ jobs:
           git add data/ REPORT.md
           if git diff --cached --quiet; then
             echo "Nessuna modifica da committare."
-          else
-            git commit -m "Valutazione automatica $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-            git push
+            exit 0
           fi
+          git commit -m "Valutazione automatica $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          for i in 1 2 3 4 5; do
+            if git push; then
+              exit 0
+            fi
+            echo "Push rifiutato (probabile push concorrente di un altro workflow), tentativo $i/5: fetch + rebase e riprovo..."
+            git fetch origin "$GITHUB_REF_NAME"
+            if ! git rebase "origin/$GITHUB_REF_NAME"; then
+              echo "::error::Rebase fallito: conflitto reale con un commit concorrente, serve intervento manuale."
+              git rebase --abort
+              exit 1
+            fi
+            sleep $((i * 3))
+          done
+          echo "::error::Push fallito dopo 5 tentativi di rebase."
+          exit 1
 
       # Vedi lo stesso step in predict.yml per la logica completa.
       - name: Notifica Telegram in caso di fallimento
