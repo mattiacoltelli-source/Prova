@@ -225,6 +225,20 @@ ogni caricamento a partire dagli slot in ora US/Eastern
 settimane in cui USA e Italia non hanno ancora fatto entrambe il cambio
 tra ora legale e solare (offset non sempre fisso a 6 ore).
 
+Il pannello informativo include anche un link diretto alla pagina GitHub
+Actions di `predict.yml`, per far partire una previsione manuale (protetta
+dal login GitHub) nel caso quella automatica tardasse — le previsioni
+generate manualmente marcano comunque lo slot del giorno come già fatto,
+così un run automatico in ritardo che arriva dopo non ne crea una doppia.
+
+**Estetica**: la dashboard usa una palette scura raffinata (bordi più
+morbidi, ombre leggere al posto dei soli bordi piatti, raggi coerenti,
+cifre allineate con `tabular-nums` su prezzi/statistiche/tabelle) —
+verificata con la suite Playwright di `qa-agent` (30 test passati, nessuna
+rottura) prima di andare in produzione. Le uniche emoji rimaste sono
+quelle su cui quella suite si aggancia direttamente (⚠️ dati mancanti,
+✅/❌ negli esiti); le altre sono state sostituite con icone SVG inline.
+
 ## Esecuzione manuale / test
 
 Entrambi i workflow supportano `workflow_dispatch` con input `dry_run`
