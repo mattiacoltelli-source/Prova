@@ -520,7 +520,13 @@
 
         async function parseJsonl(url) {
             try {
-                const res = await fetch(url);
+                // no-store: GitHub Pages serve questi file con Cache-Control:
+                // max-age=600 (10 min) — un fetch semplice può continuare a
+                // mostrare dati vecchi di 10 minuti dopo un aggiornamento
+                // reale, anche ricaricando la pagina (specie su mobile, dove
+                // "tira per aggiornare" spesso non forza una richiesta fresca
+                // come farebbe Ctrl+Shift+R su desktop).
+                const res = await fetch(url, { cache: 'no-store' });
                 if (!res.ok) return [];
                 const text = await res.text();
                 return text.trim().split('\n')
@@ -536,7 +542,7 @@
 
         async function fetchPending() {
             try {
-                const res = await fetch('data/pending.json');
+                const res = await fetch('data/pending.json', { cache: 'no-store' });
                 if (!res.ok) return [];
                 return await res.json();
             } catch (err) {
