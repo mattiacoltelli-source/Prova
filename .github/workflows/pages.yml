@@ -74,12 +74,22 @@ jobs:
           ref: gh-pages
           path: pages
 
+      # --checksum (non solo dimensione+mtime, il controllo "quick check"
+      # di default di rsync): senza, un aggiornamento di snapshot.json che
+      # cambia il contenuto ma non la lunghezza in byte (es. "510.73" ->
+      # "510.12", stessa dimensione, entrambi i checkout ravvicinati nello
+      # stesso job con mtime quasi identico) viene scambiato per "invariato"
+      # e NON copiato — bug reale scoperto il 2026-09-03: un run di
+      # snapshot.yml aveva aggiornato tutti e 3 gli asset su Main, ma
+      # rsync aveva pubblicato su gh-pages solo NVDA (unico con una
+      # dimensione file diversa dal prezzo precedente), lasciando MSFT e
+      # AAPL silenziosamente fermi a un'istantanea di ~4 ore prima.
       - name: Sincronizza i file del sito statico su gh-pages
         run: |
-          rsync -a --delete \
+          rsync -a --checksum --delete \
             main/index.html main/manifest.json main/sw.js main/REPORT.md \
             pages/
-          rsync -a --delete main/data/ pages/data/
+          rsync -a --checksum --delete main/data/ pages/data/
 
       - name: Commit e push su gh-pages
         run: |
