@@ -42,6 +42,23 @@ def _mark_slot_done(day: dt.date, label: str) -> None:
         json.dump({"date": day.isoformat(), "done_slots": sorted(done)}, fh)
 
 
+def _mark_today_done(day: dt.date, slot_label: str) -> None:
+    """Segna come fatto lo slot appena eseguito. Un --force reale (non
+    dry-run) copre un giro di previsioni completo esattamente come un tick
+    schedulato, quindi marca TUTTI gli slot configurati del giorno — non
+    solo un'etichetta "manual-force" a parte, che find_due_slot non
+    riconoscerebbe mai come uno slot vero. Bug osservato in produzione il
+    2026-09-02: un recupero manuale con --force non marcava nulla, così un
+    tick schedulato scattato più tardi lo stesso giorno trovava lo slot
+    ancora libero e generava un secondo giro di previsioni reali duplicate
+    per NVDA/MSFT/AAPL."""
+    if slot_label == "manual-force":
+        for hour, minute in config.PREDICTION_SLOTS_ET:
+            _mark_slot_done(day, _slot_label(hour, minute))
+    else:
+        _mark_slot_done(day, slot_label)
+
+
 def _analyst_outlook_state_path(asset: str, day: dt.date) -> str:
     return f"{config.STATE_DIR}/analyst_outlook_{asset.lower()}_{day.isoformat()}.json"
 
@@ -227,8 +244,8 @@ def run(dry_run: bool, force: bool) -> None:
             )
             print(f"[{asset}/{horizon.code}] previsione salvata: {saved['predicted_class']} ({saved['confidence']}%)")
 
-    if not dry_run and slot_label != "manual-force":
-        _mark_slot_done(now_et.date(), slot_label)
+    if not dry_run:
+        _mark_today_done(now_et.date(), slot_label)
 
 
 def _macro_key_present() -> bool:

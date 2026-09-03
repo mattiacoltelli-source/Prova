@@ -52,3 +52,31 @@ def test_con_cache_gia_presente_non_richiama_alpha_vantage_neanche_in_run_reale(
         result = predict_run._get_analyst_outlook("AAPL", dt.date(2026, 9, 2), dry_run=False)
     assert result == {"cached": True}
     mock_fetch.assert_not_called()
+
+
+# Regressione: un recupero manuale reale (--force, non dry-run) del
+# 2026-09-02 non segnava lo slot come fatto, così un tick schedulato
+# scattato più tardi lo stesso giorno lo trovava ancora libero e generava
+# un secondo giro di previsioni reali duplicate per NVDA/MSFT/AAPL.
+def test_slot_normale_marca_solo_quello_slot(tmp_path, monkeypatch):
+    monkeypatch.setattr(predict_run.config, "STATE_DIR", str(tmp_path))
+    day = dt.date(2026, 9, 2)
+    predict_run._mark_today_done(day, "15:45")
+    assert predict_run._done_slots(day) == {"15:45"}
+
+
+def test_force_reale_marca_tutti_gli_slot_configurati_del_giorno(tmp_path, monkeypatch):
+    monkeypatch.setattr(predict_run.config, "STATE_DIR", str(tmp_path))
+    monkeypatch.setattr(predict_run.config, "PREDICTION_SLOTS_ET", [(9, 30), (15, 45)])
+    day = dt.date(2026, 9, 2)
+    predict_run._mark_today_done(day, "manual-force")
+    assert predict_run._done_slots(day) == {"09:30", "15:45"}
+
+
+def test_dopo_un_force_reale_un_tick_schedulato_lo_stesso_giorno_non_trova_altro_slot_dovuto(
+    tmp_path, monkeypatch
+):
+    monkeypatch.setattr(predict_run.config, "STATE_DIR", str(tmp_path))
+    now_et = dt.datetime(2026, 9, 2, 20, 0, tzinfo=predict_run.config.EASTERN)
+    predict_run._mark_today_done(now_et.date(), "manual-force")
+    assert predict_run.find_due_slot(now_et) is None
