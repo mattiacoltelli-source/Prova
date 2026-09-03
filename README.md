@@ -32,7 +32,8 @@ una fase 2 successiva.
    volatilità storica per distinguere UP/DOWN/FLAT, chiama il modello
    Claude per generare una previsione con confidence, e la registra in
    `data/<asset>/predictions.jsonl` come riga append-only con hash-chain.
-   Un solo slot al giorno (15:45 ET, `src/config.py: PREDICTION_SLOTS_ET`)
+   Un solo slot al giorno (16:30 ET, dopo la chiusura — `src/config.py:
+   PREDICTION_SLOTS_ET`)
    genera tutti e 3 gli orizzonti (1g/7g/1m) per tutti gli asset:
    rigenerarli più volte nello stesso giorno cambiava pochissimo il
    risultato per 7g/1m (prezzo di partenza quasi identico a poche ore di
@@ -58,6 +59,17 @@ a finestra fissa usata in una versione precedente.
 > congelate con la vecchia formula non sarebbero più state confrontabili
 > con quelle nuove nello stesso report. Resta comunque recuperabile nella
 > cronologia Git (commit `4dd63e2` e precedenti su `Main`).
+
+> **Nota storica (2026-09-03)**: `VOLATILITY_K` ricalibrato da 0.5 a 0.4
+> (prima ricalibrazione manuale, non ancora basata sulla tabella di
+> calibrazione — con 1-2 giorni di dati reali era ancora troppo presto) e
+> slot di previsione spostato da 15:45 a 16:30 ET, dopo la chiusura invece
+> che 15 minuti prima: il prezzo di partenza ora coincide esattamente con
+> quello poi usato in valutazione (a mercato aperto i due potevano
+> differire leggermente), e il modello vede eventuali utili trimestrali
+> pubblicati alla campana (AMC). Storico azzerato di nuovo insieme al
+> cambio, stesso motivo del precedente. Recuperabile su `Main` fino al
+> commit `aa1cb1f`.
 
 ## Fonti dati (tutte gratuite, nessun abbonamento)
 

@@ -43,9 +43,19 @@ HORIZONS = [
 # identico) per gli orizzonti 7g/1m, e triplicava senza un vero motivo le
 # chiamate AI e la quota sulle fonti dati (es. Alpha Vantage, 25/giorno
 # gratuite condivise con fondamentali/news/stime analisti).
+#
+# 16:30 ET, DOPO la chiusura (16:00 ET) invece di 15 minuti prima: il
+# prezzo di prices.fetch_latest_price() (campo Yahoo regularMarketPrice)
+# resta congelato all'ultimo prezzo di sessione regolare fino alla
+# sessione successiva, quindi a mercato ancora aperto (com'era con lo
+# slot precedente alle 15:45) "prezzo di partenza" ed "esito reale"
+# valutato più avanti (sempre sulla barra di chiusura ufficiale) sono
+# leggermente disallineati. Dopo la chiusura combaciano esattamente, e in
+# più il modello vede eventuali utili trimestrali pubblicati alla campana
+# (AMC, after market close), che alle 15:45 mancava sempre.
 # (ora, minuto)
 PREDICTION_SLOTS_ET = [
-    (15, 45),
+    (16, 30),
 ]
 
 # Una scheduled run di GitHub Actions può partire in ritardo rispetto al
@@ -63,11 +73,17 @@ SLOT_CATCHUP_MINUTES = 480
 # threshold_pct = VOLATILITY_K * ATR% (14 giorni) * sqrt(trading_days)
 # ATR invece di una deviazione standard a finestra fissa: più reattivo a un
 # cambio di regime di volatilità recente e include i gap overnight, che una
-# misura chiusura-chiusura ignora. K=0.5 è un punto di partenza ragionevole
-# ma arbitrario, da ricalibrare in futuro sulla base dei risultati reali in
-# REPORT.md (nessuna previsione storica precedente a questo cambio è rimasta
-# valida da confrontare: lo storico è stato azzerato insieme al cambio).
-VOLATILITY_K = 0.5
+# misura chiusura-chiusura ignora.
+#
+# K=0.5 -> 0.4 il 2026-09-03: prima ricalibrazione manuale (non ancora
+# basata sulla tabella di calibrazione in REPORT.md, che con 1-2 giorni di
+# dati reali era ancora troppo poco popolata per dire qualcosa — resta un
+# punto di partenza ragionevole ma arbitrario, ancora da validare sui
+# risultati reali). Storico azzerato insieme al cambio, stesso motivo e
+# stesso pattern della ricalibrazione precedente (ATR al posto della
+# deviazione standard): le soglie congelate nelle previsioni già fatte non
+# sono più confrontabili con quelle calcolate con il nuovo K.
+VOLATILITY_K = 0.4
 
 # --- Modello Anthropic ------------------------------------------------------
 
