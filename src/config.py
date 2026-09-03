@@ -44,7 +44,7 @@ HORIZONS = [
 # chiamate AI e la quota sulle fonti dati (es. Alpha Vantage, 25/giorno
 # gratuite condivise con fondamentali/news/stime analisti).
 #
-# 8:00 ET, PRIMA dell'apertura (9:30 ET) invece che dopo la chiusura: a
+# 7:00 ET, PRIMA dell'apertura (9:30 ET) invece che dopo la chiusura: a
 # quell'ora prices.fetch_latest_price() (campo Yahoo regularMarketPrice)
 # ritorna ancora l'ultima chiusura ufficiale, congelata dalle 16:00 ET di
 # ieri fino alla riapertura — quindi il "prezzo di partenza" è identico a
@@ -55,6 +55,14 @@ HORIZONS = [
 # gli slot alle 15:45 e alle 16:30 usati prima di questo avevano lo stesso
 # problema, solo sull'altro lato della giornata).
 #
+# 8:00 -> 7:00 ET il 2026-09-04: un'ora in più di margine di recupero
+# (150 minuti invece di 90) prima dell'apertura, a fronte di una probabilità
+# leggermente più alta di non aver ancora visto gli utili BMO pubblicati
+# proprio a ridosso dell'apertura (la maggior parte esce comunque tra le
+# 6:00 e le 8:00 ET). Non richiede nessun altro cambio: il prezzo resta
+# congelato per tutto l'intervallo 16:00 ET di ieri - 9:30 ET di oggi,
+# qualunque ora in quella finestra dà lo stesso prezzo di riferimento.
+#
 # Il prezzo congelato pre-apertura richiede che target_at sia ancorato a
 # quella chiusura invece che all'orario reale di esecuzione dello script —
 # vedi predict_run.py: _target_anchor_date(). Per lo stesso motivo la
@@ -62,7 +70,7 @@ HORIZONS = [
 # a muoversi in tempo reale e l'assunzione "prezzo congelato" non vale più.
 # (ora, minuto)
 PREDICTION_SLOTS_ET = [
-    (8, 0),
+    (7, 0),
 ]
 
 # Una scheduled run di GitHub Actions può partire in ritardo rispetto al
@@ -72,15 +80,15 @@ PREDICTION_SLOTS_ET = [
 # fino a questa finestra dopo l'orario nominale, così un run in ritardo
 # esegue comunque il prossimo slot dovuto invece di saltarlo.
 #
-# Qui la finestra è volutamente corta (85 minuti: 8:00-9:25 ET, 5 minuti di
-# margine prima dell'apertura delle 9:30) invece che ampia come con lo slot
-# post-chiusura di prima — un recupero che scattasse dopo l'apertura
+# Qui la finestra è volutamente corta (145 minuti: 7:00-9:25 ET, 5 minuti
+# di margine prima dell'apertura delle 9:30) invece che ampia come con lo
+# slot post-chiusura di prima — un recupero che scattasse dopo l'apertura
 # userebbe un prezzo intraday già in movimento, non più la chiusura
 # congelata su cui si basa _target_anchor_date(), quindi non ha senso
 # provarci oltre quel limite. La ridondanza per compensare (più probabilità
 # che GitHub faccia partire almeno un tick nella finestra più stretta) è
-# nei tre cron sfalsati di predict.yml invece che in una finestra larga.
-SLOT_CATCHUP_MINUTES = 85
+# nei tick sfalsati di predict.yml invece che in una finestra larga.
+SLOT_CATCHUP_MINUTES = 145
 
 # --- Soglia di volatilità per UP/DOWN/FLAT ---------------------------------
 # threshold_pct = VOLATILITY_K * ATR% (14 giorni) * sqrt(trading_days)
