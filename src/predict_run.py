@@ -20,25 +20,49 @@ BENCHMARK_TICKER = "SPY"
 
 # Apertura regolare NYSE/NASDAQ. Prima di quest'ora, prices.fetch_latest_price()
 # ritorna ancora il prezzo dell'ultima chiusura (Yahoo regularMarketPrice non si
-# aggiorna finché la sessione regolare non riparte), quindi l'orizzonte di ogni
-# previsione va ancorato a QUELLA chiusura, non all'orario reale di esecuzione
-# dello script — altrimenti un run pre-apertura (slot delle 8:00 ET) userebbe
-# ancora il prezzo di ieri ma calcolerebbe target_at come "ieri + 1 giorno" da
-# "adesso" (oggi), raddoppiando silenziosamente l'orizzonte "1g" a due giorni
-# di trading invece di uno. Vedi _target_anchor_date().
+# aggiorna finché la sessione regolare non riparte); dopo, ritornerebbe invece
+# un prezzo intraday in movimento — inutilizzabile come "prezzo di riferimento"
+# di una previsione, perché l'orizzonte di ogni previsione (target_at) deve
+# essere ancorato alla data di una chiusura REALE, sempre la stessa usata come
+# prezzo. Vedi _reference_price().
 MARKET_OPEN_ET = dt.time(9, 30)
 
 
-def _target_anchor_date(now_et: dt.datetime) -> dt.date:
-    """Data di calendario da cui contare l'orizzonte di ogni previsione:
-    "oggi" se il prezzo di generazione è già quello aggiornato della sessione
-    in corso/appena chiusa, altrimenti la data del prezzo (congelato) ancora
-    in uso — non deve necessariamente essere un vero giorno di trading (es.
-    un sabato prima dell'apertura di lunedì): price_on_or_after() in fase di
-    valutazione avanza comunque al primo giorno di trading reale disponibile."""
+def _reference_price(asset: str, bars: list, now_et: dt.datetime) -> tuple[float, str, str, dt.date]:
+    """Prezzo di riferimento per la previsione (price, asof, source) e la
+    data della sessione a cui appartiene — sempre l'ultima chiusura REALE
+    già conclusa, mai un prezzo intraday in corso, a prescindere da quando
+    lo script gira (schedulato prima dell'apertura, o un recupero manuale
+    più tardi).
+
+    Bug reale in produzione il 2026-09-03: un run manuale partito 1 minuto
+    dopo l'apertura (9:31 ET) ha preso come prezzo di riferimento un
+    prezzo intraday di oggi, ma l'orizzonte "1g" è stato comunque ancorato
+    a "oggi + 1 giorno" (calcolato solo dall'orario di esecuzione) — la
+    previsione ha finito per coprire il resto della sessione di oggi PIÙ
+    l'intera sessione di domani, quasi due giorni di trading invece di
+    uno. La data di sessione ritornata qui è sempre quella VERA del
+    prezzo usato, cosicché target_at (vedi _target_at()) resti sempre
+    coerente con esso, indipendentemente dall'orario di esecuzione."""
     if now_et.time() < MARKET_OPEN_ET:
-        return now_et.date() - dt.timedelta(days=1)
-    return now_et.date()
+        price, asof, source = prices.fetch_latest_price(asset)
+        # Non deve necessariamente essere un vero giorno di trading (es. un
+        # sabato prima dell'apertura di lunedì): price_on_or_after() in
+        # fase di valutazione avanza comunque al primo giorno reale.
+        session_date = now_et.date() - dt.timedelta(days=1)
+        return price, asof, source, session_date
+
+    today_iso = now_et.date().isoformat()
+    completed = [bar for bar in bars if bar["date"] < today_iso]
+    if not completed:
+        raise ValueError(f"Nessuna chiusura storica precedente a oggi per {asset}")
+    last_bar = completed[-1]
+    asof = f"{last_bar['date']}T00:00:00+00:00"
+    return last_bar["close"], asof, "historical_bar", dt.date.fromisoformat(last_bar["date"])
+
+
+def _target_at(session_date: dt.date, horizon_days: int) -> dt.datetime:
+    return dt.datetime.combine(session_date, dt.time.min, tzinfo=dt.timezone.utc) + dt.timedelta(days=horizon_days)
 
 
 def _slot_label(hour: int, minute: int) -> str:
@@ -151,9 +175,6 @@ def run(dry_run: bool, force: bool) -> None:
         return
 
     now_utc = dt.datetime.now(dt.timezone.utc)
-    target_anchor_at = dt.datetime.combine(
-        _target_anchor_date(now_et), dt.time.min, tzinfo=dt.timezone.utc
-    )
 
     try:
         benchmark_bars = prices.fetch_daily_history(BENCHMARK_TICKER)
@@ -170,7 +191,7 @@ def run(dry_run: bool, force: bool) -> None:
     for asset in config.ASSETS:
         try:
             bars = prices.fetch_daily_history(asset)
-            price, price_asof, price_source = prices.fetch_latest_price(asset)
+            price, price_asof, price_source, session_date = _reference_price(asset, bars, now_et)
         except Exception as exc:  # noqa: BLE001
             print(f"[{asset}] skipped_no_data: {exc}")
             continue
@@ -240,7 +261,7 @@ def run(dry_run: bool, force: bool) -> None:
                 "asset": asset,
                 "horizon": horizon.code,
                 "generated_at": now_utc.isoformat(),
-                "target_at": (target_anchor_at + dt.timedelta(days=horizon.days)).isoformat(),
+                "target_at": _target_at(session_date, horizon.days).isoformat(),
                 "price_at_generation": price,
                 "price_source": price_source,
                 "predicted_class": pred["predicted_class"],

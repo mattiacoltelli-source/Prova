@@ -88,12 +88,31 @@ a finestra fissa usata in una versione precedente.
 > di margine di recupero (150 minuti contro 90) a fronte di una probabilità
 > leggermente più alta di non aver ancora visto gli utili BMO pubblicati a
 > ridosso dell'apertura. Ha richiesto anche
-> un fix in `predict_run.py` (`_target_anchor_date()`): con il prezzo
-> congelato pre-apertura, l'orizzonte di ogni previsione va ancorato alla
-> data di quella chiusura, non all'orario reale di esecuzione dello
-> script, altrimenti l'orizzonte "1g" raddoppierebbe silenziosamente a due
-> giorni di trading. Storico azzerato insieme al cambio, stesso motivo del
-> precedente. Recuperabile su `Main` fino al commit `aa1cb1f`.
+> un fix in `predict_run.py` (`_reference_price()`/`_target_at()`): con il
+> prezzo congelato pre-apertura, l'orizzonte di ogni previsione va
+> ancorato alla data di quella chiusura, non all'orario reale di
+> esecuzione dello script, altrimenti l'orizzonte "1g" raddoppierebbe
+> silenziosamente a due giorni di trading. Storico azzerato insieme al
+> cambio, stesso motivo del precedente. Recuperabile su `Main` fino al
+> commit `aa1cb1f`.
+
+> **Bug reale trovato in produzione (2026-09-03)**: il fix sopra copriva
+> solo il caso previsto (script partito prima delle 9:30 ET). Un run
+> manuale di recupero partito 1 minuto *dopo* l'apertura (9:31 ET, lo
+> scheduler di GitHub non era scattato in tempo) ha usato come prezzo di
+> riferimento un prezzo intraday di oggi — ma l'orizzonte veniva comunque
+> ancorato a "oggi + 1 giorno", finendo per coprire il resto della
+> sessione di oggi più l'intera sessione di domani, quasi due giorni di
+> trading invece di uno. Riguarda solo le previsioni di NVDA/MSFT/AAPL
+> generate quel giorno (`generated_at` 13:31 UTC) — non azzerate, l'entità
+> della distorsione è nota e documentata qui, e resta comunque un
+> confronto internamente coerente (stessa soglia, stesso prezzo, solo
+> l'etichetta "1g" leggermente imprecisa per quel solo batch). Fix:
+> `_reference_price()` ora usa sempre l'ultima chiusura storica REALE
+> (mai un prezzo intraday, mai la barra parziale di oggi) come prezzo di
+> riferimento, a prescindere da quando lo script gira — elimina la
+> distinzione prima/dopo apertura invece di provare a mantenerla corretta
+> in entrambi i casi.
 
 ## Fonti dati (tutte gratuite, nessun abbonamento)
 

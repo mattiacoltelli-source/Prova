@@ -65,9 +65,11 @@ HORIZONS = [
 #
 # Il prezzo congelato pre-apertura richiede che target_at sia ancorato a
 # quella chiusura invece che all'orario reale di esecuzione dello script —
-# vedi predict_run.py: _target_anchor_date(). Per lo stesso motivo la
-# finestra di recupero sotto resta corta: dopo l'apertura il prezzo torna
-# a muoversi in tempo reale e l'assunzione "prezzo congelato" non vale più.
+# vedi predict_run.py: _reference_price()/_target_at(). Per lo stesso
+# motivo la finestra di recupero sotto resta corta: dopo l'apertura il
+# prezzo torna a muoversi in tempo reale e l'assunzione "prezzo congelato"
+# non vale più (anche se _reference_price() gestisce anche questo caso,
+# usando l'ultima chiusura storica invece del prezzo intraday).
 # (ora, minuto)
 PREDICTION_SLOTS_ET = [
     (7, 0),
@@ -83,10 +85,12 @@ PREDICTION_SLOTS_ET = [
 # Qui la finestra è volutamente corta (145 minuti: 7:00-9:25 ET, 5 minuti
 # di margine prima dell'apertura delle 9:30) invece che ampia come con lo
 # slot post-chiusura di prima — un recupero che scattasse dopo l'apertura
-# userebbe un prezzo intraday già in movimento, non più la chiusura
-# congelata su cui si basa _target_anchor_date(), quindi non ha senso
-# provarci oltre quel limite. La ridondanza per compensare (più probabilità
-# che GitHub faccia partire almeno un tick nella finestra più stretta) è
+# resta corretto (_reference_price() usa l'ultima chiusura storica invece
+# del prezzo intraday quando serve), ma non ha senso allargare comunque la
+# finestra oltre quel limite: lo slot esiste apposta per catturare le
+# notizie pre-apertura, un recupero a mercato aperto le perde comunque. La
+# ridondanza per compensare (più probabilità che GitHub faccia partire
+# almeno un tick nella finestra più stretta) è
 # nei tick sfalsati di predict.yml invece che in una finestra larga.
 SLOT_CATCHUP_MINUTES = 145
 

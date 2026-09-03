@@ -82,21 +82,45 @@ def test_dopo_un_force_reale_un_tick_schedulato_lo_stesso_giorno_non_trova_altro
     assert predict_run.find_due_slot(now_et) is None
 
 
-# Regressione: con lo slot spostato a 8:00 ET (prima dell'apertura),
+# Regressione: con lo slot spostato a 7:00 ET (prima dell'apertura),
 # prices.fetch_latest_price() ritorna ancora il prezzo dell'ultima
 # chiusura (congelato fino alle 9:30 ET). Se target_at fosse calcolato da
 # "adesso" invece che dalla data di quella chiusura, l'orizzonte "1g"
 # diventerebbe silenziosamente di due giorni di trading invece di uno.
-def test_target_anchor_date_prima_dell_apertura_usa_il_giorno_prima():
-    now_et = dt.datetime(2026, 9, 3, 8, 0, tzinfo=predict_run.config.EASTERN)
-    assert predict_run._target_anchor_date(now_et) == dt.date(2026, 9, 2)
+def test_reference_price_prima_dell_apertura_usa_il_prezzo_congelato():
+    now_et = dt.datetime(2026, 9, 3, 7, 0, tzinfo=predict_run.config.EASTERN)
+    with patch(
+        "src.predict_run.prices.fetch_latest_price",
+        return_value=(224.31, "2026-09-02T20:00:00+00:00", "yahoo"),
+    ) as mock_fetch:
+        price, asof, source, session_date = predict_run._reference_price("NVDA", bars=[], now_et=now_et)
+    mock_fetch.assert_called_once_with("NVDA")
+    assert price == 224.31
+    assert source == "yahoo"
+    assert session_date == dt.date(2026, 9, 2)
 
 
-def test_target_anchor_date_dopo_l_apertura_usa_oggi():
-    now_et = dt.datetime(2026, 9, 3, 9, 30, tzinfo=predict_run.config.EASTERN)
-    assert predict_run._target_anchor_date(now_et) == dt.date(2026, 9, 3)
+# Regressione reale del 2026-09-03: un run manuale partito 1 minuto dopo
+# l'apertura (9:31 ET) ha usato come prezzo di riferimento un prezzo
+# intraday di oggi, ma l'orizzonte "1g" restava ancorato a "oggi + 1
+# giorno" calcolato dall'orario di esecuzione — la previsione ha finito
+# per coprire il resto della sessione di oggi PIÙ l'intera sessione di
+# domani, quasi due giorni di trading invece di uno. Dopo l'apertura
+# _reference_price() usa invece l'ultima chiusura storica reale (mai la
+# barra di oggi, anche se già presente e ancora parziale).
+def test_reference_price_dopo_l_apertura_usa_ultima_chiusura_storica_non_quella_di_oggi():
+    now_et = dt.datetime(2026, 9, 3, 9, 31, tzinfo=predict_run.config.EASTERN)
+    bars = [
+        {"date": "2026-09-01", "close": 220.0},
+        {"date": "2026-09-02", "close": 224.31},
+        {"date": "2026-09-03", "close": 227.0},  # barra di oggi: mai usata
+    ]
+    price, asof, source, session_date = predict_run._reference_price("NVDA", bars=bars, now_et=now_et)
+    assert price == 224.31
+    assert source == "historical_bar"
+    assert session_date == dt.date(2026, 9, 2)
 
 
-def test_target_anchor_date_subito_prima_dell_apertura_usa_ancora_il_giorno_prima():
-    now_et = dt.datetime(2026, 9, 3, 9, 29, tzinfo=predict_run.config.EASTERN)
-    assert predict_run._target_anchor_date(now_et) == dt.date(2026, 9, 2)
+def test_target_at_un_giorno_dopo_la_sessione_di_riferimento():
+    target = predict_run._target_at(dt.date(2026, 9, 2), horizon_days=1)
+    assert target == dt.datetime(2026, 9, 3, tzinfo=dt.timezone.utc)
