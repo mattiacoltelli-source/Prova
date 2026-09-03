@@ -693,6 +693,7 @@
             if (!s.macro_keys || s.macro_keys.length === 0) missing.push('dati macro');
             if (!s.fundamentals_source) missing.push('fondamentali');
             if (!s.analyst_outlook) missing.push('stime analisti');
+            if (!s.insider_summary) missing.push('transazioni insider');
             if (missing.length === 0) return null;
             return `⚠️ Nell'ultimo segnale mancavano: ${missing.join(', ')}`;
         }
