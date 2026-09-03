@@ -1,0 +1,74 @@
+name: Istantanea prezzi
+
+# Non è un ticker live: 3 volte al giorno durante l'orario di mercato prende
+# un'istantanea del prezzo per ogni asset (stessa fonte già usata per
+# price_at_generation, nessuna chiave API nuova) e la salva in
+# data/<asset>/snapshot.json. Serve solo a mostrare in dashboard "a che
+# punto è" una previsione rispetto al prezzo di riferimento — la
+# valutazione vera, sull'orizzonte completo, resta compito di evaluate.yml.
+#
+# Orari fissi in UTC (non sfalsati per EDT/EST come predict.yml): qui non
+# c'è nulla di sensibile all'ora esatta come il prezzo congelato pre-
+# apertura, un'istantanea presa con un'ora di scarto durante il cambio
+# ora legale/solare resta comunque un'istantanea valida.
+on:
+  schedule:
+    - cron: "30 14 * * 1-5"
+    - cron: "0 17 * * 1-5"
+    - cron: "30 19 * * 1-5"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Esegue l'istantanea senza scrivere su data/ (test sicuro)"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: snapshot-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    env:
+      TWELVE_DATA_KEY: ${{ secrets.TWELVE_DATA_KEY }}
+      FINNHUB_KEY: ${{ secrets.FINNHUB_KEY }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - run: pip install -r requirements.txt
+
+      - name: Determina modalità run
+        id: mode
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "dry_run=${{ github.event.inputs.dry_run }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "dry_run=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Prende l'istantanea dei prezzi
+        run: |
+          ARGS=""
+          if [ "${{ steps.mode.outputs.dry_run }}" = "true" ]; then ARGS="--dry-run"; fi
+          python -m src.snapshot_run $ARGS
+
+      - name: Commit e push
+        if: steps.mode.outputs.dry_run != 'true'
+        run: |
+          git config user.name "predictive-agent-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/
+          if git diff --cached --quiet; then
+            echo "Nessuna modifica da committare."
+          else
+            git commit -m "Istantanea prezzi $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            git push
+          fi

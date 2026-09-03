@@ -46,6 +46,16 @@ una fase 2 successiva.
    posteriori, per evitare look-ahead bias), lo appende a
    `data/<asset>/outcomes.jsonl` e rigenera `REPORT.md` con le statistiche
    di accuratezza.
+3. **`snapshot.yml`** (scheduled, 3 volte al giorno durante l'orario di
+   mercato) prende un'istantanea del prezzo corrente per ogni asset — non
+   un ticker live, stessa fonte già usata per `price_at_generation`,
+   nessuna chiave nuova — e la salva in `data/<asset>/snapshot.json`
+   (sovrascritta ad ogni run, non append-only: non è un dato storico da
+   preservare). La dashboard la usa per mostrare, accanto al prezzo di
+   riferimento, "a che punto è" la previsione a 1 giorno prima ancora che
+   l'orizzonte scada — un confronto istantaneo con la stessa soglia
+   congelata, non una valutazione (quella resta compito di `evaluate.yml`
+   sull'orizzonte completo).
 
 La soglia di volatilità (banda FLAT) è basata sull'ATR% a 14 giorni
 (`src/volatility.py`), scalato per la radice dei giorni di trading

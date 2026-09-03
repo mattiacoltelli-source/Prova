@@ -11,8 +11,8 @@ name: Pubblica GitHub Pages
 # dashboard non mostrava le previsioni appena generate.
 #
 # workflow_run si basa sul completamento del workflow (qualunque token
-# l'abbia fatto scrivere), quindi non ha questo problema. Copre sia
-# predict.yml che evaluate.yml — entrambi possono cambiare data/.
+# l'abbia fatto scrivere), quindi non ha questo problema. Copre predict.yml,
+# evaluate.yml e snapshot.yml — tutti e tre possono cambiare data/.
 #
 # BUG SCOPERTO IL 2026-09-02 (dashboard senza le previsioni del giorno
 # nonostante un "Genera previsioni" concluso con successo poco prima):
@@ -37,7 +37,7 @@ on:
       - "data/**"
       - "REPORT.md"
   workflow_run:
-    workflows: ["Genera previsioni", "Valuta previsioni scadute"]
+    workflows: ["Genera previsioni", "Valuta previsioni scadute", "Istantanea prezzi"]
     types: [completed]
   workflow_dispatch: {}
 

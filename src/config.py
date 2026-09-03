@@ -133,3 +133,7 @@ def predictions_file(asset: str) -> str:
 
 def outcomes_file(asset: str) -> str:
     return f"{asset_dir(asset)}/outcomes.jsonl"
+
+
+def snapshot_file(asset: str) -> str:
+    return f"{asset_dir(asset)}/snapshot.json"
