@@ -361,6 +361,13 @@
 
         .info-panel-body strong { color: var(--text-main); }
 
+        .info-panel-body a {
+            color: var(--accent-blue);
+            text-decoration: none;
+        }
+
+        .info-panel-body a:hover { text-decoration: underline; }
+
         .chart-details summary {
             cursor: pointer;
             color: var(--accent-blue);
@@ -436,7 +443,13 @@
             <strong>Orario della previsione giornaliera (ora italiana):</strong>
             <span id="prediction-times-it">—</span>, nei giorni di borsa aperta (lun-ven).<br><br>
             Tocca una riga in "Ultimi Risultati Valutati" o "Ultimi Segnali Generati" per vedere
-            i dati specifici usati in quella previsione.
+            i dati specifici usati in quella previsione.<br><br>
+            <strong>Previsione non partita in automatico?</strong> Può capitare che GitHub Actions
+            non faccia scattare lo slot programmato in tempo. Puoi farla partire a mano da
+            <a href="https://github.com/mattiacoltelli-source/Prova/actions/workflows/predict.yml" target="_blank" rel="noopener">GitHub Actions ↗</a>
+            (richiede il login al tuo account GitHub, non è esposto qui sul sito) — se lo fai, il
+            sistema se ne accorge da solo e non ne genera una seconda se poi lo slot automatico
+            parte comunque più tardi.
         </div>
     </details>
 
