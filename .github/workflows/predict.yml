@@ -3,22 +3,25 @@ name: Genera previsioni
 on:
   schedule:
     # Un solo slot di previsione al giorno (src/config.py: PREDICTION_SLOTS_ET
-    # = 16:30 ET, dopo la chiusura). Finestra 19-23 UTC copre lo slot dovuto
-    # (20:30 UTC in EDT, 21:30 UTC in EST) più il margine di recupero di 8 ore
-    # (SLOT_CATCHUP_MINUTES) in entrambi i regimi di ora legale/solare
-    # statunitense.
+    # = 8:00 ET, prima dell'apertura). Finestra 12-14 UTC copre lo slot dovuto
+    # (12:00 UTC in EDT, 13:00 UTC in EST) più il margine di recupero di 85
+    # minuti (SLOT_CATCHUP_MINUTES) in entrambi i regimi di ora legale/solare
+    # statunitense — volutamente corta, non oltre l'apertura delle 9:30 ET
+    # (13:30 UTC in EDT, 14:30 UTC in EST): dopo l'apertura il prezzo non è
+    # più quello congelato su cui si basa il calcolo di target_at (vedi
+    # predict_run.py: _target_anchor_date()).
     #
-    # Due cron separati, sfalsati di 30 minuti (:05 e :35), invece di uno
-    # solo: il 2026-09-02 nessuno dei 5 tick di un singolo cron è scattato
-    # per l'intera giornata (bug/rallentamento della piattaforma GitHub
-    # Actions, non del codice) e la previsione è dovuta partire a mano.
-    # predict_run.py è già idempotente per il giorno (_done_slots): un
-    # secondo tick che trova lo slot già fatto esce subito gratis
-    # ("Nessuno slot dovuto"), quindi raddoppiare i tentativi non ha
-    # controindicazioni, solo più occasioni indipendenti perché GitHub
-    # riesca a farne partire almeno uno.
-    - cron: "5 19-23 * * 1-5"
-    - cron: "35 19-23 * * 1-5"
+    # Tre tick sfalsati di 20 minuti (:05, :25, :45) invece di uno solo: il
+    # 2026-09-02 nessuno dei tick di un singolo cron è scattato per l'intera
+    # giornata (bug/rallentamento della piattaforma GitHub Actions, non del
+    # codice) e la previsione è dovuta partire a mano. predict_run.py è già
+    # idempotente per il giorno (_done_slots): un tick che trova lo slot già
+    # fatto (o non ancora dovuto, o la finestra già chiusa) esce subito
+    # gratis ("Nessuno slot dovuto"), quindi più tentativi non hanno
+    # controindicazioni — solo più occasioni indipendenti perché GitHub
+    # riesca a farne partire almeno uno entro la finestra, che qui è più
+    # stretta di quando lo slot era post-chiusura.
+    - cron: "5,25,45 12-14 * * 1-5"
   workflow_dispatch:
     inputs:
       dry_run:

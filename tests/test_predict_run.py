@@ -80,3 +80,23 @@ def test_dopo_un_force_reale_un_tick_schedulato_lo_stesso_giorno_non_trova_altro
     now_et = dt.datetime(2026, 9, 2, 20, 0, tzinfo=predict_run.config.EASTERN)
     predict_run._mark_today_done(now_et.date(), "manual-force")
     assert predict_run.find_due_slot(now_et) is None
+
+
+# Regressione: con lo slot spostato a 8:00 ET (prima dell'apertura),
+# prices.fetch_latest_price() ritorna ancora il prezzo dell'ultima
+# chiusura (congelato fino alle 9:30 ET). Se target_at fosse calcolato da
+# "adesso" invece che dalla data di quella chiusura, l'orizzonte "1g"
+# diventerebbe silenziosamente di due giorni di trading invece di uno.
+def test_target_anchor_date_prima_dell_apertura_usa_il_giorno_prima():
+    now_et = dt.datetime(2026, 9, 3, 8, 0, tzinfo=predict_run.config.EASTERN)
+    assert predict_run._target_anchor_date(now_et) == dt.date(2026, 9, 2)
+
+
+def test_target_anchor_date_dopo_l_apertura_usa_oggi():
+    now_et = dt.datetime(2026, 9, 3, 9, 30, tzinfo=predict_run.config.EASTERN)
+    assert predict_run._target_anchor_date(now_et) == dt.date(2026, 9, 3)
+
+
+def test_target_anchor_date_subito_prima_dell_apertura_usa_ancora_il_giorno_prima():
+    now_et = dt.datetime(2026, 9, 3, 9, 29, tzinfo=predict_run.config.EASTERN)
+    assert predict_run._target_anchor_date(now_et) == dt.date(2026, 9, 2)

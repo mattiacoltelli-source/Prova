@@ -18,6 +18,28 @@ from .data_sources import fundamentals, insider, macro, news, prices
 
 BENCHMARK_TICKER = "SPY"
 
+# Apertura regolare NYSE/NASDAQ. Prima di quest'ora, prices.fetch_latest_price()
+# ritorna ancora il prezzo dell'ultima chiusura (Yahoo regularMarketPrice non si
+# aggiorna finché la sessione regolare non riparte), quindi l'orizzonte di ogni
+# previsione va ancorato a QUELLA chiusura, non all'orario reale di esecuzione
+# dello script — altrimenti un run pre-apertura (slot delle 8:00 ET) userebbe
+# ancora il prezzo di ieri ma calcolerebbe target_at come "ieri + 1 giorno" da
+# "adesso" (oggi), raddoppiando silenziosamente l'orizzonte "1g" a due giorni
+# di trading invece di uno. Vedi _target_anchor_date().
+MARKET_OPEN_ET = dt.time(9, 30)
+
+
+def _target_anchor_date(now_et: dt.datetime) -> dt.date:
+    """Data di calendario da cui contare l'orizzonte di ogni previsione:
+    "oggi" se il prezzo di generazione è già quello aggiornato della sessione
+    in corso/appena chiusa, altrimenti la data del prezzo (congelato) ancora
+    in uso — non deve necessariamente essere un vero giorno di trading (es.
+    un sabato prima dell'apertura di lunedì): price_on_or_after() in fase di
+    valutazione avanza comunque al primo giorno di trading reale disponibile."""
+    if now_et.time() < MARKET_OPEN_ET:
+        return now_et.date() - dt.timedelta(days=1)
+    return now_et.date()
+
 
 def _slot_label(hour: int, minute: int) -> str:
     return f"{hour:02d}:{minute:02d}"
@@ -129,6 +151,9 @@ def run(dry_run: bool, force: bool) -> None:
         return
 
     now_utc = dt.datetime.now(dt.timezone.utc)
+    target_anchor_at = dt.datetime.combine(
+        _target_anchor_date(now_et), dt.time.min, tzinfo=dt.timezone.utc
+    )
 
     try:
         benchmark_bars = prices.fetch_daily_history(BENCHMARK_TICKER)
@@ -215,7 +240,7 @@ def run(dry_run: bool, force: bool) -> None:
                 "asset": asset,
                 "horizon": horizon.code,
                 "generated_at": now_utc.isoformat(),
-                "target_at": (now_utc + dt.timedelta(days=horizon.days)).isoformat(),
+                "target_at": (target_anchor_at + dt.timedelta(days=horizon.days)).isoformat(),
                 "price_at_generation": price,
                 "price_source": price_source,
                 "predicted_class": pred["predicted_class"],

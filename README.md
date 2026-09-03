@@ -32,7 +32,7 @@ una fase 2 successiva.
    volatilità storica per distinguere UP/DOWN/FLAT, chiama il modello
    Claude per generare una previsione con confidence, e la registra in
    `data/<asset>/predictions.jsonl` come riga append-only con hash-chain.
-   Un solo slot al giorno (16:30 ET, dopo la chiusura — `src/config.py:
+   Un solo slot al giorno (8:00 ET, prima dell'apertura — `src/config.py:
    PREDICTION_SLOTS_ET`)
    genera tutti e 3 gli orizzonti (1g/7g/1m) per tutti gli asset:
    rigenerarli più volte nello stesso giorno cambiava pochissimo il
@@ -62,14 +62,23 @@ a finestra fissa usata in una versione precedente.
 
 > **Nota storica (2026-09-03)**: `VOLATILITY_K` ricalibrato da 0.5 a 0.4
 > (prima ricalibrazione manuale, non ancora basata sulla tabella di
-> calibrazione — con 1-2 giorni di dati reali era ancora troppo presto) e
-> slot di previsione spostato da 15:45 a 16:30 ET, dopo la chiusura invece
-> che 15 minuti prima: il prezzo di partenza ora coincide esattamente con
-> quello poi usato in valutazione (a mercato aperto i due potevano
-> differire leggermente), e il modello vede eventuali utili trimestrali
-> pubblicati alla campana (AMC). Storico azzerato di nuovo insieme al
-> cambio, stesso motivo del precedente. Recuperabile su `Main` fino al
-> commit `aa1cb1f`.
+> calibrazione — con 1-2 giorni di dati reali era ancora troppo presto). Lo
+> slot di previsione, partito da 15:45 ET (prima della chiusura), è stato
+> spostato lo stesso giorno prima a 16:30 ET (dopo la chiusura) e poi,
+> prima che qualunque previsione reale girasse con quella configurazione
+> intermedia, a **8:00 ET** (prima dell'apertura delle 9:30 ET): il prezzo
+> di `prices.fetch_latest_price()` resta congelato all'ultima chiusura per
+> tutto l'intervallo tra le due sessioni, quindi uno slot pre-apertura usa
+> lo stesso prezzo di partenza di uno post-chiusura ma vede in più le
+> notizie overnight e gli utili pubblicati prima dell'apertura (BMO,
+> "before market open") — con la stessa logica che aveva già motivato lo
+> spostamento da pre- a post-chiusura per gli utili AMC. Ha richiesto anche
+> un fix in `predict_run.py` (`_target_anchor_date()`): con il prezzo
+> congelato pre-apertura, l'orizzonte di ogni previsione va ancorato alla
+> data di quella chiusura, non all'orario reale di esecuzione dello
+> script, altrimenti l'orizzonte "1g" raddoppierebbe silenziosamente a due
+> giorni di trading. Storico azzerato insieme al cambio, stesso motivo del
+> precedente. Recuperabile su `Main` fino al commit `aa1cb1f`.
 
 ## Fonti dati (tutte gratuite, nessun abbonamento)
 
