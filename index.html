@@ -186,6 +186,13 @@
             margin-left: 6px;
         }
 
+        .snapshot-status {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin: -6px 0 10px;
+            display: none;
+        }
+
         .data-status {
             font-size: 0.72rem;
             color: var(--accent-yellow);
@@ -471,6 +478,7 @@
                         <span class="asset-title">${asset}<span class="asset-price" id="price-${asset}"></span></span>
                         <span class="badge-accuracy" id="accuracy-${asset}">Accuratezza: 0.0%</span>
                     </div>
+                    <div class="snapshot-status" id="snapshot-status-${asset}"></div>
                     <div class="data-status" id="data-status-${asset}"></div>
                     <div class="section-title">Accuratezza nel tempo</div>
                     <div class="chart-container small" id="accuracy-wrap-${asset}">
@@ -557,9 +565,59 @@
             }
         }
 
+        // Istantanea del prezzo (non live: aggiornata 2-3 volte al giorno da
+        // snapshot.yml), non un file per riga come le altre — un solo oggetto.
+        async function fetchSnapshot(asset) {
+            try {
+                const res = await fetch(`data/${asset.toLowerCase()}/snapshot.json`, { cache: 'no-store' });
+                if (!res.ok) return null;
+                return await res.json();
+            } catch (err) {
+                return null;
+            }
+        }
+
+        // Stessa logica di src/volatility.py:classify_change, riscritta qui
+        // perché la dashboard è statica e non può chiamare Python.
+        function classifyChange(changePct, thresholdPct) {
+            if (changePct > thresholdPct) return 'UP';
+            if (changePct < -thresholdPct) return 'DOWN';
+            return 'FLAT';
+        }
+
+        function latestPrediction(predictions, horizon) {
+            const matching = (predictions || []).filter(p => p.horizon === horizon);
+            if (matching.length === 0) return null;
+            return matching.reduce((a, b) => (b.generated_at || '') > (a.generated_at || '') ? b : a);
+        }
+
+        // Non è un esito valutato (quello resta compito di evaluate_run.py
+        // sull'orizzonte completo): solo un confronto istantaneo, con la
+        // stessa soglia congelata della previsione 1g, per farsi un'idea
+        // prima che l'orizzonte scada.
+        function snapshotStatusLine(snapshot, pred1d) {
+            if (!snapshot || typeof snapshot.price !== 'number') return null;
+            const time = new Date(snapshot.snapshot_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+            let line = `Ora (${time}): <strong>$${snapshot.price.toFixed(2)}</strong>`;
+            if (!pred1d || typeof pred1d.price_at_generation !== 'number' || typeof pred1d.volatility_threshold_pct !== 'number') {
+                return line;
+            }
+            const changePct = ((snapshot.price - pred1d.price_at_generation) / pred1d.price_at_generation) * 100;
+            const current = classifyChange(changePct, pred1d.volatility_threshold_pct);
+            const sign = changePct >= 0 ? '+' : '';
+            line += ` (${sign}${changePct.toFixed(2)}% dal riferimento)`;
+            if (current === pred1d.predicted_class) {
+                line += ` — <span style="color: var(--accent-green)">✅ in linea con la previsione 1g (${pred1d.predicted_class})</span>`;
+            } else {
+                line += ` — <span style="color: var(--accent-yellow)">al momento ${current}, la previsione 1g era ${pred1d.predicted_class}</span>`;
+            }
+            return line;
+        }
+
         // Dati grezzi (tutti gli orizzonti) presi una sola volta dal server;
         // il filtro per orizzonte lavora solo su questi, senza rifare fetch.
         let rawPerAsset = [];
+        let rawSnapshots = [];
         let rawPending = [];
         let currentHorizonFilter = 'all';
 
@@ -576,6 +634,7 @@
                 parseJsonl(`data/${asset.toLowerCase()}/predictions.jsonl`),
                 parseJsonl(`data/${asset.toLowerCase()}/outcomes.jsonl`)
             ])));
+            rawSnapshots = await Promise.all(ASSETS.map(asset => fetchSnapshot(asset)));
             rawPending = await fetchPending();
             renderDashboard();
         }
@@ -601,8 +660,10 @@
 
             ASSETS.forEach((asset, i) => {
                 const [predictions, outcomes] = filteredPerAsset[i];
+                const [rawPredictions] = rawPerAsset[i];
+                const snapshot = rawSnapshots[i];
                 try {
-                    renderAssetData(asset, predictions, outcomes);
+                    renderAssetData(asset, predictions, outcomes, rawPredictions, snapshot);
                 } catch (err) {
                     // Un errore per un solo asset (es. Chart.js non caricato
                     // dal CDN) non deve bloccare il forEach e lasciare gli
@@ -760,13 +821,24 @@
             row.style.display = 'table-row';
         }
 
-        function renderAssetData(asset, predictions, outcomes) {
+        function renderAssetData(asset, predictions, outcomes, rawPredictions, snapshot) {
             const total = outcomes.length;
             const correct = outcomes.filter(o => o.correct === true).length;
             const accuracy = total > 0 ? ((correct / total) * 100).toFixed(1) : "0.0";
 
             const horizonLabel = { '1d': ' (1g)', '7d': ' (7g)', '1m': ' (1m)' }[currentHorizonFilter] || '';
             document.getElementById(`accuracy-${asset}`).innerText = `Accuratezza${horizonLabel}: ${accuracy}%`;
+
+            // Verdetto sull'istantanea: sempre rispetto alla previsione 1g più
+            // recente, a prescindere dal filtro orizzonte attivo — non avrebbe
+            // senso confrontare un'istantanea di oggi con una soglia 7g/1m
+            // congelata giorni fa.
+            const snapshotEl = document.getElementById(`snapshot-status-${asset}`);
+            if (snapshotEl) {
+                const line = snapshotStatusLine(snapshot, latestPrediction(rawPredictions, '1d'));
+                snapshotEl.innerHTML = line || '';
+                snapshotEl.style.display = line ? 'block' : 'none';
+            }
 
             const predsMap = {};
             predictions.forEach(p => { if (p.id) predsMap[p.id] = p; });
