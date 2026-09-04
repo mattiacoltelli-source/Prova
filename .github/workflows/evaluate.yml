@@ -2,13 +2,20 @@ name: Valuta previsioni scadute
 
 on:
   schedule:
-    # Due tick al giorno invece di uno, sfalsati di ~6 ore: evaluate_run.py
-    # è già idempotente (rilegge data/pending.json ad ogni run e valuta solo
-    # ciò che non è ancora stato tolto da lì), quindi un secondo tick che
-    # non trova nulla di nuovo da valutare è un no-op gratuito. Stessa
-    # motivazione del doppio cron in predict.yml: più occasioni indipendenti
-    # nel caso GitHub Actions non faccia scattare uno dei due tick.
-    - cron: "5 22 * * *"
+    # Primo tick alle 20:15 UTC, 15 minuti dopo la chiusura di NYSE/NASDAQ
+    # (16:00 ET = 20:00 UTC in EDT, ora legale USA attiva da marzo a
+    # novembre) — così la valutazione delle previsioni scadute quel giorno
+    # avviene la sera stessa invece che aspettare fino a notte, come
+    # richiesto dall'utente. Corrisponde alle 22:15 in Italia sia in CEST
+    # che in CET (l'offset ET-Italia resta di 6 ore quando entrambi i
+    # regimi di ora legale sono allineati); nelle settimane in cui USA e
+    # Italia non hanno ancora fatto entrambe il cambio, o quando lo
+    # scheduled tick di GitHub Actions arriva in ritardo, il secondo tick
+    # (03:35 UTC) recupera comunque — evaluate_run.py è idempotente
+    # (rilegge data/pending.json ad ogni run e valuta solo ciò che non è
+    # ancora stato tolto da lì), quindi un tick troppo presto o un secondo
+    # tick che non trova nulla di nuovo sono entrambi no-op gratuiti.
+    - cron: "15 20 * * *"
     - cron: "35 3 * * *"
   workflow_dispatch:
     inputs:
