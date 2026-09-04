@@ -54,11 +54,39 @@ def _fake_response(content: bytes | None = None, json_data=None):
 
 def test_fetch_open_market_transactions_ignora_i_codici_non_p_s():
     with patch("src.data_sources.insider.http.get", return_value=_fake_response(content=_FORM4_SAMPLE)):
-        transactions = insider._fetch_open_market_transactions("0000320193", "0001-26-000001")
+        transactions = insider._fetch_open_market_transactions(
+            "0000320193", "0001-26-000001", "xslF345X06/form4.xml"
+        )
     # Solo S (vendita) e P (acquisto): il grant "A" con codice non P/S è escluso.
     assert len(transactions) == 2
     codes = {tx["code"] for tx in transactions}
     assert codes == {"S", "P"}
+
+
+# Regressione reale trovata il 2026-09-04: il nome del documento XML
+# primario di un Form 4 NON è sempre "form4.xml" (dipende dall'agente di
+# deposito del filer, es. per NVDA è "wk-form4_<id>.xml") — l'URL fisso
+# a "form4.xml" dava 404 su ogni filing NVDA, e "nessuna transazione
+# insider" (esito silenzioso, nessun log) era in realtà un fetch fallito,
+# non un dato vero. Verificato con SEC EDGAR live prima del fix.
+def test_fetch_open_market_transactions_usa_il_vero_nome_del_documento():
+    with patch(
+        "src.data_sources.insider.http.get", return_value=_fake_response(content=_FORM4_SAMPLE)
+    ) as mock_get:
+        insider._fetch_open_market_transactions(
+            "1045810", "0001199039-26-000012", "xslF345X06/wk-form4_1788387031.xml"
+        )
+    called_url = mock_get.call_args[0][0]
+    assert called_url.endswith("/wk-form4_1788387031.xml")
+    assert "xslF345X06" not in called_url
+
+
+def test_fetch_open_market_transactions_fallback_form4_xml_se_primary_document_assente():
+    with patch(
+        "src.data_sources.insider.http.get", return_value=_fake_response(content=_FORM4_SAMPLE)
+    ) as mock_get:
+        insider._fetch_open_market_transactions("0000320193", "0001-26-000001", None)
+    assert mock_get.call_args[0][0].endswith("/form4.xml")
 
 
 def test_fetch_insider_summary_aggrega_acquisti_e_vendite():
@@ -68,6 +96,7 @@ def test_fetch_insider_summary_aggrega_acquisti_e_vendite():
                 "form": ["4", "10-K"],
                 "filingDate": ["2026-08-15", "2026-08-01"],
                 "accessionNumber": ["0001-26-000001", "0002-26-000002"],
+                "primaryDocument": ["xslF345X06/form4.xml", "10-k.htm"],
             }
         }
     }
