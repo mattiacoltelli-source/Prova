@@ -180,10 +180,26 @@ def run(dry_run: bool, force: bool) -> None:
         print(f"Weekend ({now_et.isoformat()}), nessuna previsione.")
         return
 
-    slot_label = "manual-force" if force else find_due_slot(now_et)
-    if slot_label is None:
-        print(f"Nessuno slot dovuto ({now_et.isoformat()}), esco senza consumare budget.")
-        return
+    if force:
+        # --force ignora solo il vincolo di ORARIO (utile oltre la finestra
+        # di recupero, es. un run manuale tardivo), MAI il controllo "già
+        # fatto oggi": senza questo controllo un secondo tap su "Run
+        # workflow" lo stesso giorno (o un force lanciato dopo che lo slot
+        # schedulato era già scattato con successo) rigenererebbe un
+        # secondo giro di previsioni reali duplicate per NVDA/MSFT/AAPL,
+        # con relativo consumo di budget AI — esattamente il tipo di
+        # doppione che _mark_today_done esiste per evitare nell'altro
+        # verso (force prima, schedulato dopo).
+        already_done = _done_slots(now_et.date())
+        if all(_slot_label(h, m) in already_done for h, m in config.PREDICTION_SLOTS_ET):
+            print(f"Slot di oggi già fatto ({now_et.isoformat()}), --force non rigenera previsioni duplicate.")
+            return
+        slot_label = "manual-force"
+    else:
+        slot_label = find_due_slot(now_et)
+        if slot_label is None:
+            print(f"Nessuno slot dovuto ({now_et.isoformat()}), esco senza consumare budget.")
+            return
 
     now_utc = dt.datetime.now(dt.timezone.utc)
 

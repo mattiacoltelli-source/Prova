@@ -239,9 +239,15 @@ tra ora legale e solare (offset non sempre fisso a 6 ore).
 
 Il pannello informativo include anche un link diretto alla pagina GitHub
 Actions di `predict.yml`, per far partire una previsione manuale (protetta
-dal login GitHub) nel caso quella automatica tardasse — le previsioni
-generate manualmente marcano comunque lo slot del giorno come già fatto,
-così un run automatico in ritardo che arriva dopo non ne crea una doppia.
+dal login GitHub) nel caso quella automatica tardasse. "Run workflow" ha
+già i default giusti per questo (`dry_run=false`, `force=true`): basta
+premere il pulsante, senza toccare nulla. Sicuro in entrambe le direzioni
+— le previsioni generate manualmente marcano lo slot del giorno come già
+fatto (un run automatico in ritardo che arriva dopo non ne crea una
+doppia), e viceversa `force` è comunque un no-op se lo slot di oggi è già
+stato fatto (dallo scheduled o da un run manuale precedente), quindi un
+tap ripetuto sul pulsante non genera mai un secondo giro di previsioni
+reali duplicate.
 
 **Estetica**: la dashboard usa una palette scura raffinata (bordi più
 morbidi, ombre leggere al posto dei soli bordi piatti, raggi coerenti,

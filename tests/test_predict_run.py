@@ -82,6 +82,25 @@ def test_dopo_un_force_reale_un_tick_schedulato_lo_stesso_giorno_non_trova_altro
     assert predict_run.find_due_slot(now_et) is None
 
 
+# Regressione: --force ignorava anche il controllo "slot già fatto oggi",
+# non solo il vincolo di orario — un secondo run manuale (o un run manuale
+# lanciato dopo che lo slot schedulato era già scattato con successo, es.
+# per un tap ripetuto su "Run workflow" nell'app GitHub) rigenerava un
+# secondo giro di previsioni reali duplicate per NVDA/MSFT/AAPL. Ora
+# --force salta solo il vincolo di orario, mai il controllo "già fatto".
+def test_force_non_rigenera_se_lo_slot_di_oggi_e_gia_fatto(tmp_path, monkeypatch, capsys):
+    monkeypatch.setattr(predict_run.config, "STATE_DIR", str(tmp_path))
+    now_et = dt.datetime.now(predict_run.config.EASTERN)
+    for hour, minute in predict_run.config.PREDICTION_SLOTS_ET:
+        predict_run._mark_slot_done(now_et.date(), predict_run._slot_label(hour, minute))
+
+    with patch("src.predict_run.prices.fetch_daily_history") as mock_fetch:
+        predict_run.run(dry_run=True, force=True)
+
+    mock_fetch.assert_not_called()
+    assert "già fatto" in capsys.readouterr().out
+
+
 # Regressione: con lo slot spostato a 7:00 ET (prima dell'apertura),
 # prices.fetch_latest_price() ritorna ancora il prezzo dell'ultima
 # chiusura (congelato fino alle 9:30 ET). Se target_at fosse calcolato da

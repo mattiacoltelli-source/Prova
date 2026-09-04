@@ -21,16 +21,26 @@ on:
     # controindicazioni — solo più occasioni indipendenti perché GitHub
     # riesca a farne partire almeno uno entro la finestra.
     - cron: "5,25,45 11-14 * * 1-5"
+  # Default pensati per "Run workflow" senza toccare nulla, quando serve
+  # recuperare a mano uno slot scadere (link nel pannello info della
+  # dashboard): dry_run=false (altrimenti non scrive nulla) e force=true
+  # (altrimenti, se lo slot è già fuori dalla finestra di recupero di
+  # SLOT_CATCHUP_MINUTES, il run "riesce" ma non genera nulla). force=true
+  # come default è sicuro perché predict_run.run() salta comunque, senza
+  # duplicare, se lo slot di oggi è già stato fatto (dallo scheduled o da
+  # un run manuale precedente) — vedi il commento su run() in
+  # predict_run.py. Chi vuole testare senza scrivere deve impostare
+  # dry_run=true a mano.
   workflow_dispatch:
     inputs:
       dry_run:
         description: "Esegue la pipeline senza scrivere su data/ (test sicuro)"
         type: boolean
-        default: true
-      force:
-        description: "Ignora il controllo dello slot orario (utile per test manuali)"
-        type: boolean
         default: false
+      force:
+        description: "Ignora il vincolo di orario (mai i duplicati: no-op se lo slot di oggi è già fatto)"
+        type: boolean
+        default: true
 
 permissions:
   contents: write
