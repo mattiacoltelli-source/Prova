@@ -253,6 +253,16 @@ stato fatto (dallo scheduled o da un run manuale precedente), quindi un
 tap ripetuto sul pulsante non genera mai un secondo giro di previsioni
 reali duplicate.
 
+Stesso pattern per `snapshot.yml`: un secondo link nel pannello info porta
+al "Run workflow" di quel workflow (`dry_run=false` di default), per
+recuperare a mano uno dei 3 scatti giornalieri se non è partito in tempo.
+Qui non c'è un `force` da attivare — il tetto di
+`config.SNAPSHOT_MAX_PER_DAY` (3, cache in
+`data/_state/snapshot_count_<data>.json`) è condiviso tra tick schedulati
+e run manuali indipendentemente dall'orario: un click oltre il tetto del
+giorno è un no-op esplicito, quindi non si può mai finire con più di 3
+istantanee nello stesso giorno.
+
 **Estetica**: la dashboard usa una palette scura raffinata (bordi più
 morbidi, ombre leggere al posto dei soli bordi piatti, raggi coerenti,
 cifre allineate con `tabular-nums` su prezzi/statistiche/tabelle) —

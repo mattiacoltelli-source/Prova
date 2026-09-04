@@ -119,6 +119,14 @@ ANTHROPIC_MAX_TOKENS = 500
 # 3 asset x 3 orizzonti x 1 slot/giorno = 9 chiamate attese al massimo.
 MAX_AI_CALLS_PER_DAY = 15
 
+# Istantanee prezzi (snapshot_run.py): 3 round/giorno, corrispondenti ai 3
+# tick cron di snapshot.yml. Il tetto vale per il TOTALE giornaliero
+# (automatici + manuali insieme, non 3 automatici + altri 3 manuali): un
+# round manuale forzato da dashboard consuma uno degli stessi 3, così se
+# uno scheduled tick non è scattato lo si può recuperare a mano senza
+# rischiare di finire con più di 3 istantanee in un giorno.
+SNAPSHOT_MAX_PER_DAY = 3
+
 # --- Percorsi ---------------------------------------------------------------
 
 DATA_DIR = "data"

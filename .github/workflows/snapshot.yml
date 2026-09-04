@@ -16,6 +16,12 @@ name: Istantanea prezzi
 # evaluate.yml (":00" è il minuto di picco di carico di GitHub Actions,
 # quello coi ritardi peggiori) e dimenticata qui alla prima stesura — il
 # tick delle 17:00 UTC non è scattato il giorno stesso in cui l'ho aggiunto.
+# dry_run=false di default: "Run workflow" da qui è pensato per il recupero
+# manuale quando i tick schedulati non sono scattati (link nel pannello info
+# della dashboard, stesso pattern di predict.yml). Nessun rischio di
+# superare le 3 istantanee/giorno: snapshot_run.py tiene un contatore
+# condiviso (SNAPSHOT_MAX_PER_DAY in config.py) tra tick schedulati e run
+# manuali — un click oltre il tetto del giorno è un no-op esplicito.
 on:
   schedule:
     - cron: "35 14 * * 1-5"
@@ -26,7 +32,7 @@ on:
       dry_run:
         description: "Esegue l'istantanea senza scrivere su data/ (test sicuro)"
         type: boolean
-        default: true
+        default: false
 
 permissions:
   contents: write
