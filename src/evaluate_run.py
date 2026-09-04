@@ -12,6 +12,19 @@ import sys
 from . import config, report, storage, volatility
 from .data_sources import prices
 
+# Bug reale trovato in produzione il 2026-09-04: fetch_daily_history()
+# include una barra per la sessione di OGGI anche a mercato ancora aperto
+# (verificato dal vivo: due chiamate a pochi secondi di distanza a mercato
+# aperto ritornavano close/volume diversi per la stessa data — una barra
+# ancora in aggiornamento, non la chiusura definitiva). price_on_or_after()
+# la prenderebbe come "prima barra >= target_date" per un orizzonte che
+# scade proprio oggi, valutando la previsione contro un prezzo non
+# definitivo e scrivendolo per sempre nella catena hash. Rischio concreto
+# per un run manuale di recupero, che (a differenza dei due tick
+# schedulati, entrambi dopo le 20:15 UTC/22:15 italiane) può partire in
+# qualunque momento della giornata.
+MARKET_CLOSE_ET = dt.time(16, 0)
+
 
 def _find_prediction(asset: str, prediction_id: str) -> dict | None:
     for record in storage.read_all(config.predictions_file(asset)):
@@ -20,8 +33,9 @@ def _find_prediction(asset: str, prediction_id: str) -> dict | None:
     return None
 
 
-def run(dry_run: bool) -> None:
-    now_utc = dt.datetime.now(dt.timezone.utc)
+def run(dry_run: bool, now_utc: dt.datetime | None = None) -> None:
+    now_utc = now_utc or dt.datetime.now(dt.timezone.utc)
+    now_et = now_utc.astimezone(config.EASTERN)
     pending = storage.load_pending()
     if not pending:
         print("Nessuna previsione in attesa di valutazione.")
@@ -32,6 +46,15 @@ def run(dry_run: bool) -> None:
                 continue
 
             asset = entry["asset"]
+
+            if target_at.date() == now_et.date() and now_et.time() < MARKET_CLOSE_ET:
+                print(
+                    f"[{asset}] orizzonte scaduto oggi ma il mercato è ancora aperto "
+                    f"({now_et.strftime('%H:%M')} ET): valutazione rimandata a dopo la chiusura "
+                    "(16:00 ET), per non usare un prezzo di oggi non ancora definitivo."
+                )
+                continue
+
             prediction = _find_prediction(asset, entry["id"])
             if prediction is None:
                 print(f"[{asset}] previsione {entry['id']} non trovata, salto.")

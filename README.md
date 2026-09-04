@@ -263,6 +263,21 @@ e run manuali indipendentemente dall'orario: un click oltre il tetto del
 giorno è un no-op esplicito, quindi non si può mai finire con più di 3
 istantanee nello stesso giorno.
 
+Stesso pattern anche per `evaluate.yml` (terzo link, `dry_run=false` di
+default), con una protezione in più invece che un tetto: se una previsione
+in `data/pending.json` scade proprio oggi, `evaluate_run.py` aspetta da
+solo la chiusura dei mercati (`MARKET_CLOSE_ET`, 16:00 ET) prima di
+valutarla, qualunque sia l'ora in cui il run — schedulato o manuale — viene
+lanciato. Bug reale trovato il 2026-09-04: `fetch_daily_history()` include
+una barra per la sessione di oggi anche a mercato ancora aperto (verificato
+dal vivo, due chiamate a pochi secondi di distanza restituivano
+close/volume diversi per la stessa data — una barra ancora in
+aggiornamento, non la chiusura definitiva). Senza questo gate, un run
+manuale lanciato durante l'orario di mercato avrebbe valutato la previsione
+contro un prezzo non definitivo, scrivendolo per sempre nella catena hash.
+Un orizzonte scaduto un giorno o più fa non è mai soggetto al gate: quella
+barra è già sicuramente definitiva.
+
 **Estetica**: la dashboard usa una palette scura raffinata (bordi più
 morbidi, ombre leggere al posto dei soli bordi piatti, raggi coerenti,
 cifre allineate con `tabular-nums` su prezzi/statistiche/tabelle) —

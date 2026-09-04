@@ -17,12 +17,19 @@ on:
     # tick che non trova nulla di nuovo sono entrambi no-op gratuiti.
     - cron: "15 20 * * *"
     - cron: "35 3 * * *"
+  # dry_run=false di default: "Run workflow" da qui è pensato per il
+  # recupero manuale quando i tick schedulati non sono scattati (link nel
+  # pannello info della dashboard, stesso pattern di predict.yml/
+  # snapshot.yml). Sicuro a qualunque ora venga premuto: evaluate_run.py
+  # rimanda da solo la valutazione di un orizzonte che scade oggi finché
+  # il mercato non ha chiuso (MARKET_CLOSE_ET), quindi non serve un
+  # controllo separato qui nel workflow.
   workflow_dispatch:
     inputs:
       dry_run:
         description: "Esegue la valutazione senza scrivere su data/ (test sicuro)"
         type: boolean
-        default: true
+        default: false
 
 permissions:
   contents: write
