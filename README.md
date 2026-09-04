@@ -133,7 +133,7 @@ a finestra fissa usata in una versione precedente.
 | Prezzo (OHLCV giornaliero) | Yahoo Finance (endpoint pubblico) | Twelve Data → Finnhub | nessuna key per la primaria |
 | News | Finnhub News | Alpha Vantage Sentiment → GDELT | sentiment -1..+1 quando la fonte è Alpha Vantage |
 | Fondamentali | SEC EDGAR (XBRL company facts) | Alpha Vantage | nessuna key per la primaria |
-| Consenso analisti | Alpha Vantage (EARNINGS_ESTIMATES + EARNINGS_CALENDAR) | — | 1 fetch/giorno per asset (cache), stima EPS + revisioni + prossimo bilancio |
+| Consenso analisti | Alpha Vantage (EARNINGS_ESTIMATES + EARNINGS_CALENDAR) | — | al massimo 1 fetch riuscito ogni 7gg per asset (cache), stima EPS + revisioni + prossimo bilancio |
 | Transazioni insider | SEC EDGAR (Form 4) | — | nessuna key; solo transazioni discrezionali (P/S) |
 | Macro | FRED | — | 9 serie: tassi 10Y/2Y, spread di curva, CPI, disoccupazione, VIX, indice dollaro, fed funds rate, fiducia dei consumatori |
 | Indicatori tecnici | calcolati localmente da OHLCV già scaricato | — | nessuna fonte/key in più |
@@ -156,11 +156,15 @@ dopo un giorno mancante.
 
 **Consenso analisti** (`fetch_analyst_outlook()` in `fundamentals.py`):
 prossima data di bilancio, stima EPS media, numero di analisti e revisioni
-al rialzo/ribasso negli ultimi 30gg. Aggiornato al massimo una volta al
-giorno per asset (cache in
-`data/_state/analyst_outlook_<asset>_<data>.json`), per restare ben sotto
-il tetto gratuito di 25 chiamate/giorno di Alpha Vantage (condiviso con
-fondamentali/news di riserva).
+al rialzo/ribasso negli ultimi 30gg. Un fetch riuscito viene riusato fino
+a 7 giorni (cache in `data/_state/analyst_outlook_<asset>_<data>.json`,
+`ANALYST_OUTLOOK_CACHE_DAYS` in `predict_run.py`) — le stime di consenso
+non cambiano in modo significativo da un giorno all'altro, e questa
+funzione costa 2 chiamate per asset sul tetto gratuito condiviso di 25/
+giorno di Alpha Vantage (con fondamentali/news di riserva), spesso già
+esaurito da solo un giorno di uso normale se richiamata ogni giorno. Un
+fallimento (es. quota esaurita quel giorno) non viene mai riusato: si
+ritenta comunque al prossimo run reale, non aspetta i 7 giorni.
 
 **Transazioni insider** (`fetch_insider_summary()` in
 `src/data_sources/insider.py`): acquisti/vendite sul mercato aperto di

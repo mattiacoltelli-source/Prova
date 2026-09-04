@@ -18,6 +18,18 @@ from .data_sources import fundamentals, insider, macro, news, prices
 
 BENCHMARK_TICKER = "SPY"
 
+# fetch_analyst_outlook costa 2 chiamate Alpha Vantage per asset (6/giorno
+# per i 3 asset), sul tetto gratuito condiviso di 25/giorno con
+# fondamentali/news di riserva — in pratica spesso già esaurito da un solo
+# giorno di uso normale/di test (osservato in produzione il 2026-09-04: la
+# primissima chiamata analyst_outlook della giornata ha trovato la quota
+# già a zero). Le stime di consenso e la prossima data di bilancio non
+# cambiano in modo significativo da un giorno all'altro, quindi una
+# chiamata riuscita resta valida per diversi giorni invece che uno solo —
+# riduce il consumo di quota di questa funzione di ~7x, lasciando margine
+# reale alle altre due fonti che condividono la stessa chiave.
+ANALYST_OUTLOOK_CACHE_DAYS = 7
+
 # Apertura regolare NYSE/NASDAQ. Prima di quest'ora, prices.fetch_latest_price()
 # ritorna ancora il prezzo dell'ultima chiusura (Yahoo regularMarketPrice non si
 # aggiorna finché la sessione regolare non riparte); dopo, ritornerebbe invece
@@ -121,16 +133,27 @@ def _analyst_outlook_state_path(asset: str, day: dt.date) -> str:
 
 
 def _cached_analyst_outlook(asset: str, day: dt.date) -> tuple[bool, dict | None]:
-    """(già recuperato oggi?, outlook-o-None). fetch_analyst_outlook costa 2
-    chiamate Alpha Vantage (tetto gratuito 25/giorno condiviso con
-    fondamentali/news di riserva): va richiamata al più una volta al giorno
-    per asset, non ad ogni previsione — da cui questa cache su file, stesso
-    pattern degli slot in _done_slots."""
+    """(già disponibile in cache?, outlook-o-None). La cache di OGGI (anche
+    None, cioè un tentativo già fatto e fallito) blocca sempre un secondo
+    fetch lo stesso giorno, come prima. In più, riusa un outlook REALE
+    (mai un fallimento) trovato in uno degli ultimi ANALYST_OUTLOOK_CACHE_DAYS
+    giorni: un fallimento vecchio (quota esaurita quel giorno) non viene
+    mai riusato, si ritenta comunque al prossimo run reale."""
     path = _analyst_outlook_state_path(asset, day)
-    if not os.path.exists(path):
-        return False, None
-    with open(path, "r", encoding="utf-8") as fh:
-        return True, json.load(fh).get("outlook")
+    if os.path.exists(path):
+        with open(path, "r", encoding="utf-8") as fh:
+            return True, json.load(fh).get("outlook")
+
+    for offset in range(1, ANALYST_OUTLOOK_CACHE_DAYS):
+        candidate_path = _analyst_outlook_state_path(asset, day - dt.timedelta(days=offset))
+        if not os.path.exists(candidate_path):
+            continue
+        with open(candidate_path, "r", encoding="utf-8") as fh:
+            outlook = json.load(fh).get("outlook")
+        if outlook is not None:
+            return True, outlook
+
+    return False, None
 
 
 def _save_analyst_outlook_cache(asset: str, day: dt.date, outlook: dict | None) -> None:

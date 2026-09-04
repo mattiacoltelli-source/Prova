@@ -1,9 +1,13 @@
-"""Test unitari per la cache giornaliera di src/predict_run.py._get_analyst_outlook.
+"""Test unitari per la cache di src/predict_run.py._get_analyst_outlook.
 
 Un dry-run non deve mai consumare la quota gratuita di Alpha Vantage (25
 richieste/giorno, condivisa con fondamentali/news di riserva) che serve ai
 run reali: niente fetch, niente cache scritta, per lasciare intatta la
 possibilità di un fetch vero più tardi nello stesso giorno.
+
+La cache copre anche piu' giorni (ANALYST_OUTLOOK_CACHE_DAYS): un outlook
+riuscito resta valido per una settimana, un fallimento (es. quota
+esaurita quel giorno) no — vedi _cached_analyst_outlook.
 """
 from __future__ import annotations
 
@@ -52,6 +56,54 @@ def test_con_cache_gia_presente_non_richiama_alpha_vantage_neanche_in_run_reale(
         result = predict_run._get_analyst_outlook("AAPL", dt.date(2026, 9, 2), dry_run=False)
     assert result == {"cached": True}
     mock_fetch.assert_not_called()
+
+
+# Regressione (2026-09-04): analyst_outlook costa 2 chiamate Alpha Vantage
+# per asset sul tetto gratuito condiviso di 25/giorno, spesso già esaurito
+# da solo un giorno di uso normale — la primissima chiamata della giornata
+# ha trovato la quota già a zero. Un outlook riuscito qualche giorno fa
+# resta valido (le stime di consenso non cambiano da un giorno all'altro),
+# quindi non va rifatto ogni giorno.
+def test_outlook_riuscito_qualche_giorno_fa_viene_riusato(tmp_path, monkeypatch):
+    monkeypatch.setattr(predict_run.config, "STATE_DIR", str(tmp_path))
+    outlook = {"next_report_date": "2026-10-30"}
+    predict_run._save_analyst_outlook_cache("AAPL", dt.date(2026, 8, 30), outlook)
+    with patch("src.predict_run.fundamentals.fetch_analyst_outlook") as mock_fetch:
+        result = predict_run._get_analyst_outlook("AAPL", dt.date(2026, 9, 2), dry_run=False)
+    assert result == outlook
+    mock_fetch.assert_not_called()
+
+
+# Un fallimento vecchio (es. quota esaurita quel giorno) non deve invece
+# bloccare i tentativi successivi per una settimana intera: solo un
+# outlook REALE resta valido a lungo, un None viene sempre ritentato.
+def test_fallimento_vecchio_non_blocca_un_nuovo_tentativo(tmp_path, monkeypatch):
+    monkeypatch.setattr(predict_run.config, "STATE_DIR", str(tmp_path))
+    predict_run._save_analyst_outlook_cache("AAPL", dt.date(2026, 9, 1), None)
+    outlook = {"next_report_date": "2026-10-30"}
+    with patch(
+        "src.predict_run.fundamentals.fetch_analyst_outlook", return_value=outlook
+    ) as mock_fetch:
+        result = predict_run._get_analyst_outlook("AAPL", dt.date(2026, 9, 2), dry_run=False)
+    assert result == outlook
+    mock_fetch.assert_called_once()
+
+
+# Oltre la finestra di cache (ANALYST_OUTLOOK_CACHE_DAYS), anche un
+# outlook riuscito va ricontrollato: le stime possono nel frattempo essere
+# state riviste.
+def test_outlook_oltre_la_finestra_di_cache_viene_riprovato(tmp_path, monkeypatch):
+    monkeypatch.setattr(predict_run.config, "STATE_DIR", str(tmp_path))
+    old_outlook = {"next_report_date": "2026-07-30"}
+    old_day = dt.date(2026, 9, 2) - dt.timedelta(days=predict_run.ANALYST_OUTLOOK_CACHE_DAYS)
+    predict_run._save_analyst_outlook_cache("AAPL", old_day, old_outlook)
+    fresh_outlook = {"next_report_date": "2026-10-30"}
+    with patch(
+        "src.predict_run.fundamentals.fetch_analyst_outlook", return_value=fresh_outlook
+    ) as mock_fetch:
+        result = predict_run._get_analyst_outlook("AAPL", dt.date(2026, 9, 2), dry_run=False)
+    assert result == fresh_outlook
+    mock_fetch.assert_called_once()
 
 
 # Regressione: un recupero manuale reale (--force, non dry-run) del
