@@ -114,6 +114,18 @@ a finestra fissa usata in una versione precedente.
 > distinzione prima/dopo apertura invece di provare a mantenerla corretta
 > in entrambi i casi.
 
+> **Storico azzerato (2026-09-04)**, a differenza di quanto scritto nella
+> nota precedente: il batch del 2026-09-03 13:31 UTC restava comunque
+> percepibile come una previsione "1g" che si sovrapponeva a quella del
+> giorno successivo — confuso da vedere in dashboard anche se
+> internamente coerente, a prescindere dalla correttezza tecnica del
+> confronto. Nessun esito era ancora stato valutato (0 righe in
+> `outcomes.jsonl` per tutti e tre gli asset), quindi azzerare non ha
+> fatto perdere alcuna accuratezza storica reale. Ripulito `predictions.jsonl`,
+> `outcomes.jsonl`, `pending.json` e la cache in `data/_state/` per
+> NVDA/MSFT/AAPL — SPY non toccato, è già storico archiviato a parte.
+> Recuperabile su `Main` fino al commit `00ed2c4`.
+
 ## Fonti dati (tutte gratuite, nessun abbonamento)
 
 | Categoria | Fonte | Fallback | Note |
