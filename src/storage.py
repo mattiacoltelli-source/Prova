@@ -82,6 +82,16 @@ def load_pending() -> list[dict]:
 
 
 def save_pending(entries: list[dict]) -> None:
+    # Ordine stabile (non di inserimento/rimozione): pending.json è l'unico
+    # file riscritto per intero sia da predict_run.py (aggiunge) sia da
+    # evaluate_run.py (rimuove), a differenza di predictions.jsonl/
+    # outcomes.jsonl (solo append) o snapshot.json (un file per asset) —
+    # un ordine che dipende da quando ogni entry è stata aggiunta/rimossa
+    # fa slittare il testo JSON di ogni riga sotto il punto di modifica,
+    # aumentando il rischio che il retry con rebase su un push concorrente
+    # (predict.yml/evaluate.yml, vedi commento lì) trovi un vero conflitto
+    # anche quando le due modifiche toccano entry diverse.
+    entries = sorted(entries, key=lambda e: (e["asset"], e["horizon"], e["id"]))
     os.makedirs(os.path.dirname(config.PENDING_FILE), exist_ok=True)
     with open(config.PENDING_FILE, "w", encoding="utf-8") as fh:
         json.dump(entries, fh, indent=2, sort_keys=True)

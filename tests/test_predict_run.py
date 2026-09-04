@@ -221,3 +221,28 @@ def test_reference_price_dopo_l_apertura_usa_ultima_chiusura_storica_non_quella_
 def test_target_at_un_giorno_dopo_la_sessione_di_riferimento():
     target = predict_run._target_at(dt.date(2026, 9, 2), horizon_days=1)
     assert target == dt.datetime(2026, 9, 3, tzinfo=dt.timezone.utc)
+
+
+# Regressione trovata da revisione del codice il 2026-09-04, stessa famiglia
+# del bug già corretto in evaluate_run.py (MARKET_CLOSE_ET lì): bars/
+# benchmark_bars/sector_bars venivano passate INTERE (barra di oggi, ancora
+# in aggiornamento a mercato aperto, inclusa) a tutti gli indicatori
+# tecnici — non solo a _reference_price(), che già la escludeva.
+def test_completed_bars_esclude_la_barra_di_oggi_a_mercato_aperto():
+    now_et = dt.datetime(2026, 9, 4, 10, 0, tzinfo=predict_run.config.EASTERN)
+    bars = [
+        {"date": "2026-09-02", "close": 224.0},
+        {"date": "2026-09-03", "close": 228.45},
+        {"date": "2026-09-04", "close": 233.78},  # barra di oggi, live/parziale
+    ]
+    result = predict_run._completed_bars(bars, now_et)
+    assert result == bars[:2]
+
+
+def test_completed_bars_include_la_barra_di_oggi_dopo_la_chiusura():
+    now_et = dt.datetime(2026, 9, 4, 20, 0, tzinfo=predict_run.config.EASTERN)  # dopo le 16:00 ET
+    bars = [
+        {"date": "2026-09-03", "close": 228.45},
+        {"date": "2026-09-04", "close": 230.10},  # ormai definitiva
+    ]
+    assert predict_run._completed_bars(bars, now_et) == bars

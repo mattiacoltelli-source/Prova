@@ -128,3 +128,15 @@ def test_fetch_insider_summary_none_se_nessun_filing_form4():
 def test_fetch_insider_summary_none_se_cik_non_trovato():
     with patch("src.data_sources.insider.sec_cik_for_ticker", side_effect=Exception("non trovato")):
         assert insider.fetch_insider_summary("XYZ") is None
+
+
+# Regressione: un fallimento sistematico nel recuperare l'elenco dei filing
+# (CIK non trovato, SEC EDGAR giù, un campo rinominato) era completamente
+# silenzioso — indistinguibile da "nessuna transazione questo mese", lo
+# stesso tipo di fallimento silenzioso che ha nascosto in produzione il bug
+# del nome file Form 4 sbagliato per NVDA.
+def test_fetch_insider_summary_logga_se_il_fetch_dell_elenco_filing_fallisce(capsys):
+    with patch("src.data_sources.insider.sec_cik_for_ticker", side_effect=Exception("SEC EDGAR non raggiungibile")):
+        result = insider.fetch_insider_summary("XYZ")
+    assert result is None
+    assert "XYZ" in capsys.readouterr().out

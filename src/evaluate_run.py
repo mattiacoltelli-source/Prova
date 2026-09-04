@@ -23,6 +23,19 @@ from .data_sources import prices
 # per un run manuale di recupero, che (a differenza dei due tick
 # schedulati, entrambi dopo le 20:15 UTC/22:15 italiane) può partire in
 # qualunque momento della giornata.
+#
+# Secondo bug reale, stessa famiglia, trovato il 2026-09-04 da revisione
+# del codice: il primo gate confrontava target_at.date() con oggi, non la
+# data della barra REALMENTE restituita da price_on_or_after(). Un
+# orizzonte 1g generato di venerdì ha target_at = sabato
+# (_target_at somma giorni di calendario, non di borsa); un run manuale il
+# lunedì successivo, prima delle 16:00 ET, aveva target_at.date()=sabato
+# != oggi=lunedì, quindi il gate non scattava — ma price_on_or_after()
+# avanza comunque alla prima barra disponibile >= sabato, cioè quella di
+# lunedì, riproducendo esattamente il bug che questo gate doveva evitare.
+# Stesso problema per un orizzonte che cade su una festività di borsa.
+# Fix: controllare la data della barra DOPO averla ottenuta, non provare a
+# indovinarla prima dalla sola data dell'orizzonte.
 MARKET_CLOSE_ET = dt.time(16, 0)
 
 
@@ -47,14 +60,6 @@ def run(dry_run: bool, now_utc: dt.datetime | None = None) -> None:
 
             asset = entry["asset"]
 
-            if target_at.date() == now_et.date() and now_et.time() < MARKET_CLOSE_ET:
-                print(
-                    f"[{asset}] orizzonte scaduto oggi ma il mercato è ancora aperto "
-                    f"({now_et.strftime('%H:%M')} ET): valutazione rimandata a dopo la chiusura "
-                    "(16:00 ET), per non usare un prezzo di oggi non ancora definitivo."
-                )
-                continue
-
             prediction = _find_prediction(asset, entry["id"])
             if prediction is None:
                 print(f"[{asset}] previsione {entry['id']} non trovata, salto.")
@@ -64,6 +69,14 @@ def run(dry_run: bool, now_utc: dt.datetime | None = None) -> None:
                 target_bar = prices.price_on_or_after(asset, target_at.date().isoformat())
             except Exception as exc:  # noqa: BLE001
                 print(f"[{asset}] prezzo reale non ancora disponibile per {entry['id']}: {exc}")
+                continue
+
+            if target_bar["date"] == now_et.date().isoformat() and now_et.time() < MARKET_CLOSE_ET:
+                print(
+                    f"[{asset}] la barra disponibile ({target_bar['date']}) è quella di oggi e il "
+                    f"mercato è ancora aperto ({now_et.strftime('%H:%M')} ET): valutazione rimandata "
+                    "a dopo la chiusura (16:00 ET), per non usare un prezzo non ancora definitivo."
+                )
                 continue
 
             price_at_generation = prediction["price_at_generation"]

@@ -39,6 +39,31 @@ ANALYST_OUTLOOK_CACHE_DAYS = 7
 # prezzo. Vedi _reference_price().
 MARKET_OPEN_ET = dt.time(9, 30)
 
+# Chiusura regolare NYSE/NASDAQ. Bug reale trovato il 2026-09-04 (stessa
+# famiglia di quello già corretto in evaluate_run.py, MARKET_CLOSE_ET
+# lì): fetch_daily_history() include una barra per la sessione di OGGI
+# anche a mercato ancora aperto (verificato dal vivo: due chiamate a
+# pochi secondi di distanza ritornavano close/volume diversi per la
+# stessa data). _reference_price() già la esclude dal calcolo del prezzo
+# di riferimento, ma bars/benchmark_bars/sector_bars venivano comunque
+# passate INTERE (barra di oggi inclusa) a tutti gli indicatori tecnici
+# (RSI, SMA/EMA, MACD, ATR, Bollinger, OBV, CMF, forza relativa, beta) —
+# durante un run manuale di recupero a mercato aperto, l'intera sezione
+# tecnica del prompt AI sarebbe stata calcolata includendo un prezzo
+# ancora in movimento. Vedi _completed_bars().
+MARKET_CLOSE_ET = dt.time(16, 0)
+
+
+def _completed_bars(bars: list, now_et: dt.datetime) -> list:
+    """Barre daily verificate concluse: esclude la barra di oggi se il
+    mercato non ha ancora chiuso (partial/live, non la chiusura
+    definitiva). Se il mercato ha già chiuso oggi, la barra di oggi è
+    affidabile e resta inclusa."""
+    if now_et.time() >= MARKET_CLOSE_ET:
+        return bars
+    today_iso = now_et.date().isoformat()
+    return [bar for bar in bars if bar["date"] < today_iso]
+
 
 def _reference_price(asset: str, bars: list, now_et: dt.datetime) -> tuple[float, str, str, dt.date]:
     """Prezzo di riferimento per la previsione (price, asof, source) e la
@@ -227,20 +252,22 @@ def run(dry_run: bool, force: bool) -> None:
     now_utc = dt.datetime.now(dt.timezone.utc)
 
     try:
-        benchmark_bars = prices.fetch_daily_history(BENCHMARK_TICKER)
+        benchmark_bars = _completed_bars(prices.fetch_daily_history(BENCHMARK_TICKER), now_et)
     except Exception:  # noqa: BLE001 - la forza relativa è un segnale opzionale
         benchmark_bars = None
 
     sector_bars_by_ticker: dict[str, list] = {}
     for sector_ticker in set(config.SECTOR_BENCHMARK.values()):
         try:
-            sector_bars_by_ticker[sector_ticker] = prices.fetch_daily_history(sector_ticker)
+            sector_bars_by_ticker[sector_ticker] = _completed_bars(
+                prices.fetch_daily_history(sector_ticker), now_et
+            )
         except Exception:  # noqa: BLE001 - segnale opzionale, mai bloccante
             continue
 
     for asset in config.ASSETS:
         try:
-            bars = prices.fetch_daily_history(asset)
+            bars = _completed_bars(prices.fetch_daily_history(asset), now_et)
             price, price_asof, price_source, session_date = _reference_price(asset, bars, now_et)
         except Exception as exc:  # noqa: BLE001
             print(f"[{asset}] skipped_no_data: {exc}")

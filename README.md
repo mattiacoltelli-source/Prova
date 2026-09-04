@@ -220,6 +220,50 @@ funzione di verifica).
   un asset (es. Chart.js non caricato dal CDN) non blocca più il rendering
   degli asset successivi.
 
+**Audit approfondito (2026-09-04)**, su richiesta esplicita dopo diversi bug
+reali trovati nella stessa giornata — 4 nuovi problemi, tutti verificati
+con letture dirette del codice o chiamate live (non solo teoria) prima di
+essere corretti:
+
+- `fetch_daily_history(ticker, range_=...)` accettava `range_` ma non lo
+  passava mai alle funzioni sottostanti — ogni chiamante otteneva sempre
+  ~1 anno di storico, a prescindere da quanto richiesto (`price_on_or_after`
+  chiede 2 anni di default). Mascherato finora dall'orizzonte massimo di 1
+  mese, ma avrebbe potuto far fallire una valutazione con "nessuna barra
+  disponibile" se `evaluate.yml` fosse rimasto fermo più di un anno. Fix:
+  `range_` ora arriva davvero a Yahoo (stringa) e Twelve Data (`outputsize`
+  tradotto).
+- Il gate anti-prezzo-non-definitivo di `evaluate.yml` (vedi sopra)
+  confrontava `target_at.date()` con oggi, non la data della barra
+  REALMENTE restituita — un orizzonte 1g generato di venerdì ha
+  `target_at` = sabato (somma di giorni di calendario, non di borsa); un
+  run manuale il lunedì successivo prima della chiusura non faceva
+  scattare il gate, pur ottenendo comunque la barra (non definitiva) di
+  oggi. Stesso problema per un orizzonte che cade su una festività. Fix:
+  il gate ora controlla la data della barra dopo averla ottenuta, non
+  prima di richiederla.
+- Stesso bug della barra "di oggi" non definitiva, ma in `predict_run.py`:
+  `_reference_price()` la escludeva già dal prezzo di riferimento, ma
+  `bars`/`benchmark_bars`/`sector_bars` venivano passate intere (barra di
+  oggi inclusa) a tutti gli indicatori tecnici (RSI, SMA/EMA, MACD, ATR,
+  Bollinger, OBV, CMF, forza relativa, beta) — un run manuale di recupero
+  a mercato aperto avrebbe calcolato l'intera sezione tecnica del prompt
+  AI su un prezzo ancora in movimento. Fix: nuovo `_completed_bars()`,
+  usato ovunque le barre vengono scaricate.
+- `fetch_insider_summary()` non registrava nulla se il fetch dell'elenco
+  filing falliva (CIK non trovato, SEC EDGAR giù) — lo stesso tipo di
+  fallimento silenzioso, indistinguibile da "nessuna transazione questo
+  mese", che aveva nascosto il bug del nome file Form 4 sbagliato per
+  NVDA. Fix: log informativo anche su questo fallimento, stessa
+  convenzione già usata sul fetch del singolo filing.
+- `data/pending.json` (l'unico file riscritto per intero sia da
+  `predict.yml` che da `evaluate.yml`, a differenza degli altri file solo
+  append-only o per-asset) aveva un ordine dipendente da quando ogni entry
+  veniva aggiunta/rimossa, aumentando il rischio che il retry con rebase
+  su un push concorrente trovasse un conflitto spurio anche quando le due
+  modifiche toccavano entry diverse. Fix: ordine stabile per
+  `(asset, orizzonte, id)`.
+
 ## Dashboard: range FLAT e filtro per orizzonte
 
 Il dettaglio di ogni previsione (tocca una riga in "Ultimi Risultati

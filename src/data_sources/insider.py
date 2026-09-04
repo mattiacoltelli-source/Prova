@@ -85,7 +85,16 @@ def fetch_insider_summary(ticker: str, lookback_days: int = 30) -> dict | None:
     try:
         cik = sec_cik_for_ticker(ticker)
         filings = _recent_form4_filings(cik, lookback_days)
-    except Exception:  # noqa: BLE001
+    except Exception as exc:  # noqa: BLE001
+        # Log informativo, non un errore: la fonte è opzionale, mai
+        # bloccante. Ma senza questa riga un fallimento sistematico (CIK
+        # non trovato, SEC EDGAR giù, un campo rinominato) sarebbe
+        # indistinguibile da "nessuna transazione insider questo mese" —
+        # esattamente il tipo di fallimento silenzioso che ha nascosto in
+        # produzione il bug del nome file Form 4 sbagliato per NVDA
+        # (2026-09-04), scoperto solo grazie a un log analogo sul fetch
+        # del singolo filing più sotto.
+        print(f"[info] {ticker}: fetch elenco filing Form 4 fallito, {exc!r}")
         return None
     if not filings:
         return None

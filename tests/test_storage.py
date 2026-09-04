@@ -51,3 +51,22 @@ def test_pending_operations(tmp_path, monkeypatch):
 
     storage.remove_pending("p1")
     assert storage.load_pending() == []
+
+
+# Regressione: l'ordine di pending.json dipendeva da quando ogni entry
+# veniva aggiunta/rimossa, non da un ordine stabile — pending.json è
+# l'unico file riscritto per intero sia da predict_run.py che da
+# evaluate_run.py, quindi un ordine variabile aumentava il rischio di
+# conflitti spuri nel retry con rebase su un push concorrente.
+def test_save_pending_ordina_in_modo_stabile_indipendentemente_dall_ordine_di_inserimento(
+    tmp_path, monkeypatch
+):
+    pending_file = str(tmp_path / "pending.json")
+    monkeypatch.setattr(config, "PENDING_FILE", pending_file)
+
+    storage.add_pending({"id": "z", "asset": "NVDA", "horizon": "7d", "target_at": "x"})
+    storage.add_pending({"id": "a", "asset": "AAPL", "horizon": "1d", "target_at": "x"})
+    storage.add_pending({"id": "m", "asset": "MSFT", "horizon": "1m", "target_at": "x"})
+
+    ids_in_order = [e["id"] for e in storage.load_pending()]
+    assert ids_in_order == ["a", "m", "z"]  # ordinate per (asset, horizon, id), non per inserimento

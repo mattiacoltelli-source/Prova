@@ -139,12 +139,27 @@ def _now_iso() -> str:
     return dt.datetime.now(dt.timezone.utc).isoformat()
 
 
+# Bug reale trovato il 2026-09-04 in revisione del codice: fetch_daily_history()
+# accettava range_ ma non lo passava mai alle funzioni sottostanti — ogni
+# chiamante otteneva sempre ~1 anno di storico (il default di Yahoo/Twelve
+# Data), a prescindere da quanto richiesto. Mascherato finora perché
+# l'orizzonte massimo configurato è 1 mese, ben dentro 1 anno; price_on_or_after
+# (usata da evaluate_run.py, default range_="2y") avrebbe potuto fallire con
+# "Nessuna barra disponibile" se evaluate.yml fosse rimasto fermo più di un
+# anno, nonostante 2 anni di storico fossero stati esplicitamente richiesti.
+_RANGE_TO_TWELVEDATA_OUTPUTSIZE = {"1y": 260, "2y": 520, "5y": 1300}
+
+
 def fetch_daily_history(ticker: str, range_: str = "1y") -> list[DailyBar]:
     """Storico daily con fallback a cascata. Ordinato per data crescente."""
     errors = []
-    for fn, label in ((_yahoo_daily_history, "yahoo"), (_twelvedata_daily_history, "twelvedata")):
+    outputsize = _RANGE_TO_TWELVEDATA_OUTPUTSIZE.get(range_, 260)
+    for fn, label, kwargs in (
+        (_yahoo_daily_history, "yahoo", {"range_": range_}),
+        (_twelvedata_daily_history, "twelvedata", {"outputsize": outputsize}),
+    ):
         try:
-            return fn(ticker)
+            return fn(ticker, **kwargs)
         except Exception as exc:  # noqa: BLE001 - vogliamo continuare sulla fonte successiva
             errors.append(f"{label}: {exc}")
     raise DataUnavailableError(f"Storico prezzo non disponibile per {ticker}: {errors}")
