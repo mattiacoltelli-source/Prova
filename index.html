@@ -136,6 +136,15 @@
 
         .stat-label {
             font-size: 0.7rem;
+            line-height: 1.35;
+            /* Riserva sempre lo spazio di 2 righe: se su uno schermo stretto
+               una sola delle tre label va a capo (es. "Accuratezza"), i tre
+               valori numerici sotto restano comunque allineati alla stessa
+               altezza invece di sfalsarsi. */
+            min-height: calc(1.35em * 2);
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
             color: var(--text-dim);
             text-transform: uppercase;
             letter-spacing: 0.06em;
@@ -581,7 +590,7 @@
 
     <div class="summary-banner">
         <div class="stat-box">
-            <span class="stat-label">Accuratezza AI</span>
+            <span class="stat-label">Accuratezza</span>
             <span class="stat-value green" id="stat-accuracy">0.0%</span>
         </div>
         <div class="stat-box">
