@@ -1,12 +1,6 @@
 [
   {
     "asset": "AAPL",
-    "horizon": "1d",
-    "id": "e6d4014a-de12-4aa9-a2d4-29c4f1f95bdd",
-    "target_at": "2026-09-09T00:00:00+00:00"
-  },
-  {
-    "asset": "AAPL",
     "horizon": "1m",
     "id": "54c8d6fa-94c9-43fa-8758-17da481d1b36",
     "target_at": "2026-10-08T00:00:00+00:00"
@@ -55,12 +49,6 @@
   },
   {
     "asset": "MSFT",
-    "horizon": "1d",
-    "id": "6884f367-97e5-4247-9c76-b2139cfb2ee7",
-    "target_at": "2026-09-09T00:00:00+00:00"
-  },
-  {
-    "asset": "MSFT",
     "horizon": "1m",
     "id": "171d31b3-6414-4e68-a260-3cadc5be12aa",
     "target_at": "2026-10-04T00:00:00+00:00"
@@ -106,12 +94,6 @@
     "horizon": "7d",
     "id": "f82556ab-30c6-429c-8620-ddd98882ee3e",
     "target_at": "2026-09-11T00:00:00+00:00"
-  },
-  {
-    "asset": "NVDA",
-    "horizon": "1d",
-    "id": "634842a2-7e1c-4f4d-8e14-4ac944c9d125",
-    "target_at": "2026-09-09T00:00:00+00:00"
   },
   {
     "asset": "NVDA",
