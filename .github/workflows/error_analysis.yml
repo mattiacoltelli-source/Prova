@@ -1,0 +1,85 @@
+name: Analisi errori periodica
+
+on:
+  schedule:
+    # Il 1° e il 15° di ogni mese, ~08:00 UTC: circa ogni 2 settimane. Non
+    # è un intervallo di 14 giorni esatto (cron non lo supporta in modo
+    # pulito attraverso i cambi di mese), ma la cadenza voluta è "ogni
+    # tanto, quando si è accumulato abbastanza storico" — non serve più
+    # precisione di così. Nessuna dipendenza da orari di mercato: legge
+    # solo outcomes.jsonl già scritto da evaluate.yml, può girare a
+    # qualunque ora senza rischi.
+    - cron: "0 8 1,15 * *"
+  # Sempre sicuro da rilanciare a mano in qualunque momento: rilegge tutto
+  # outcomes.jsonl e riscrive ERROR_ANALYSIS.md da zero, nessuno stato
+  # nascosto da corrompere e nessuna chiamata API esterna da consumare.
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: error-analysis-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  error-analysis:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install -r requirements.txt
+
+      - name: Rigenera ERROR_ANALYSIS.md
+        run: python -m src.error_analysis
+
+      # Stesso pattern di retry-con-rebase di predict.yml/evaluate.yml/
+      # snapshot.yml: senza, un push respinto per un run concorrente
+      # andrebbe perso silenziosamente.
+      - name: Commit e push
+        run: |
+          git config user.name "predictive-agent-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add ERROR_ANALYSIS.md
+          if git diff --cached --quiet; then
+            echo "Nessuna modifica da committare."
+            exit 0
+          fi
+          git commit -m "Analisi errori automatica $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          for i in 1 2 3 4 5; do
+            if git push; then
+              exit 0
+            fi
+            echo "Push rifiutato (probabile push concorrente di un altro workflow), tentativo $i/5: fetch + rebase e riprovo..."
+            git fetch origin "$GITHUB_REF_NAME"
+            if ! git rebase "origin/$GITHUB_REF_NAME"; then
+              echo "::error::Rebase fallito: conflitto reale con un commit concorrente, serve intervento manuale."
+              git rebase --abort
+              exit 1
+            fi
+            sleep $((i * 3))
+          done
+          echo "::error::Push fallito dopo 5 tentativi di rebase."
+          exit 1
+
+      # Vedi lo stesso step in predict.yml/evaluate.yml per la logica completa.
+      - name: Notifica Telegram in caso di fallimento
+        if: failure()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ]; then
+            echo "TELEGRAM_BOT_TOKEN/TELEGRAM_CHAT_ID non configurati nei secret del repo: notifica saltata."
+            exit 0
+          fi
+          MESSAGE=$'⚠️ <b>Analisi errori periodica fallita</b>\nRun: '"${RUN_URL}"
+          curl -sS -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "parse_mode=HTML" \
+            --data-urlencode "text=${MESSAGE}"

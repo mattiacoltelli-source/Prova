@@ -56,6 +56,19 @@ una fase 2 successiva.
    l'orizzonte scada — un confronto istantaneo con la stessa soglia
    congelata, non una valutazione (quella resta compito di `evaluate.yml`
    sull'orizzonte completo).
+4. **`error_analysis.yml`** (scheduled, circa ogni 2 settimane — il 1° e il
+   15° del mese) rilegge tutto lo storico di `outcomes.jsonl` e rigenera
+   `ERROR_ANALYSIS.md`: accuratezza per asset e per classe prevista, e
+   segnalazioni meccaniche di eventuali bias sistematici (es. una classe
+   prevista molto più spesso di quanto si verifichi davvero, o mai
+   azzeccata quando viene prevista). È un report da **leggere**, non un
+   meccanismo che si autocorregge: non tocca mai soglie di volatilità,
+   prompt o logica di previsione. Cadenza volutamente più lenta di
+   `evaluate.yml` (che aggiorna `REPORT.md` ad ogni valutazione) perché con
+   poche previsioni valutate un pattern che sembra forte può benissimo
+   essere solo rumore del periodo osservato — il report lo ricorda
+   esplicitamente finché il campione resta sotto una soglia minima
+   (`error_analysis.MIN_SAMPLE_SIZE`).
 
 La soglia di volatilità (banda FLAT) è basata sull'ATR% a 14 giorni
 (`src/volatility.py`), scalato per la radice dei giorni di trading

@@ -133,6 +133,7 @@ DATA_DIR = "data"
 STATE_DIR = "data/_state"
 PENDING_FILE = "data/pending.json"
 REPORT_FILE = "REPORT.md"
+ERROR_ANALYSIS_FILE = "ERROR_ANALYSIS.md"
 
 
 def asset_dir(asset: str) -> str:
