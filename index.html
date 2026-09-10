@@ -584,7 +584,14 @@
             <a href="https://github.com/mattiacoltelli-source/Prova/actions/workflows/evaluate.yml" target="_blank" rel="noopener">GitHub Actions ↗</a>
             — sicuro a qualunque ora: se una previsione scade oggi, il sistema aspetta da solo la
             chiusura dei mercati (16:00 ET / 22:00 italiane) prima di valutarla, per non usare un
-            prezzo di oggi ancora in movimento.
+            prezzo di oggi ancora in movimento.<br><br>
+            <strong>L'AI impara dai propri errori?</strong> Non in automatico — le soglie e il prompt
+            restano fissi finché non c'è abbastanza storico per distinguere un bias vero dal rumore
+            di poche settimane. Ogni due settimane circa un report diagnostico rilegge tutti gli esiti
+            e segnala pattern come "prevede UP molto più spesso di quanto accada davvero":
+            <a href="https://github.com/mattiacoltelli-source/Prova/blob/Main/ERROR_ANALYSIS.md" target="_blank" rel="noopener">ERROR_ANALYSIS.md ↗</a>
+            (si rigenera da solo, o a mano da
+            <a href="https://github.com/mattiacoltelli-source/Prova/actions/workflows/error_analysis.yml" target="_blank" rel="noopener">GitHub Actions ↗</a>).
         </div>
     </details>
 
