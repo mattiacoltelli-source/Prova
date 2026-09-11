@@ -1,37 +1,37 @@
-# Report accuratezza — aggiornato al 2026-09-11T08:16:01.639330+00:00
+# Report accuratezza — aggiornato al 2026-09-11T20:19:41.427584+00:00
 
-**Previsioni valutate: 18 — accuratezza complessiva: 16.7%**
+**Previsioni valutate: 27 — accuratezza complessiva: 29.6%**
 
 ## Per asset / orizzonte
 
 | Asset | Orizzonte | N | Accuratezza |
 |---|---|---|---|
-| AAPL | 1d | 5 | 20.0% |
-| AAPL | 7d | 1 | 0.0% |
-| MSFT | 1d | 5 | 20.0% |
-| MSFT | 7d | 1 | 0.0% |
-| NVDA | 1d | 5 | 20.0% |
-| NVDA | 7d | 1 | 0.0% |
+| AAPL | 1d | 6 | 33.3% |
+| AAPL | 7d | 3 | 66.7% |
+| MSFT | 1d | 6 | 33.3% |
+| MSFT | 7d | 3 | 0.0% |
+| NVDA | 1d | 6 | 33.3% |
+| NVDA | 7d | 3 | 0.0% |
 
 ## Matrice di confusione (predetto vs reale, tutti gli asset/orizzonti)
 
 | Predetto \ Reale | UP | DOWN | FLAT |
 |---|---|---|---|
-| UP | 1 | 8 | 4 |
+| UP | 4 | 10 | 6 |
 | DOWN | 0 | 0 | 0 |
-| FLAT | 0 | 3 | 2 |
+| FLAT | 0 | 3 | 4 |
 
 ## Calibrazione (confidence dichiarata vs accuratezza reale)
 
 | Fascia confidence | N | Accuratezza |
 |---|---|---|
 | bassa (0-49) | 0 | 0.0% |
-| media (50-74) | 15 | 20.0% |
-| alta (75-100) | 3 | 0.0% |
+| media (50-74) | 22 | 27.3% |
+| alta (75-100) | 5 | 40.0% |
 
 ## Confronto con baseline naive
 
 - Random (3 classi equiprobabili): 33.3%
-- Persistenza (ripete l'ultimo esito reale osservato): 50.0% (n=12)
-- **Agente AI: 16.7%**
+- Persistenza (ripete l'ultimo esito reale osservato): 57.1% (n=21)
+- **Agente AI: 29.6%**
 
