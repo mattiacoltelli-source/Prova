@@ -24,8 +24,9 @@ _OPEN_MARKET_CODES = {"P", "S"}
 
 # Limite di sicurezza sul numero di filing Form 4 da scaricare per run:
 # evita di scaricare decine di documenti se un titolo ha avuto un'ondata
-# insolita di filing nella finestra di lookback.
-_MAX_FILINGS_PER_RUN = 20
+# insolita di filing nella finestra di lookback. Aumentato a 50 per coprire
+# ticker con molti filing (es. MSFT con 32 in 30 giorni).
+_MAX_FILINGS_PER_RUN = 50
 
 
 def _recent_form4_filings(cik: str, lookback_days: int) -> list[dict]:
