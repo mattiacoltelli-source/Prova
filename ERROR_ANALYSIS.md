@@ -1,33 +1,29 @@
-# Analisi errori — aggiornato al 2026-09-10T05:21:18.259033+00:00
+# Analisi errori — aggiornato al 2026-09-15T13:12:21.906194+00:00
 
-⚠️ Campione ancora piccolo (12 previsioni valutate, soglia indicativa 30): i numeri sotto sono un indizio da tenere d'occhio nel tempo, non una conclusione statisticamente solida. Non modificare soglie di volatilità o prompt sulla base di questo report finché il campione non cresce.
-
-**Previsioni valutate: 12 — accuratezza complessiva: 8.3%**
+**Previsioni valutate: 33 — accuratezza complessiva: 24.2%**
 
 ## Per asset
 
 | Asset | Valutate | Corrette | Accuratezza |
 |---|---|---|---|
-| AAPL | 4 | 0 | 0.0% |
-| MSFT | 4 | 0 | 0.0% |
-| NVDA | 4 | 1 | 25.0% |
+| AAPL | 11 | 4 | 36.4% |
+| MSFT | 11 | 2 | 18.2% |
+| NVDA | 11 | 2 | 18.2% |
 
 ## Per classe prevista
 
 | Prevista | N. volte | Corrette | Accuratezza |
 |---|---|---|---|
-| UP | 9 | 0 | 0.0% |
-| FLAT | 3 | 1 | 33.3% |
+| UP | 22 | 4 | 18.2% |
+| FLAT | 11 | 4 | 36.4% |
 | DOWN | 0 | — | mai prevista |
 
 ## Pattern osservati
 
-- **UP** prevista più spesso di quanto accada davvero: 75.0% delle previsioni contro 0.0% delle volte in cui si è verificata realmente.
-- **DOWN** osservata nella realtà 8 volte (66.7%) ma mai prevista dal modello.
-- Quando ha previsto **UP** (9 volte), non ha mai indovinato.
+- **UP** prevista più spesso di quanto accada davvero: 66.7% delle previsioni contro 18.2% delle volte in cui si è verificata realmente.
+- **DOWN** osservata nella realtà 15 volte (45.5%) ma mai prevista dal modello.
 
 ## Confidence
 
 Range dichiarato: 72-78%.
-Campione troppo piccolo per dire se la confidence discrimina i casi corretti da quelli sbagliati.
 
