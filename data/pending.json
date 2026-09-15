@@ -1,6 +1,18 @@
 [
   {
     "asset": "AAPL",
+    "horizon": "1d",
+    "id": "69840dac-0dce-47cb-b5e6-272d07ff39ac",
+    "target_at": "2026-09-15T00:00:00+00:00"
+  },
+  {
+    "asset": "AAPL",
+    "horizon": "1m",
+    "id": "2beb1ffa-4a7f-4601-b0d3-4abb99cc3509",
+    "target_at": "2026-10-14T00:00:00+00:00"
+  },
+  {
+    "asset": "AAPL",
     "horizon": "1m",
     "id": "54c8d6fa-94c9-43fa-8758-17da481d1b36",
     "target_at": "2026-10-08T00:00:00+00:00"
@@ -56,6 +68,12 @@
   {
     "asset": "AAPL",
     "horizon": "7d",
+    "id": "35908557-3817-4968-afd0-129cc670331b",
+    "target_at": "2026-09-21T00:00:00+00:00"
+  },
+  {
+    "asset": "AAPL",
+    "horizon": "7d",
     "id": "46c6e8c3-da96-4404-b074-78cd52b835c4",
     "target_at": "2026-09-18T00:00:00+00:00"
   },
@@ -76,6 +94,12 @@
     "horizon": "7d",
     "id": "f98fd7b5-ba5f-483d-b5c3-dfef54a85a48",
     "target_at": "2026-09-17T00:00:00+00:00"
+  },
+  {
+    "asset": "MSFT",
+    "horizon": "1d",
+    "id": "b172cd17-97f6-427a-8a4c-2ab85a2e6f58",
+    "target_at": "2026-09-15T00:00:00+00:00"
   },
   {
     "asset": "MSFT",
@@ -122,6 +146,12 @@
   {
     "asset": "MSFT",
     "horizon": "1m",
+    "id": "a9698502-e346-4b5d-8e51-8c504a22ba8e",
+    "target_at": "2026-10-14T00:00:00+00:00"
+  },
+  {
+    "asset": "MSFT",
+    "horizon": "1m",
     "id": "d1d9c90b-31e4-416d-be6a-fb20b4b0afb2",
     "target_at": "2026-10-09T00:00:00+00:00"
   },
@@ -140,6 +170,12 @@
   {
     "asset": "MSFT",
     "horizon": "7d",
+    "id": "4dae5762-f8af-40d4-996d-3c77a91e094f",
+    "target_at": "2026-09-21T00:00:00+00:00"
+  },
+  {
+    "asset": "MSFT",
+    "horizon": "7d",
     "id": "4e6629d4-228c-4cd3-8118-54fe15ec8d33",
     "target_at": "2026-09-17T00:00:00+00:00"
   },
@@ -154,6 +190,12 @@
     "horizon": "7d",
     "id": "f56e9786-6969-4ee1-ac09-90884df9c15c",
     "target_at": "2026-09-18T00:00:00+00:00"
+  },
+  {
+    "asset": "NVDA",
+    "horizon": "1d",
+    "id": "d3d05423-7022-483f-82a6-dc08afd363bf",
+    "target_at": "2026-09-15T00:00:00+00:00"
   },
   {
     "asset": "NVDA",
@@ -178,6 +220,12 @@
     "horizon": "1m",
     "id": "786ee560-ed3d-432e-8d7d-e455cf7667da",
     "target_at": "2026-10-11T00:00:00+00:00"
+  },
+  {
+    "asset": "NVDA",
+    "horizon": "1m",
+    "id": "7bbd7a4e-3a68-4d5b-bf66-62e87f87ac20",
+    "target_at": "2026-10-14T00:00:00+00:00"
   },
   {
     "asset": "NVDA",
@@ -226,6 +274,12 @@
     "horizon": "7d",
     "id": "71104caf-23ba-4647-980e-3621ac254fb2",
     "target_at": "2026-09-16T00:00:00+00:00"
+  },
+  {
+    "asset": "NVDA",
+    "horizon": "7d",
+    "id": "dda3a38d-caa0-468f-ae94-e2bc17ef2ab7",
+    "target_at": "2026-09-21T00:00:00+00:00"
   },
   {
     "asset": "NVDA",
