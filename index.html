@@ -335,6 +335,52 @@
             padding-bottom: 4px;
         }
 
+        .collapsible-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            user-select: none;
+            padding: 8px 0;
+            margin-bottom: 10px;
+            border-bottom: 1px solid var(--card-border);
+            transition: all 0.2s ease;
+        }
+
+        .collapsible-header:hover {
+            color: var(--text-main);
+        }
+
+        .collapsible-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        .chevron-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 20px;
+            transition: transform 0.3s ease;
+        }
+
+        .collapsible-content {
+            max-height: 2000px;
+            overflow: hidden;
+            transition: max-height 0.3s ease, opacity 0.3s ease;
+            opacity: 1;
+        }
+
+        .collapsible-content.collapsed {
+            max-height: 0;
+            opacity: 0;
+        }
+
         .table-wrapper {
             overflow-x: auto;
         }
@@ -648,6 +694,20 @@
             return `<tr aria-hidden="true">${cells}</tr>`.repeat(3);
         }
 
+        function toggleCollapsible(headerElement) {
+            const content = headerElement.nextElementSibling;
+            const chevron = headerElement.querySelector('.chevron-icon');
+            const isCollapsed = content.classList.contains('collapsed');
+
+            if (isCollapsed) {
+                content.classList.remove('collapsed');
+                chevron.style.transform = 'rotate(0deg)';
+            } else {
+                content.classList.add('collapsed');
+                chevron.style.transform = 'rotate(-90deg)';
+            }
+        }
+
         function renderAssetCards() {
             const grid = document.getElementById('assets-grid');
             grid.innerHTML = ASSETS.map(asset => `
@@ -685,23 +745,40 @@
                         </div>
                     </details>
 
-                    <div class="section-title">Ultimi Risultati Valutati <span style="font-weight:400; font-size:0.75rem;">(tocca una riga per i dettagli)</span></div>
-                    <div class="table-wrapper">
-                        <table>
-                            <thead>
-                                <tr><th>Data</th><th>Orizzonte</th><th>Preditto</th><th>Reale</th><th>Esito</th></tr>
-                            </thead>
-                            <tbody id="outcomes-body-${asset}">${skeletonRows(5)}</tbody>
-                        </table>
+                    <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                        <span class="collapsible-title">
+                            <span>Ultimi Risultati Valutati</span>
+                            <span style="font-size: 0.8rem; font-weight: 400; color: var(--text-muted);">(tocca una riga per i dettagli)</span>
+                        </span>
+                        <span class="chevron-icon">▼</span>
                     </div>
-                    <div class="section-title" style="margin-top: 16px;">Ultimi Segnali Generati <span style="font-weight:400; font-size:0.75rem;">(tocca una riga per i dettagli)</span></div>
-                    <div class="table-wrapper">
-                        <table>
-                            <thead>
-                                <tr><th>Data</th><th>Orizzonte</th><th>Classe</th><th>Conf.</th></tr>
-                            </thead>
-                            <tbody id="predictions-body-${asset}">${skeletonRows(4)}</tbody>
-                        </table>
+                    <div class="collapsible-content">
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr><th>Data</th><th>Orizzonte</th><th>Preditto</th><th>Reale</th><th>Esito</th></tr>
+                                </thead>
+                                <tbody id="outcomes-body-${asset}">${skeletonRows(5)}</tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="collapsible-header" onclick="toggleCollapsible(this)" style="margin-top: 16px;">
+                        <span class="collapsible-title">
+                            <span>Ultimi Segnali Generati</span>
+                            <span style="font-size: 0.8rem; font-weight: 400; color: var(--text-muted);">(tocca una riga per i dettagli)</span>
+                        </span>
+                        <span class="chevron-icon">▼</span>
+                    </div>
+                    <div class="collapsible-content">
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr><th>Data</th><th>Orizzonte</th><th>Classe</th><th>Conf.</th></tr>
+                                </thead>
+                                <tbody id="predictions-body-${asset}">${skeletonRows(4)}</tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             `).join('');
