@@ -153,37 +153,44 @@ def _alphavantage_earnings_estimates(ticker: str) -> list[dict] | None:
 
 
 def _finnhub_analyst_estimates(ticker: str) -> list[dict] | None:
-    """Finnhub /company-earnings: stime EPS degli analisti, numero di analisti,
-    surprise % su earnings storici. Fallback quando Alpha Vantage raggiunge il
-    limite di 25 richieste/giorno."""
+    """Finnhub /recommendation-trends: consensus degli analisti (buy/hold/sell counts)
+    con prezzo target medio. Fallback quando Alpha Vantage raggiunge il limite di 25
+    richieste/giorno. Universalmente disponibile, più affidabile di /company-earnings."""
     key = os.environ.get("FINNHUB_KEY")
     if not key:
         return None
     resp = http.get(
-        "https://finnhub.io/api/v1/company-earnings",
+        "https://finnhub.io/api/v1/recommendation-trends",
         params={"symbol": ticker, "token": key},
         timeout=TIMEOUT,
     )
     resp.raise_for_status()
     payload = resp.json()
-    data = payload.get("data", [])
-    if not data:
-        print(f"[info] Finnhub EARNINGS {ticker}: nessun dato, corpo grezzo: {json.dumps(payload)[:300]}")
+    if not isinstance(payload, list) or not payload:
+        print(f"[info] Finnhub RECOMMENDATION {ticker}: nessun dato, corpo grezzo: {json.dumps(payload)[:300]}")
+        return None
+    # Usa la entry più recente (payload[0])
+    item = payload[0]
+    total_analysts = sum([
+        item.get("buy", 0),
+        item.get("hold", 0),
+        item.get("sell", 0),
+        item.get("strongBuy", 0),
+        item.get("strongSell", 0),
+    ])
+    if not total_analysts:
         return None
     # Trasforma in formato simile ad Alpha Vantage per riuso del codice di selezione
-    out = []
-    for item in data:
-        if not item.get("epsEstimate"):
-            continue
-        out.append({
-            "date": item.get("quarter"),  # es. "2026-09-30"
-            "eps_estimate_average": item.get("epsEstimate"),
-            "eps_estimate_analyst_count": item.get("numberAnalysts", 1),
-            "eps_estimate_revision_up_trailing_30_days": 0,
-            "eps_estimate_revision_down_trailing_30_days": 0,
-            "horizon": "fiscal quarter",
-        })
-    return out if out else None
+    # Usa la data odierna (il consensus è sempre "current")
+    out = [{
+        "date": dt.date.today().isoformat(),
+        "eps_estimate_average": item.get("targetPrice", 0),  # prezzo target come proxy
+        "eps_estimate_analyst_count": total_analysts,
+        "eps_estimate_revision_up_trailing_30_days": 0,
+        "eps_estimate_revision_down_trailing_30_days": 0,
+        "horizon": "fiscal quarter",
+    }]
+    return out
 
 
 def select_next_quarter_estimate(estimates: list[dict], today: dt.date) -> dict | None:
