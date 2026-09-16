@@ -260,6 +260,52 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             padding-bottom: 4px;
         }
 
+        .collapsible-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            user-select: none;
+            padding: 8px 0;
+            margin-bottom: 10px;
+            border-bottom: 1px solid var(--card-border);
+            transition: all 0.2s ease;
+        }
+
+        .collapsible-header:hover {
+            color: var(--text-main);
+        }
+
+        .collapsible-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        .chevron-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 20px;
+            transition: transform 0.3s ease;
+        }
+
+        .collapsible-content {
+            max-height: 2000px;
+            overflow: hidden;
+            transition: max-height 0.3s ease, opacity 0.3s ease;
+            opacity: 1;
+        }
+
+        .collapsible-content.collapsed {
+            max-height: 0;
+            opacity: 0;
+        }
+
         .table-wrapper {
             overflow-x: auto;
         }
@@ -356,62 +402,78 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 <canvas id="chart-{{ asset }}"></canvas>
             </div>
 
-            <div class="section-title">Ultimi Risultati Valutati</div>
-            <div class="table-wrapper">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Data</th>
-                            <th>Orizzonte</th>
-                            <th>Preditto</th>
-                            <th>Reale</th>
-                            <th>Esito</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% if a_data.recent_outcomes %}
-                            {% for row in a_data.recent_outcomes %}
+            <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                <span class="collapsible-title">
+                    <span>Ultimi Risultati Valutati</span>
+                    <span style="font-size: 0.8rem; font-weight: 400; color: var(--text-muted);">({{ a_data.recent_outcomes|length }} risultati)</span>
+                </span>
+                <span class="chevron-icon">▼</span>
+            </div>
+            <div class="collapsible-content">
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
                             <tr>
-                                <td>{{ row.evaluated_at[:10] }}</td>
-                                <td>{{ row.horizon }}</td>
-                                <td><span class="badge badge-{{ row.predicted_class }}">{{ row.predicted_class }}</span></td>
-                                <td><span class="badge badge-{{ row.actual_class }}">{{ row.actual_class }}</span></td>
-                                <td class="correct-{{ row.correct }}">{{ '✅ SI' if row.correct else '❌ NO' }}</td>
+                                <th>Data</th>
+                                <th>Orizzonte</th>
+                                <th>Preditto</th>
+                                <th>Reale</th>
+                                <th>Esito</th>
                             </tr>
-                            {% endfor %}
-                        {% else %}
-                            <tr><td colspan="5" style="text-align:center; color: var(--text-muted);">Nessuna valutazione ancora.</td></tr>
-                        {% endif %}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            {% if a_data.recent_outcomes %}
+                                {% for row in a_data.recent_outcomes %}
+                                <tr>
+                                    <td>{{ row.evaluated_at[:10] }}</td>
+                                    <td>{{ row.horizon }}</td>
+                                    <td><span class="badge badge-{{ row.predicted_class }}">{{ row.predicted_class }}</span></td>
+                                    <td><span class="badge badge-{{ row.actual_class }}">{{ row.actual_class }}</span></td>
+                                    <td class="correct-{{ row.correct }}">{{ '✅ SI' if row.correct else '❌ NO' }}</td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr><td colspan="5" style="text-align:center; color: var(--text-muted);">Nessuna valutazione ancora.</td></tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
-            <div class="section-title" style="margin-top: 16px;">Ultimi Segnali Generati</div>
-            <div class="table-wrapper">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Data</th>
-                            <th>Orizzonte</th>
-                            <th>Classe</th>
-                            <th>Conf.</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% if a_data.recent_predictions %}
-                            {% for p in a_data.recent_predictions %}
+            <div class="collapsible-header" onclick="toggleCollapsible(this)" style="margin-top: 16px;">
+                <span class="collapsible-title">
+                    <span>Ultimi Segnali Generati</span>
+                    <span style="font-size: 0.8rem; font-weight: 400; color: var(--text-muted);">({{ a_data.recent_predictions|length }} segnali)</span>
+                </span>
+                <span class="chevron-icon">▼</span>
+            </div>
+            <div class="collapsible-content">
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
                             <tr>
-                                <td>{{ p.generated_at[:10] }}</td>
-                                <td>{{ p.horizon }}</td>
-                                <td><span class="badge badge-{{ p.predicted_class }}">{{ p.predicted_class }}</span></td>
-                                <td>{{ p.confidence }}%</td>
+                                <th>Data</th>
+                                <th>Orizzonte</th>
+                                <th>Classe</th>
+                                <th>Conf.</th>
                             </tr>
-                            {% endfor %}
-                        {% else %}
-                            <tr><td colspan="4" style="text-align:center; color: var(--text-muted);">Nessuna predizione registrata.</td></tr>
-                        {% endif %}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            {% if a_data.recent_predictions %}
+                                {% for p in a_data.recent_predictions %}
+                                <tr>
+                                    <td>{{ p.generated_at[:10] }}</td>
+                                    <td>{{ p.horizon }}</td>
+                                    <td><span class="badge badge-{{ p.predicted_class }}">{{ p.predicted_class }}</span></td>
+                                    <td>{{ p.confidence }}%</td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr><td colspan="4" style="text-align:center; color: var(--text-muted);">Nessuna predizione registrata.</td></tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
         {% endfor %}
@@ -440,6 +502,20 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 }
             } catch (err) {
                 showToast('Errore di connessione');
+            }
+        }
+
+        function toggleCollapsible(headerElement) {
+            const content = headerElement.nextElementSibling;
+            const chevron = headerElement.querySelector('.chevron-icon');
+            const isCollapsed = content.classList.contains('collapsed');
+
+            if (isCollapsed) {
+                content.classList.remove('collapsed');
+                chevron.style.transform = 'rotate(0deg)';
+            } else {
+                content.classList.add('collapsed');
+                chevron.style.transform = 'rotate(-90deg)';
             }
         }
 
