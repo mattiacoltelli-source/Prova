@@ -1,0 +1,112 @@
+name: Analisi trend robotica
+
+# Cadenza settimanale (non oraria come predict.yml): un ciclo
+# semiconduttori/robotica si muove su mesi/anni (vedi src/config.py,
+# ROBOTICS_ASSETS), ricalcolarlo più spesso sprecherebbe solo budget AI
+# senza aggiungere segnale. Lunedì 08:00 UTC: dopo la chiusura del mercato
+# di Tokyo di venerdì (THK/Harmonic Drive, JST = UTC+9, chiusura 06:00 UTC
+# venerdì) e prima dell'apertura europea/USA della settimana.
+on:
+  schedule:
+    - cron: "0 8 * * 1"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Esegue la pipeline senza scrivere su data/ (test sicuro)"
+        type: boolean
+        default: false
+      force:
+        description: "Ignora il controllo 'già fatto questa settimana'"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: trend-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  trend:
+    runs-on: ubuntu-latest
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+      ALPHA_VANTAGE_KEY: ${{ secrets.ALPHA_VANTAGE_KEY }}
+      TWELVE_DATA_KEY: ${{ secrets.TWELVE_DATA_KEY }}
+      FINNHUB_KEY: ${{ secrets.FINNHUB_KEY }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - run: pip install -r requirements.txt
+
+      - name: Determina modalità run
+        id: mode
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "dry_run=${{ github.event.inputs.dry_run }}" >> "$GITHUB_OUTPUT"
+            echo "force=${{ github.event.inputs.force }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "dry_run=false" >> "$GITHUB_OUTPUT"
+            echo "force=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Genera analisi trend
+        run: |
+          ARGS=""
+          if [ "${{ steps.mode.outputs.dry_run }}" = "true" ]; then ARGS="$ARGS --dry-run"; fi
+          if [ "${{ steps.mode.outputs.force }}" = "true" ]; then ARGS="$ARGS --force"; fi
+          python -m src.trend_run $ARGS
+
+      # Stesso pattern di retry-con-rebase di predict.yml/evaluate.yml
+      # (vedi commento lì): trend.yml tocca file distinti
+      # (data/robotics/*, data/_state/trend_*), un conflitto reale con gli
+      # altri workflow è il caso raro, non quello atteso.
+      - name: Commit e push
+        if: steps.mode.outputs.dry_run != 'true'
+        run: |
+          git config user.name "predictive-agent-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/robotics/ data/_state/
+          if git diff --cached --quiet; then
+            echo "Nessuna modifica da committare."
+            exit 0
+          fi
+          git commit -m "Analisi trend robotica $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          for i in 1 2 3 4 5; do
+            if git push; then
+              exit 0
+            fi
+            echo "Push rifiutato (probabile push concorrente di un altro workflow), tentativo $i/5: fetch + rebase e riprovo..."
+            git fetch origin "$GITHUB_REF_NAME"
+            if ! git rebase "origin/$GITHUB_REF_NAME"; then
+              echo "::error::Rebase fallito: conflitto reale con un commit concorrente, serve intervento manuale."
+              git rebase --abort
+              exit 1
+            fi
+            sleep $((i * 3))
+          done
+          echo "::error::Push fallito dopo 5 tentativi di rebase."
+          exit 1
+
+      - name: Notifica Telegram in caso di fallimento
+        if: failure()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ]; then
+            echo "TELEGRAM_BOT_TOKEN/TELEGRAM_CHAT_ID non configurati nei secret del repo: notifica saltata."
+            exit 0
+          fi
+          MESSAGE=$'⚠️ <b>Analisi trend robotica fallita</b>\nRun: '"${RUN_URL}"
+          curl -sS -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "parse_mode=HTML" \
+            --data-urlencode "text=${MESSAGE}"

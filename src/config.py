@@ -21,6 +21,60 @@ SECTOR_BENCHMARK = {"NVDA": "SMH", "MSFT": "XLK", "AAPL": "XLK"}
 # Email di contatto richiesta da SEC EDGAR nell'header User-Agent (non è una API key).
 SEC_EDGAR_CONTACT_EMAIL = "mattia.coltelli@gmail.com"
 
+# --- Asset "trend" (fase 2: robotica/meccanica di precisione) --------------
+# Sistema separato da ASSETS/HORIZONS sopra: qui l'obiettivo non è una
+# previsione puntuale UP/DOWN/FLAT a breve termine, ma la classificazione
+# del regime di trend di lungo periodo (vedi trend_analysis.py). Cadenza
+# settimanale (trend.yml), non oraria: un ciclo semiconduttori/robotica si
+# muove su mesi/anni, non ha senso ricalcolarlo ogni giorno.
+#
+# Perché THK/Harmonic Drive e non ABB: analisi storica del 2026-09-17 (10
+# anni di dati) — ABB ha ceduto la divisione Robotics a SoftBank (chiusura
+# prevista H2 2026), quindi da qui in avanti non è più un "puro" gioco
+# robotica. THK (guide lineari/cuscinetti di precisione) e Harmonic Drive
+# Systems (riduttori a gioco zero) sono i prodotti letteralmente richiesti
+# e restano quotate come pure-play.
+ROBOTICS_ASSETS = ["THK", "HARMONIC_DRIVE"]
+
+# Ticker Yahoo Finance (Tokyo Stock Exchange). Nota: Harmonic Drive Systems
+# ha ticker 6324, non 6371 come inizialmente ipotizzato — verificato per
+# disponibilità dati storici prima di essere fissato qui.
+ROBOTICS_TICKER = {"THK": "6481.T", "HARMONIC_DRIVE": "6324.T"}
+
+# Query testuale (non ticker) usata per il fallback news GDELT (l'unica
+# fonte delle 3 a cascata in news.fetch_recent_news che non richiede una
+# key ed è l'unica delle 3 con copertura reale di small/mid-cap giapponesi
+# — Finnhub/Alpha Vantage in pratica non hanno news per ticker Tokyo su
+# piano gratuito, quindi qui si passa comunque il nome azienda: se anche
+# Finnhub/Alpha Vantage falliscono (atteso), news.py scende comunque a
+# GDELT con una query sensata invece che con il ticker crudo "6481.T".
+ROBOTICS_NEWS_QUERY = {
+    "THK": "THK Co Ltd linear motion robotics",
+    "HARMONIC_DRIVE": "Harmonic Drive Systems robot reducer",
+}
+
+# Benchmark macro dominante per questo paniere: scoperto empiricamente
+# (correlazione 0.55-0.76 sui rendimenti annuali 2016-2026, vs quasi zero
+# con la Produzione Industriale USA) — il vero driver è il ciclo capex
+# semiconduttori/AI, non l'industria generica. Indice Philadelphia
+# Semiconductor, nessuna key richiesta (stessa fonte Yahoo dei prezzi).
+ROBOTICS_BENCHMARK_TICKER = "^SOX"
+
+# Orizzonti di analisi trend, in anni (non giorni/orizzonti brevi come
+# HORIZONS sopra).
+TREND_HORIZONS_YEARS = [1, 3, 5, 10]
+
+# Finestra della media mobile di lungo periodo usata per classificare la
+# fase del ciclo (ESTESA/NEUTRALE/COMPRESSA): 200 settimane (~4 anni),
+# coerente con l'analisi storica che ha mostrato cicli boom-bust di 3-4
+# anni su questo paniere.
+TREND_MA_WEEKS = 200
+
+# Tetto di spesa AI separato da MAX_AI_CALLS_PER_DAY: cadenza settimanale,
+# 2 asset x 1 chiamata = 2 attese, margine ampio per eventuali retry/test
+# manuali nella stessa settimana.
+MAX_TREND_AI_CALLS_PER_WEEK = 6
+
 # --- Orizzonti (fase 1) ----------------------------------------------------
 
 
@@ -115,6 +169,10 @@ VOLATILITY_K = 0.4
 ANTHROPIC_MODEL = "claude-haiku-4-5-20251001"
 ANTHROPIC_MAX_TOKENS = 500
 
+# Più ampio di ANTHROPIC_MAX_TOKENS: l'output atteso qui è una narrativa
+# discorsiva (driver, rischi) invece di un singolo JSON compatto UP/DOWN/FLAT.
+TREND_ANTHROPIC_MAX_TOKENS = 700
+
 # --- Tetto di spesa (enforcement lato codice) ------------------------------
 # 3 asset x 3 orizzonti x 1 slot/giorno = 9 chiamate attese al massimo.
 MAX_AI_CALLS_PER_DAY = 15
@@ -150,3 +208,11 @@ def outcomes_file(asset: str) -> str:
 
 def snapshot_file(asset: str) -> str:
     return f"{asset_dir(asset)}/snapshot.json"
+
+
+def robotics_asset_dir(asset: str) -> str:
+    return f"{DATA_DIR}/robotics/{asset.lower()}"
+
+
+def trend_file(asset: str) -> str:
+    return f"{robotics_asset_dir(asset)}/trend.jsonl"
