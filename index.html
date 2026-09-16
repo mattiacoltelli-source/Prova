@@ -783,6 +783,10 @@
         </div>
     </div>
 
+    <div class="horizon-filter" id="asset-filter">
+        <span class="horizon-filter-label">Asset:</span>
+    </div>
+
     <div class="horizon-filter" id="horizon-filter">
         <span class="horizon-filter-label">Orizzonte:</span>
         <button class="horizon-filter-btn active" data-horizon="all" onclick="setHorizonFilter('all')">Tutti</button>
@@ -980,10 +984,45 @@
             }
         }
 
+        // La pagina Tech mostrava tutte e 3 le card impilate: una singola
+        // lista lunghissima soprattutto su mobile (1 colonna). Il toggle
+        // mostra una sola card alla volta, come già fa horizon-filter per
+        // gli orizzonti — stessa idea, stesso stile.
+        let currentAssetFilter = ASSETS[0];
+
+        function renderAssetFilter() {
+            const container = document.getElementById('asset-filter');
+            container.innerHTML = '<span class="horizon-filter-label">Asset:</span>' + ASSETS.map(asset => `
+                <button class="horizon-filter-btn${asset === currentAssetFilter ? ' active' : ''}" data-asset="${asset}" onclick="setAssetFilter('${asset}')">${asset}</button>
+            `).join('');
+        }
+
+        function setAssetFilter(asset) {
+            currentAssetFilter = asset;
+            document.querySelectorAll('#asset-filter .horizon-filter-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.asset === asset);
+            });
+            applyAssetFilter();
+        }
+
+        function applyAssetFilter() {
+            document.querySelectorAll('#assets-grid > .asset-card').forEach(card => {
+                card.style.display = card.dataset.asset === currentAssetFilter ? '' : 'none';
+            });
+            // Chart.js misura il contenitore alla creazione: un canvas
+            // creato mentre la card è nascosta (display:none) nasce con
+            // larghezza 0 e non si corregge da solo quando la card torna
+            // visibile — stesso problema già risolto per i <details> via
+            // setupChartDetailsResize(), qui applicato al toggle asset.
+            Object.entries(chartInstances).forEach(([key, chart]) => {
+                if (key.includes(currentAssetFilter)) chart.resize();
+            });
+        }
+
         function renderAssetCards() {
             const grid = document.getElementById('assets-grid');
             grid.innerHTML = ASSETS.map(asset => `
-                <div class="asset-card">
+                <div class="asset-card" data-asset="${asset}">
                     <div class="asset-header">
                         <span class="asset-title">${asset}<span class="asset-price" id="price-${asset}"></span></span>
                         <span class="badge-accuracy" id="accuracy-${asset}">Accuratezza: 0.0%</span>
@@ -1683,6 +1722,8 @@
         }
 
         renderAssetCards();
+        renderAssetFilter();
+        applyAssetFilter();
         setupChartDetailsResize();
         showPredictionTimesInItalianTime();
         loadDashboardData();
