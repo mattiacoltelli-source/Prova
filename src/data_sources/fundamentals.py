@@ -152,6 +152,40 @@ def _alphavantage_earnings_estimates(ticker: str) -> list[dict] | None:
     return estimates
 
 
+def _finnhub_analyst_estimates(ticker: str) -> list[dict] | None:
+    """Finnhub /company-earnings: stime EPS degli analisti, numero di analisti,
+    surprise % su earnings storici. Fallback quando Alpha Vantage raggiunge il
+    limite di 25 richieste/giorno."""
+    key = os.environ.get("FINNHUB_KEY")
+    if not key:
+        return None
+    resp = http.get(
+        "https://finnhub.io/api/v1/company-earnings",
+        params={"symbol": ticker, "token": key},
+        timeout=TIMEOUT,
+    )
+    resp.raise_for_status()
+    payload = resp.json()
+    data = payload.get("data", [])
+    if not data:
+        print(f"[info] Finnhub EARNINGS {ticker}: nessun dato, corpo grezzo: {json.dumps(payload)[:300]}")
+        return None
+    # Trasforma in formato simile ad Alpha Vantage per riuso del codice di selezione
+    out = []
+    for item in data:
+        if not item.get("epsEstimate"):
+            continue
+        out.append({
+            "date": item.get("quarter"),  # es. "2026-09-30"
+            "eps_estimate_average": item.get("epsEstimate"),
+            "eps_estimate_analyst_count": item.get("numberAnalysts", 1),
+            "eps_estimate_revision_up_trailing_30_days": 0,
+            "eps_estimate_revision_down_trailing_30_days": 0,
+            "horizon": "fiscal quarter",
+        })
+    return out if out else None
+
+
 def select_next_quarter_estimate(estimates: list[dict], today: dt.date) -> dict | None:
     """Tra le stime trimestrali (escluse quelle annuali), sceglie quella col
     fiscalDateEnding più vicino ma non passato rispetto a `today` — le stime
@@ -175,17 +209,21 @@ def select_next_quarter_estimate(estimates: list[dict], today: dt.date) -> dict 
 def fetch_analyst_outlook(ticker: str, today: dt.date | None = None) -> dict | None:
     """Prossima data di bilancio + consenso analisti (stima EPS media, numero
     di analisti, revisioni al rialzo/ribasso negli ultimi 30gg) per il
-    trimestre fiscale più vicino. None se Alpha Vantage non ha nulla di
-    utile (fonte opzionale, mai bloccante). 2 chiamate Alpha Vantage per
-    ticker: va richiamata al più una volta al giorno per asset (vedi la
-    cache in predict_run.py), non ad ogni previsione — il tetto gratuito è
-    di 25 chiamate/giorno in totale, condiviso con fondamentali/news di
-    riserva."""
+    trimestre fiscale più vicino. None se nessuna fonte ha nulla di utile
+    (opzionale, mai bloccante). Prova Alpha Vantage (2 call), fallback su
+    Finnhub (1 call) se Alpha Vantage raggiunge il limite di 25 richieste/giorno."""
     today = today or dt.date.today()
+
+    # Prova Alpha Vantage per primo
     next_report_date = _alphavantage_earnings_calendar(ticker)
     estimates = _alphavantage_earnings_estimates(ticker)
+
+    # Fallback su Finnhub se Alpha Vantage non ha stime
     if estimates is None:
-        return None
+        estimates = _finnhub_analyst_estimates(ticker)
+        if estimates is None:
+            return None
+
     picked = select_next_quarter_estimate(estimates, today)
     if picked is None:
         return None
