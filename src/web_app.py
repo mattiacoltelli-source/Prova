@@ -497,12 +497,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 @app.route("/")
 @app.route("/index.html")
 def index():
-    # Se esiste index.html nella radice, serviamolo per coerenza con GitHub Pages
-    root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    index_path = os.path.join(root_dir, "index.html")
-    if os.path.exists(index_path):
-        with open(index_path, "r", encoding="utf-8") as f:
-            return f.read()
+    # Renderizza sempre il template dinamico per avere accesso ai dati reali
     data = get_dashboard_data()
     return render_template_string(HTML_TEMPLATE, data=data)
 
