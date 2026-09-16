@@ -427,6 +427,126 @@
         .badge-DOWN { background-color: rgba(248, 113, 113, 0.2); color: var(--accent-red); }
         .badge-FLAT { background-color: rgba(245, 185, 66, 0.2); color: var(--accent-yellow); }
 
+        /* Tab switcher tra la pagina "Tech" (breve termine) e "Robotica"
+           (trend lungo periodo) — due sistemi di previsione diversi, non ha
+           senso mostrarli nella stessa lista. */
+        .page-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 18px;
+        }
+
+        .page-tab {
+            flex: 1;
+            padding: 11px 8px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--card-border);
+            background-color: var(--card-bg);
+            color: var(--text-muted);
+            font-weight: 700;
+            font-size: 0.85rem;
+            cursor: pointer;
+            text-align: center;
+            transition: all var(--transition-fast);
+        }
+
+        .page-tab.active {
+            background-color: rgba(56, 182, 217, 0.15);
+            border-color: var(--accent-signal);
+            color: var(--accent-signal);
+        }
+
+        /* Badge fase del ciclo (trend_analysis.classify_cycle_phase):
+           rosso = estesa (rischio mean-reversion), giallo = neutrale,
+           verde = compressa (storicamente punto di ingresso migliore) —
+           deliberatamente l'opposto della lettura istintiva "verde = sali",
+           coerente con la natura ciclica boom-bust di questo paniere. */
+        .cycle-badge {
+            padding: 5px 11px;
+            border-radius: var(--radius-pill);
+            font-size: 0.78rem;
+            font-weight: 800;
+            display: inline-block;
+        }
+
+        .cycle-molto_estesa, .cycle-estesa {
+            background-color: rgba(248, 113, 113, 0.2);
+            color: var(--accent-red);
+        }
+
+        .cycle-neutrale, .cycle-sconosciuta {
+            background-color: rgba(245, 185, 66, 0.2);
+            color: var(--accent-yellow);
+        }
+
+        .cycle-compressa, .cycle-molto_compressa {
+            background-color: rgba(61, 220, 154, 0.2);
+            color: var(--accent-green);
+        }
+
+        .cagr-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin: 12px 0;
+        }
+
+        .cagr-cell {
+            background-color: var(--bg-color-2);
+            border-radius: var(--radius-sm);
+            padding: 8px 4px;
+            text-align: center;
+        }
+
+        .cagr-cell .cagr-label {
+            display: block;
+            font-size: 0.68rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            margin-bottom: 3px;
+        }
+
+        .cagr-cell .cagr-value {
+            font-family: var(--font-mono);
+            font-weight: 700;
+            font-size: 0.9rem;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .driver-chip-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin: 10px 0;
+        }
+
+        .driver-chip {
+            background-color: rgba(56, 182, 217, 0.1);
+            color: var(--accent-signal);
+            padding: 4px 10px;
+            border-radius: var(--radius-pill);
+            font-size: 0.76rem;
+            line-height: 1.4;
+        }
+
+        .risk-note {
+            font-size: 0.82rem;
+            color: var(--accent-yellow);
+            background-color: rgba(245, 185, 66, 0.08);
+            border-radius: var(--radius-md);
+            padding: 10px 12px;
+            margin-top: 10px;
+            line-height: 1.5;
+        }
+
+        .trend-generated-at {
+            font-size: 0.72rem;
+            color: var(--text-dim);
+            margin-top: 12px;
+            text-align: right;
+        }
+
         .outcome-verdict { display: inline-flex; align-items: center; gap: 4px; font-weight: 700; font-family: var(--font-mono); }
         .outcome-verdict svg { flex-shrink: 0; }
         .correct-true { color: var(--accent-green); }
@@ -585,6 +705,13 @@
         <button class="refresh-btn" onclick="location.reload()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>Aggiorna</button>
     </header>
 
+    <div class="page-tabs">
+        <button class="page-tab active" id="tab-btn-tech" onclick="switchPage('tech')">Tech (breve termine)</button>
+        <button class="page-tab" id="tab-btn-robotics" onclick="switchPage('robotics')">Robotica (trend lungo)</button>
+    </div>
+
+    <div id="page-tech">
+
     <details class="info-panel">
         <summary><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-2px;margin-right:5px"><circle cx="12" cy="12" r="9"/><line x1="12" y1="11" x2="12" y2="16"/><circle cx="12" cy="7.4" r="0.6" fill="currentColor" stroke="none"/></svg>Che dati analizza l'AI?</summary>
         <div class="info-panel-body">
@@ -666,10 +793,60 @@
 
     <div class="grid-two-assets" id="assets-grid"></div>
 
+    </div><!-- /page-tech -->
+
+    <div id="page-robotics" style="display:none">
+
+        <details class="info-panel">
+            <summary><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-2px;margin-right:5px"><circle cx="12" cy="12" r="9"/><line x1="12" y1="11" x2="12" y2="16"/><circle cx="12" cy="7.4" r="0.6" fill="currentColor" stroke="none"/></svg>Come funziona questa pagina?</summary>
+            <div class="info-panel-body">
+                Sistema separato dalla pagina Tech: qui l'obiettivo non è prevedere il prezzo di
+                domani, ma leggere il <strong>regime di trend di lungo periodo</strong> (1/3/5/10
+                anni) di due aziende di meccanica di precisione per la robotica — <strong>THK</strong>
+                (guide lineari/cuscinetti di precisione) e <strong>Harmonic Drive Systems</strong>
+                (riduttori a gioco zero).<br><br>
+                <strong>Perché non ABB?</strong> Ha ceduto la divisione Robotics a SoftBank
+                (chiusura prevista H2 2026): da qui in avanti non è più un puro player robotica.<br><br>
+                <strong>Perché fasi cicliche invece di UP/DOWN?</strong> Questo paniere si è mosso
+                storicamente a boom-bust di 3-4 anni (drawdown 45-80% dai picchi), legati al ciclo
+                capex semiconduttori/AI — non a un trend lineare. La <strong>fase del ciclo</strong>
+                (badge colorato) misura quanto il prezzo è sopra/sotto la propria media mobile a
+                200 settimane: rosso = molto estesa (storicamente a rischio correzione), verde =
+                compressa (storicamente punto di ingresso migliore).<br><br>
+                <strong>Driver macro:</strong> correlazione empirica con l'indice Philadelphia
+                Semiconductor (^SOX), non con la produzione industriale generica — è risultato il
+                driver dominante nell'analisi storica.<br><br>
+                <strong>Cadenza:</strong> analisi rigenerata al massimo una volta a settimana (non
+                ha senso più spesso su orizzonti pluriennali). Puoi farla partire a mano da
+                <a href="https://github.com/mattiacoltelli-source/Prova/actions/workflows/trend.yml" target="_blank" rel="noopener">GitHub Actions ↗</a>.
+            </div>
+        </details>
+
+        <div class="grid-two-assets" id="robotics-grid"></div>
+
+    </div><!-- /page-robotics -->
+
     <script>
         // Unico punto da modificare quando cambia il paniere di asset seguiti.
         const ASSETS = ['NVDA', 'MSFT', 'AAPL'];
         const chartInstances = {};
+
+        // Paniere separato (src/config.py: ROBOTICS_ASSETS/ROBOTICS_TICKER),
+        // stessa idea di ASSETS ma per la pagina "Robotica" — sistema di
+        // trend.jsonl, non predictions.jsonl/outcomes.jsonl.
+        const ROBOTICS_ASSETS = [
+            { key: 'THK', label: 'THK', ticker: '6481.T' },
+            { key: 'HARMONIC_DRIVE', label: 'Harmonic Drive Systems', ticker: '6324.T' },
+        ];
+        const CYCLE_PHASE_LABEL = {
+            molto_estesa: 'Molto estesa',
+            estesa: 'Estesa',
+            neutrale: 'Neutrale',
+            compressa: 'Compressa',
+            molto_compressa: 'Molto compressa',
+            sconosciuta: 'Sconosciuta',
+        };
+        const TREND_DIRECTION_BADGE_CLASS = { RIALZISTA: 'badge-UP', RIBASSISTA: 'badge-DOWN', LATERALE: 'badge-FLAT' };
 
         // Icone SVG coerenti con lo stile già in uso in header/info-panel
         // (stroke, currentColor), al posto delle emoji usate in precedenza
@@ -705,6 +882,101 @@
             } else {
                 content.classList.add('collapsed');
                 chevron.style.transform = 'rotate(-90deg)';
+            }
+        }
+
+        function switchPage(page) {
+            document.getElementById('page-tech').style.display = page === 'tech' ? '' : 'none';
+            document.getElementById('page-robotics').style.display = page === 'robotics' ? '' : 'none';
+            document.getElementById('tab-btn-tech').classList.toggle('active', page === 'tech');
+            document.getElementById('tab-btn-robotics').classList.toggle('active', page === 'robotics');
+        }
+
+        function formatPct(value, digits = 1) {
+            if (value === null || value === undefined || Number.isNaN(value)) return '—';
+            const sign = value >= 0 ? '+' : '';
+            return `${sign}${value.toFixed(digits)}%`;
+        }
+
+        function renderRoboticsCards() {
+            const grid = document.getElementById('robotics-grid');
+            grid.innerHTML = ROBOTICS_ASSETS.map(a => `
+                <div class="asset-card">
+                    <div class="asset-header">
+                        <span class="asset-title">${a.label}<span class="asset-price" id="robotics-price-${a.key}"></span></span>
+                        <span id="robotics-direction-${a.key}"></span>
+                    </div>
+                    <div id="robotics-body-${a.key}" style="font-size:0.85rem; color: var(--text-muted);">Caricamento…</div>
+                </div>
+            `).join('');
+        }
+
+        // Un solo record per asset (l'ultimo generato da trend_run.py, non
+        // "pending/valutato" come predictions.jsonl — qui non c'è un
+        // outcome futuro da attendere, solo l'ultima lettura del regime di
+        // trend). trend.jsonl può non esistere ancora finché trend.yml non
+        // ha fatto il primo run reale: gestito come lista vuota, non errore.
+        async function loadRoboticsData() {
+            for (const a of ROBOTICS_ASSETS) {
+                const bodyEl = document.getElementById(`robotics-body-${a.key}`);
+                const priceEl = document.getElementById(`robotics-price-${a.key}`);
+                const dirEl = document.getElementById(`robotics-direction-${a.key}`);
+                const { ok, data } = await parseJsonl(`data/robotics/${a.key.toLowerCase()}/trend.jsonl`);
+                if (!ok || data.length === 0) {
+                    bodyEl.innerHTML = `<div class="data-status" style="display:flex">
+                        <span class="icon">${ICON_CROSS}</span>
+                        Nessuna analisi trend ancora disponibile per ${a.label} (il primo run
+                        settimanale non è ancora partito, o è in corso).
+                    </div>`;
+                    continue;
+                }
+                const latest = data.reduce((acc, cur) => (cur.generated_at || '') > (acc.generated_at || '') ? cur : acc);
+                const m = latest.metrics || {};
+
+                if (priceEl && typeof m.last_price === 'number') {
+                    priceEl.textContent = `¥${m.last_price.toLocaleString('it-IT')}`;
+                }
+
+                if (dirEl) {
+                    const badgeClass = TREND_DIRECTION_BADGE_CLASS[latest.trend_direction] || 'badge-FLAT';
+                    dirEl.innerHTML = `<span class="badge ${badgeClass}">${latest.trend_direction || '—'}</span>`;
+                }
+
+                const cagr = (m.cagr_by_years) || {};
+                const cagrCells = ['1', '3', '5', '10'].map(y => {
+                    const v = cagr[y];
+                    const color = v == null ? 'var(--text-dim)' : (v >= 0 ? 'var(--accent-green)' : 'var(--accent-red)');
+                    return `<div class="cagr-cell">
+                        <span class="cagr-label">${y} ${y === '1' ? 'anno' : 'anni'}</span>
+                        <span class="cagr-value" style="color:${color}">${v != null ? formatPct(v * 100) : '—'}</span>
+                    </div>`;
+                }).join('');
+
+                const cyclePhase = m.cycle_phase || 'sconosciuta';
+                const cycleLabel = CYCLE_PHASE_LABEL[cyclePhase] || cyclePhase;
+                const drivers = (latest.key_drivers || []).map(d => `<span class="driver-chip">${d}</span>`).join('');
+
+                bodyEl.innerHTML = `
+                    <div style="margin-bottom: 10px;">
+                        <span class="cycle-badge cycle-${cyclePhase}">Fase ciclo: ${cycleLabel}</span>
+                        <span style="font-size:0.76rem; color: var(--text-dim); margin-left: 8px;">
+                            ${m.price_vs_ma_pct != null ? `${formatPct(m.price_vs_ma_pct)} vs media ${m.ma_weeks || 200} sett.` : ''}
+                        </span>
+                    </div>
+                    <div class="cagr-grid">${cagrCells}</div>
+                    <div class="section-title">Valutazione ciclo</div>
+                    <p style="font-size:0.85rem; line-height:1.5; color: var(--text-main); margin-bottom: 10px;">
+                        ${latest.cycle_assessment || 'Non disponibile.'}
+                    </p>
+                    ${drivers ? `<div class="driver-chip-list">${drivers}</div>` : ''}
+                    ${latest.risk_notes ? `<div class="risk-note">${latest.risk_notes}</div>` : ''}
+                    <div style="font-size:0.76rem; color: var(--text-muted); margin-top:10px;">
+                        Drawdown storico max: ${m.max_drawdown != null ? formatPct(m.max_drawdown * 100) : '—'} ·
+                        Volatilità ann.: ${m.annualized_volatility != null ? formatPct(m.annualized_volatility * 100, 0) : '—'} ·
+                        Confidence: ${latest.confidence != null ? latest.confidence + '%' : '—'}
+                    </div>
+                    <div class="trend-generated-at">Aggiornato: ${latest.generated_at ? new Date(latest.generated_at).toLocaleDateString('it-IT') : '—'}</div>
+                `;
             }
         }
 
@@ -1414,6 +1686,9 @@
         setupChartDetailsResize();
         showPredictionTimesInItalianTime();
         loadDashboardData();
+
+        renderRoboticsCards();
+        loadRoboticsData();
     </script>
 </body>
 </html>
