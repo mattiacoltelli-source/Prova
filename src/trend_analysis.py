@@ -187,6 +187,137 @@ def build_weekly_series(bars: list[DailyBar], ma_weeks: int) -> list[dict]:
     return out
 
 
+def _months_between(d1: dt.date, d2: dt.date) -> float:
+    """Mesi (con decimali) tra due date, sempre >= 0 (assume d2 >= d1)."""
+    return (d2 - d1).days / 30.44  # 365.25/12, media giorni/mese
+
+
+def find_extended_episodes(weekly_series: list[dict], threshold_pct: float = 40.0) -> list[dict]:
+    """Trova le fasi storiche in cui il titolo era "molto esteso" (prezzo
+    sopra la propria media mobile di quanto definito da threshold_pct —
+    40%, la stessa soglia di classify_cycle_phase per "molto_estesa", cosi
+    le fasi trovate qui sono le stesse che il badge segnala oggi) e misura
+    l'esito REALE di ognuna: mesi dall'inizio della fase al picco, ampiezza
+    della correzione dal picco, mesi di recupero.
+
+    Puro calcolo su prezzi storici già scaricati — nessuna chiamata AI,
+    nessun numero stimato: o l'esito è misurabile dai dati (fase chiusa,
+    con un trough e magari un recupero osservati), o l'episodio è escluso
+    dal risultato. Una fase ancora in corso (il titolo non è ancora
+    ridisceso sotto soglia entro i dati disponibili, es. lo stato attuale)
+    non ha un esito da misurare per definizione e viene sempre esclusa —
+    non è un limite di questa funzione, è che quell'esito semplicemente
+    non è ancora accaduto."""
+    n = len(weekly_series)
+    episodes: list[dict] = []
+    i = 0
+    while i < n:
+        vs_ma = weekly_series[i]["ma"]
+        pct = (weekly_series[i]["close"] / vs_ma - 1) * 100 if vs_ma else None
+        if pct is None or pct < threshold_pct:
+            i += 1
+            continue
+        start_idx = i
+        while i < n:
+            ma = weekly_series[i]["ma"]
+            p = (weekly_series[i]["close"] / ma - 1) * 100 if ma else None
+            if p is None or p < threshold_pct:
+                break
+            i += 1
+        end_idx = i - 1
+        is_ongoing = end_idx == n - 1
+
+        segment = weekly_series[start_idx : end_idx + 1]
+        peak_point = max(segment, key=lambda p: p["close"])
+        peak_idx = start_idx + segment.index(peak_point)
+
+        episodes.append(
+            {
+                "start_date": weekly_series[start_idx]["date"],
+                "peak_date": peak_point["date"],
+                "peak_price": peak_point["close"],
+                "peak_idx": peak_idx,
+                "is_ongoing": is_ongoing,
+            }
+        )
+
+    resolved: list[dict] = []
+    for ep in episodes:
+        if ep["is_ongoing"]:
+            continue
+        peak_idx = ep["peak_idx"]
+        peak_price = ep["peak_price"]
+        peak_date = dt.date.fromisoformat(ep["peak_date"])
+
+        trough_price = peak_price
+        trough_date = peak_date
+        recovered_date: dt.date | None = None
+        for j in range(peak_idx + 1, n):
+            point = weekly_series[j]
+            close_j = point["close"]
+            if close_j < trough_price:
+                trough_price = close_j
+                trough_date = dt.date.fromisoformat(point["date"])
+            if close_j >= peak_price:
+                recovered_date = dt.date.fromisoformat(point["date"])
+                break
+
+        if trough_price >= peak_price:
+            continue  # non è mai sceso sotto il picco: nessuna correzione da misurare
+
+        resolved.append(
+            {
+                "start_date": ep["start_date"],
+                "peak_date": ep["peak_date"],
+                "trough_date": trough_date.isoformat(),
+                "months_to_peak": round(_months_between(dt.date.fromisoformat(ep["start_date"]), peak_date), 1),
+                "correction_pct": round((trough_price / peak_price - 1) * 100, 1),
+                "recovery_months": round(_months_between(trough_date, recovered_date), 1) if recovered_date else None,
+                "recovered": recovered_date is not None,
+            }
+        )
+
+    return resolved
+
+
+def summarize_extended_episodes(episodes: list[dict]) -> dict:
+    """Sintesi statistica degli episodi trovati da find_extended_episodes:
+    su N episodi simili, correzione media e recupero medio. None/0 se non
+    ci sono episodi risolti nello storico disponibile (non abbastanza
+    anni, o il titolo non è mai stato così esteso prima) — mai un numero
+    inventato per riempire il buco."""
+    if not episodes:
+        return {"num_episodes": 0, "avg_correction_pct": None, "avg_recovery_months": None, "num_not_recovered": 0, "episodes": []}
+    corrections = [e["correction_pct"] for e in episodes]
+    recoveries = [e["recovery_months"] for e in episodes if e["recovery_months"] is not None]
+    return {
+        "num_episodes": len(episodes),
+        "avg_correction_pct": round(sum(corrections) / len(corrections), 1),
+        "avg_recovery_months": round(sum(recoveries) / len(recoveries), 1) if recoveries else None,
+        "num_not_recovered": sum(1 for e in episodes if not e["recovered"]),
+        "episodes": episodes,
+    }
+
+
+def compute_ath_distance(bars: list[DailyBar]) -> dict:
+    """Distanza del prezzo attuale dal massimo storico assoluto (su tutto
+    lo storico scaricato — non necessariamente il vero ATH di sempre se la
+    fonte dati parte più tardi della quotazione, ma è il massimo di cui
+    disponiamo verifica reale). Il massimo a 52 settimane è già coperto da
+    technicals.compute_52w_range_position, non duplicato qui."""
+    if not bars:
+        return {"ath_price": None, "ath_date": None, "pct_from_ath": None}
+    last_price = bars[-1]["close"]
+    ath_bar = max(bars, key=lambda b: b["close"])
+    if not ath_bar["close"]:
+        return {"ath_price": None, "ath_date": None, "pct_from_ath": None}
+    return {
+        "ath_price": ath_bar["close"],
+        "ath_date": ath_bar["date"],
+        "pct_from_ath": round((last_price / ath_bar["close"] - 1) * 100, 2),
+    }
+
+
 def build_trend_metrics(
     bars: list[DailyBar],
     years_list: list[int],

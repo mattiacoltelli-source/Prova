@@ -50,6 +50,33 @@ def build_trend_prompt(
     price_vs_ma = metrics.get("price_vs_ma_pct")
     ma_weeks = metrics.get("ma_weeks")
 
+    # Episodi storici "molto_estesa" + esito reale ed ATH/52w high: numeri
+    # GIÀ CALCOLATI su prezzi storici (trend_analysis.find_extended_episodes/
+    # compute_ath_distance), mai da ricalcolare — il modello li deve solo
+    # commentare, non derivarli da solo (evita numeri stimati/inventati).
+    ep = metrics.get("extended_episodes") or {}
+    if ep.get("num_episodes"):
+        episodes_block = (
+            f"Su {ep['num_episodes']} episodi storici simili (fase >=40% sopra la media mobile "
+            f"{ma_weeks} settimane, come lo stato attuale), la correzione media dal picco è stata "
+            f"{ep['avg_correction_pct']:+.1f}%"
+            + (f", con recupero medio in {ep['avg_recovery_months']:.1f} mesi" if ep.get("avg_recovery_months") is not None else "")
+            + (f". {ep['num_not_recovered']} episodio/i su {ep['num_episodes']} non ha/hanno ancora recuperato il livello del picco." if ep.get("num_not_recovered") else ".")
+        )
+    else:
+        episodes_block = "Nessun episodio storico simile risolto nello storico disponibile (dato insufficiente, non un valore nullo da ignorare)."
+
+    ath = metrics.get("ath_distance") or {}
+    pct_from_ath = ath.get("pct_from_ath")
+    pct_from_52w = ath.get("pct_from_52w_high")
+    ath_block = (
+        f"Distanza dal massimo storico (ATH, {ath.get('ath_date', 'n/d')} a {ath.get('ath_price', 'n/d')}): "
+        f"{pct_from_ath:+.1f}%. " if pct_from_ath is not None else "Distanza dal massimo storico: non disponibile. "
+    ) + (
+        f"Distanza dal massimo a 52 settimane: {pct_from_52w:+.1f}%."
+        if pct_from_52w is not None else "Distanza dal massimo a 52 settimane: non disponibile."
+    )
+
     return f"""Sei un analista quantitativo specializzato in trend di lungo periodo (NON trading di breve
 termine). Devi valutare il REGIME DI TREND attuale di {asset_label} ({ticker}), un'azione del
 comparto robotica/automazione/meccanica di precisione, su orizzonti di 1, 3, 5 e 10 anni.
@@ -72,6 +99,11 @@ generica): correlazione storica dei rendimenti annuali con l'indice Philadelphia
 (^SOX) = {sox_correlation if sox_correlation is not None else 'non disponibile'}, beta vs SOX
 (circa 1 anno di barre) = {beta_vs_sox if beta_vs_sox is not None else 'non disponibile'}.
 
+Storico episodi "molto estesa" (numeri già calcolati sui prezzi storici, NON ricalcolarli):
+{episodes_block}
+
+{ath_block}
+
 News/contesto recente:
 {news_block}
 
@@ -80,6 +112,10 @@ capex semiconduttori/AI, con drawdown storici del 45-80% dai picchi), non un tre
 fase "molto_estesa" o "estesa" (prezzo ben sopra la propria media di lungo periodo) è
 storicamente seguita da correzioni significative, anche quando il trend di fondo resta
 strutturalmente positivo.
+
+Gli episodi storici e la distanza da ATH/52w high sopra sono GIÀ CALCOLATI su dati reali: usali
+per informare cycle_assessment/risk_notes, non provare a ricalcolarli o a stimarne altri con
+numeri diversi da quelli forniti.
 
 Rispondi ESCLUSIVAMENTE con un oggetto JSON valido, nessun altro testo, con questa forma esatta:
 {{"trend_direction": "RIALZISTA|RIBASSISTA|LATERALE", "confidence": <intero 0-100>,

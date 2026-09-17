@@ -74,6 +74,20 @@ def run(dry_run: bool, force: bool) -> None:
 
         metrics = trend_analysis.build_trend_metrics(bars, config.TREND_HORIZONS_YEARS, config.TREND_MA_WEEKS)
 
+        # Storico episodi "molto estesa" + esito reale di ognuno (correzione,
+        # recupero) e distanza da ATH/52w high: puro calcolo sui prezzi già
+        # scaricati, nessuna chiamata AI per questi numeri — passati al
+        # modello solo come contesto da commentare, mai da "calcolare" lui
+        # stesso (vedi trend_analysis.find_extended_episodes).
+        weekly_series = trend_analysis.build_weekly_series(bars, config.TREND_MA_WEEKS)
+        episodes = trend_analysis.find_extended_episodes(weekly_series)
+        episode_summary = trend_analysis.summarize_extended_episodes(episodes)
+        ath_info = trend_analysis.compute_ath_distance(bars)
+        range_52w = technicals.compute_52w_range_position(bars)
+        ath_info["pct_from_52w_high"] = range_52w["pct_from_high"] if range_52w else None
+        metrics["extended_episodes"] = episode_summary
+        metrics["ath_distance"] = ath_info
+
         sox_correlation = None
         beta_vs_sox = None
         if benchmark_bars:
@@ -125,7 +139,6 @@ def run(dry_run: bool, force: bool) -> None:
         # nulla da verificare, è solo il dato per il grafico prezzo+MA sulla
         # pagina Robotica): sovrascritto ad ogni run, stesso pattern di
         # snapshot_file() per gli asset Tech.
-        weekly_series = trend_analysis.build_weekly_series(bars, config.TREND_MA_WEEKS)
         series_path = config.price_series_file(asset)
         os.makedirs(os.path.dirname(series_path), exist_ok=True)
         with open(series_path, "w", encoding="utf-8") as fh:
