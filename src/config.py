@@ -34,23 +34,34 @@ SEC_EDGAR_CONTACT_EMAIL = "mattia.coltelli@gmail.com"
 # robotica. THK (guide lineari/cuscinetti di precisione) e Harmonic Drive
 # Systems (riduttori a gioco zero) sono i prodotti letteralmente richiesti
 # e restano quotate come pure-play.
-ROBOTICS_ASSETS = ["THK", "HARMONIC_DRIVE"]
+#
+# TER (Teradyne) aggiunta il 2026-09-17: possiede Universal Robots (cobot)
+# e MiR (robot mobili), ma il core business è test equipment per
+# semiconduttori — cattura in un solo titolo sia il tema robotica sia il
+# vero driver macro di questo paniere (correlazione SOX, vedi sotto).
+# A differenza di THK/Harmonic Drive è quotata NASDAQ: nessun problema di
+# accesso al mercato per un broker generalista, e a differenza loro ha
+# copertura reale su SEC EDGAR (fondamentali) e Finnhub (news per ticker) —
+# le due fonti che per i ticker Tokyo restano vuote in questo sistema.
+ROBOTICS_ASSETS = ["THK", "HARMONIC_DRIVE", "TER"]
 
-# Ticker Yahoo Finance (Tokyo Stock Exchange). Nota: Harmonic Drive Systems
-# ha ticker 6324, non 6371 come inizialmente ipotizzato — verificato per
-# disponibilità dati storici prima di essere fissato qui.
-ROBOTICS_TICKER = {"THK": "6481.T", "HARMONIC_DRIVE": "6324.T"}
+# Ticker Yahoo Finance. THK/Harmonic Drive: Tokyo Stock Exchange (Harmonic
+# Drive Systems ha ticker 6324, non 6371 come inizialmente ipotizzato —
+# verificato per disponibilità dati storici prima di essere fissato qui).
+# TER: NASDAQ, stesso ticker ovunque.
+ROBOTICS_TICKER = {"THK": "6481.T", "HARMONIC_DRIVE": "6324.T", "TER": "TER"}
 
-# Query testuale (non ticker) usata per il fallback news GDELT (l'unica
-# fonte delle 3 a cascata in news.fetch_recent_news che non richiede una
-# key ed è l'unica delle 3 con copertura reale di small/mid-cap giapponesi
-# — Finnhub/Alpha Vantage in pratica non hanno news per ticker Tokyo su
-# piano gratuito, quindi qui si passa comunque il nome azienda: se anche
-# Finnhub/Alpha Vantage falliscono (atteso), news.py scende comunque a
-# GDELT con una query sensata invece che con il ticker crudo "6481.T".
+# Query passata a news.fetch_recent_news(): per THK/Harmonic Drive è testo
+# libero (non il ticker), perché Finnhub/Alpha Vantage in pratica non hanno
+# news per ticker Tokyo su piano gratuito — solo GDELT (fallback finale,
+# nessuna key) funziona lì, e gli serve una query sensata invece del
+# ticker crudo "6481.T". TER è invece un ticker USA con copertura reale su
+# Finnhub: qui la query è il ticker stesso, così la cascata funziona sul
+# serio dal primo livello invece di scendere sempre a GDELT.
 ROBOTICS_NEWS_QUERY = {
     "THK": "THK Co Ltd linear motion robotics",
     "HARMONIC_DRIVE": "Harmonic Drive Systems robot reducer",
+    "TER": "TER",
 }
 
 # Benchmark macro dominante per questo paniere: scoperto empiricamente
@@ -71,9 +82,9 @@ TREND_HORIZONS_YEARS = [1, 3, 5, 10]
 TREND_MA_WEEKS = 200
 
 # Tetto di spesa AI separato da MAX_AI_CALLS_PER_DAY: cadenza settimanale,
-# 2 asset x 1 chiamata = 2 attese, margine ampio per eventuali retry/test
-# manuali nella stessa settimana.
-MAX_TREND_AI_CALLS_PER_WEEK = 6
+# 3 asset x 1 chiamata = 3 attese (era 2 prima di TER), margine ampio per
+# eventuali retry/test manuali nella stessa settimana.
+MAX_TREND_AI_CALLS_PER_WEEK = 9
 
 # --- Orizzonti (fase 1) ----------------------------------------------------
 
