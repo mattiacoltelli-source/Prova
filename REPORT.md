@@ -1,4 +1,4 @@
-# Report accuratezza — aggiornato al 2026-09-17T08:52:15.791776+00:00
+# Report accuratezza — aggiornato al 2026-09-17T16:58:20.622836+00:00
 
 **Previsioni valutate: 45 — accuratezza complessiva: 33.3%**
 
@@ -33,5 +33,13 @@
 
 - Random (3 classi equiprobabili): 33.3%
 - Persistenza (ripete l'ultimo esito reale osservato): 64.1% (n=39)
+- Classe più frequente (frequenza storica su decenni di prezzi, pesata sullo stesso mix asset/orizzonte): 46.0% (n=45)
 - **Agente AI: 33.3%**
+
+> La baseline "classe più frequente" è la più dura delle tre: è
+> l'accuratezza di chi prevede sempre la stessa classe senza
+> guardare né prezzi né notizie. Batterla è il minimo perché
+> l'agente stia aggiungendo qualcosa. Dettaglio per asset e
+> orizzonte in `data/baseline.json` (rigenerabile con
+> `python -m src.baseline_run`).
 

@@ -1,9 +1,11 @@
 """Rigenera REPORT.md a partire dallo storico outcomes.jsonl: accuratezza
 complessiva, per asset/orizzonte, matrice di confusione, calibrazione e
-confronto con baseline naive (random e persistenza)."""
+confronto con baseline naive (random, persistenza e frequenza storica)."""
 from __future__ import annotations
 
 import datetime as dt
+import json
+import os
 from collections import defaultdict
 
 from . import config, storage
@@ -60,6 +62,46 @@ def _persistence_baseline(rows: list[dict]) -> tuple[int, int, float]:
     return correct, total, pct
 
 
+def _load_baseline() -> dict | None:
+    """Baseline storiche prodotte da src/baseline_run.py, se presenti. Il
+    file è opzionale: REPORT.md deve continuare a generarsi anche in un
+    checkout che non l'ha ancora calcolato."""
+    if not os.path.exists(config.BASELINE_FILE):
+        return None
+    try:
+        with open(config.BASELINE_FILE, "r", encoding="utf-8") as fh:
+            return json.load(fh)
+    except (json.JSONDecodeError, OSError):
+        return None
+
+
+def _historical_baseline(rows: list[dict], baseline_data: dict) -> tuple[int, float] | None:
+    """Accuratezza attesa di chi prevedesse SEMPRE la classe storicamente più
+    frequente, misurata sullo stesso mix di asset/orizzonti su cui l'agente è
+    stato valutato.
+
+    Il peso conta: se metà delle previsioni valutate sono NVDA/1d e metà
+    AAPL/1m, la baseline giusta è la media pesata di quelle due, non un
+    numero unico valido per tutti. Confrontare l'agente con una baseline
+    calcolata su un mix diverso dal suo sarebbe un confronto truccato (in
+    una direzione o nell'altra).
+    """
+    matched = 0
+    expected = 0.0
+    for r in rows:
+        asset = baseline_data.get("assets", {}).get(r["asset"])
+        if not asset:
+            continue
+        horizon = asset.get("horizons", {}).get(r["horizon"])
+        if not horizon:
+            continue
+        matched += 1
+        expected += horizon["majority_pct"]
+    if not matched:
+        return None
+    return matched, round(expected / matched, 1)
+
+
 def render_markdown(rows: list[dict]) -> str:
     generated_at = dt.datetime.now(dt.timezone.utc).isoformat()
     lines = [f"# Report accuratezza — aggiornato al {generated_at}", ""]
@@ -101,8 +143,28 @@ def render_markdown(rows: list[dict]) -> str:
         lines.append(f"- Persistenza (ripete l'ultimo esito reale osservato): {p_pct}% (n={p_total})")
     else:
         lines.append("- Persistenza: non ancora calcolabile (serve più di un esito per coppia asset/orizzonte)")
+    baseline_data = _load_baseline()
+    if baseline_data:
+        historical = _historical_baseline(rows, baseline_data)
+        if historical:
+            n_matched, expected_pct = historical
+            lines.append(
+                f"- Classe più frequente (frequenza storica su decenni di prezzi, "
+                f"pesata sullo stesso mix asset/orizzonte): {expected_pct}% (n={n_matched})"
+            )
     lines.append(f"- **Agente AI: {pct}%**")
     lines.append("")
+
+    if baseline_data:
+        lines += [
+            "> La baseline \"classe più frequente\" è la più dura delle tre: è",
+            "> l'accuratezza di chi prevede sempre la stessa classe senza",
+            "> guardare né prezzi né notizie. Batterla è il minimo perché",
+            "> l'agente stia aggiungendo qualcosa. Dettaglio per asset e",
+            "> orizzonte in `data/baseline.json` (rigenerabile con",
+            "> `python -m src.baseline_run`).",
+            "",
+        ]
 
     return "\n".join(lines) + "\n"
 

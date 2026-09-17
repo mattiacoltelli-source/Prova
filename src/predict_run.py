@@ -252,7 +252,10 @@ def run(dry_run: bool, force: bool) -> None:
     now_utc = dt.datetime.now(dt.timezone.utc)
 
     try:
-        benchmark_bars = _completed_bars(prices.fetch_daily_history(BENCHMARK_TICKER), now_et)
+        benchmark_bars = _completed_bars(
+            prices.fetch_daily_history(BENCHMARK_TICKER, range_=config.PRICE_HISTORY_RANGE),
+            now_et,
+        )
     except Exception:  # noqa: BLE001 - la forza relativa è un segnale opzionale
         benchmark_bars = None
 
@@ -260,14 +263,17 @@ def run(dry_run: bool, force: bool) -> None:
     for sector_ticker in set(config.SECTOR_BENCHMARK.values()):
         try:
             sector_bars_by_ticker[sector_ticker] = _completed_bars(
-                prices.fetch_daily_history(sector_ticker), now_et
+                prices.fetch_daily_history(sector_ticker, range_=config.PRICE_HISTORY_RANGE),
+                now_et,
             )
         except Exception:  # noqa: BLE001 - segnale opzionale, mai bloccante
             continue
 
     for asset in config.ASSETS:
         try:
-            bars = _completed_bars(prices.fetch_daily_history(asset), now_et)
+            bars = _completed_bars(
+                prices.fetch_daily_history(asset, range_=config.PRICE_HISTORY_RANGE), now_et
+            )
             price, price_asof, price_source, session_date = _reference_price(asset, bars, now_et)
         except Exception as exc:  # noqa: BLE001
             print(f"[{asset}] skipped_no_data: {exc}")

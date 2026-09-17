@@ -32,9 +32,22 @@ class DailyBar(TypedDict):
 
 def _yahoo_daily_history(ticker: str, range_: str = "1y") -> list[DailyBar]:
     url = f"https://query1.finance.yahoo.com/v8/finance/chart/{ticker}"
-    resp = http.get(
-        url, params={"range": range_, "interval": "1d"}, headers=YAHOO_UA, timeout=TIMEOUT
-    )
+    # range="max" con interval="1d" NON restituisce barre giornaliere: Yahoo
+    # degrada silenziosamente a barre MENSILI (verificato il 2026-09-17 su
+    # NVDA: 333 barre invece di 6956). Nessun errore, nessun campo che lo
+    # segnali — il chiamante crederebbe di avere 27 anni di daily e starebbe
+    # calcolando ATR e medie mobili su barre mensili. Per lo storico completo
+    # si usa quindi la coppia period1/period2, che il daily lo restituisce
+    # davvero.
+    if range_ == "max":
+        params = {
+            "period1": 0,
+            "period2": int(dt.datetime.now(dt.timezone.utc).timestamp()),
+            "interval": "1d",
+        }
+    else:
+        params = {"range": range_, "interval": "1d"}
+    resp = http.get(url, params=params, headers=YAHOO_UA, timeout=TIMEOUT)
     resp.raise_for_status()
     payload = resp.json()["chart"]["result"][0]
     timestamps = payload["timestamp"]
@@ -147,7 +160,18 @@ def _now_iso() -> str:
 # (usata da evaluate_run.py, default range_="2y") avrebbe potuto fallire con
 # "Nessuna barra disponibile" se evaluate.yml fosse rimasto fermo più di un
 # anno, nonostante 2 anni di storico fossero stati esplicitamente richiesti.
-_RANGE_TO_TWELVEDATA_OUTPUTSIZE = {"1y": 260, "2y": 520, "5y": 1300}
+# Barre di trading approssimative per ogni range_, usate quando si scende sul
+# fallback Twelve Data (che ragiona per numero di barre, non per intervallo di
+# date). "max" chiede il tetto del piano gratuito: Twelve Data non ha un
+# equivalente di period1=0, quindi lo storico che dà è comunque più corto di
+# quello di Yahoo — accettabile per un fallback.
+_RANGE_TO_TWELVEDATA_OUTPUTSIZE = {
+    "1y": 260,
+    "2y": 520,
+    "5y": 1300,
+    "10y": 2600,
+    "max": 5000,
+}
 
 
 def fetch_daily_history(ticker: str, range_: str = "1y") -> list[DailyBar]:

@@ -168,6 +168,36 @@ TREND_MA_WEEKS = 200
 # minimo necessario.
 MAX_TREND_AI_CALLS_PER_MONTH = 12
 
+# --- Profondità dello storico prezzi ---------------------------------------
+# Quanto storico daily chiedere a prices.fetch_daily_history() nella pipeline
+# di previsione. Fino al 2026-09-17 predict_run.py chiamava la funzione senza
+# argomenti e si prendeva il default "1y" (~252 barre) — non una scelta, solo
+# il default mai alzato. Con ~252 barre:
+#   - compute_sma_trend(50, 200) girava con una cinquantina di barre di
+#     margine sopra il minimo di 200;
+#   - compute_52w_range_position(lookback=252) ne riceveva SEMPRE meno di 252
+#     (predict_run._completed_bars() toglie la barra di oggi), quindi
+#     calcolava massimi e minimi su poco meno di 52 settimane pur
+#     dichiarandone 52.
+# Nessuno dei due è un errore di calcolo, ma entrambi lavoravano al limite
+# esatto dei dati disponibili. 10 anni li porta in una zona comoda senza
+# costi: stessa singola chiamata HTTP a Yahoo, nessuna key aggiuntiva.
+#
+# Non cambia nessuna soglia congelata: la banda FLAT resta ATR% a 14 giorni
+# (volatility.compute_threshold_pct), che guarda solo le ultime 15 barre e
+# dà lo stesso identico valore con 1 o 10 anni di storico alle spalle. Lo
+# storico di previsioni/esiti NON è stato azzerato per questo cambio, a
+# differenza dei due cambi di stimatore documentati nel README: qui le
+# feature sono le stesse di prima, calcolate sugli stessi dati ma senza
+# lavorare al minimo indispensabile.
+PRICE_HISTORY_RANGE = "10y"
+
+# Storico usato dalle analisi statistiche offline (src/baseline_run.py), che
+# non girano nella pipeline quotidiana e vogliono tutta la profondità
+# disponibile. "max" passa da period1/period2 su Yahoo — vedi il commento in
+# data_sources/prices.py sul fatto che range="max" degrada a barre mensili.
+BASELINE_HISTORY_RANGE = "max"
+
 # --- Orizzonti (fase 1) ----------------------------------------------------
 
 
@@ -285,6 +315,12 @@ STATE_DIR = "data/_state"
 PENDING_FILE = "data/pending.json"
 REPORT_FILE = "REPORT.md"
 ERROR_ANALYSIS_FILE = "ERROR_ANALYSIS.md"
+# Baseline storiche (src/baseline_run.py): non è uno storico append-only come
+# predictions/outcomes, è un derivato statistico ricalcolabile in qualsiasi
+# momento dai prezzi pubblici. Va in data/ e non in data/_state/ perché non è
+# stato effimero di un run: è un risultato che REPORT.md legge ad ogni
+# rigenerazione e che ha senso tenere versionato.
+BASELINE_FILE = "data/baseline.json"
 
 
 def asset_dir(asset: str) -> str:
