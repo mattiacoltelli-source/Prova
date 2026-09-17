@@ -290,6 +290,27 @@ VOLATILITY_K = 0.4
 # --- Modello Anthropic ------------------------------------------------------
 
 ANTHROPIC_MODEL = "claude-haiku-4-5-20251001"
+
+# Versione del prompt di previsione, registrata in ogni record e usata da
+# report.py per separare l'accuratezza per versione.
+#
+# Perché serve: cambiare il prompt cambia l'esperimento, quindi confrontare
+# previsioni fatte con prompt diversi in un unico numero di accuratezza
+# nasconde l'effetto del cambio. Il README documenta due azzeramenti dello
+# storico fatti in passato proprio per non mescolare regole diverse. Questa
+# è l'alternativa migliore: lo storico si tiene tutto (sono esiti reali,
+# cancellarli distrugge dati) e REPORT.md lo spacca per versione, così il
+# confronto resta pulito senza perdere niente.
+#
+# v1: prompt originale. Forniva al modello una lunga lista di indicatori di
+#     trend senza alcuna frequenza di base. Risultato misurato su 45
+#     previsioni valutate: UP previsto nel 62% dei casi contro un 28-38%
+#     di occorrenza reale, DOWN MAI previsto contro un 45% di occorrenza.
+# v2: riformulato. Espone le frequenze storiche reali per quella coppia
+#     asset/orizzonte (da data/baseline.json) e distingue esplicitamente il
+#     regime di trend dalla probabilità di superare la banda nell'orizzonte
+#     dato — la confusione fra le due cose spiega il bias di v1.
+PROMPT_VERSION = 2
 ANTHROPIC_MAX_TOKENS = 500
 
 # Più ampio di ANTHROPIC_MAX_TOKENS: l'output atteso qui è una narrativa

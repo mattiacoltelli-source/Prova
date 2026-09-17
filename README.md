@@ -139,6 +139,67 @@ a finestra fissa usata in una versione precedente.
 > NVDA/MSFT/AAPL — SPY non toccato, è già storico archiviato a parte.
 > Recuperabile su `Main` fino al commit `00ed2c4`.
 
+## Il prompt: v1, il bias misurato, e la v2
+
+La v1 del prompt chiedeva al modello di "emettere una previsione sulla
+direzione del prezzo" e gli passava una lunga lista di indicatori — medie
+mobili, MACD, forza relativa, consenso analisti — **senza mai dirgli quanto
+spesso ciascuna classe si verifichi davvero**. Il risultato, su 45 previsioni
+valutate:
+
+- **UP previsto nel 62% dei casi**, contro un'occorrenza reale del 28-38%.
+- **DOWN previsto zero volte**, contro un'occorrenza reale del 45%.
+
+La diagnosi non è "il modello è ottimista". È più specifica: il modello
+confondeva due domande diverse. Gli indicatori dicevano *"il titolo è in
+tendenza rialzista"*, che era vero — anche l'aggregato tecnico indipendente di
+TradingView segnalava BUY su tutti e tre i titoli il 2026-09-17. Ma la
+domanda posta era un'altra: *"supererà la banda di +/- X% entro l'orizzonte?"*
+E la baseline storica risponde che a 1 giorno questo accade in salita solo il
+28% delle volte, perché **una tendenza è l'accumulo di molti movimenti
+piccoli, non la garanzia di un movimento grande in un orizzonte specifico**.
+
+La v2 corregge esattamente questo:
+
+1. **Riformula il compito**: da "previsione sulla direzione" a
+   "classificazione di quale dei tre esiti è più probabile in questo
+   orizzonte".
+2. **Espone le frequenze storiche reali** della coppia asset/orizzonte,
+   prese da `data/baseline.json` e calcolate con la stessa formula di banda
+   usata nella previsione.
+3. **Distingue esplicitamente** regime di trend e probabilità di superare la
+   banda, dicendo che sono domande diverse con risposte possibilmente
+   opposte.
+4. **Nomina DOWN** come esito legittimo, con la sua frequenza reale.
+5. **Chiede sincerità sulla confidence**, ricordando che la calibrazione è
+   misurata nel report.
+
+Un rischio c'era, opposto a quello della v1: dare le frequenze può far
+collassare il modello sulla classe più frequente, ottenendo la baseline e
+nessun valore aggiunto. Per questo il prompt dice esplicitamente che quelle
+percentuali **non sono un suggerimento su cosa rispondere** ma il metro di
+giudizio, e che prevedere sempre la classe più frequente è esattamente la
+strategia con cui viene confrontato. `tests/test_prompt_v2.py` blocca
+entrambe le derive.
+
+### Lo storico non è stato azzerato
+
+Il README documenta due azzeramenti passati, fatti per non mescolare regole
+diverse in un unico numero. Qui la soluzione è migliore: ogni previsione
+registra `prompt_version`, `evaluate_run.py` la copia nell'esito, e
+`REPORT.md` mostra una tabella di accuratezza **per versione**. Le previsioni
+generate prima che il campo esistesse sono v1 per definizione.
+
+Così i 45 esiti reali già raccolti si tengono tutti — sono dati, cancellarli
+è una perdita — e il confronto resta comunque pulito. Le versioni sono
+descritte in `src/config.py` (`PROMPT_VERSION`).
+
+> Attenzione per il futuro: la v2 aggiunge un parametro `base_rates` in mezzo
+> alla firma di `build_prompt()`, che ha molti parametri opzionali.
+> `generate_prediction()` ora li passa **per nome** e non per posizione,
+> perché un inserimento in mezzo avrebbe spostato in silenzio `technicals` e
+> tutti i successivi. C'è un test di regressione che lo verifica.
+
 ## Baseline storiche (il metro di paragone)
 
 `REPORT.md` dice "accuratezza 33%". Da solo quel numero non significa nulla:

@@ -21,6 +21,8 @@ barre fino alla `i`, esattamente come fa `predict_run.py` in produzione.
 from __future__ import annotations
 
 import datetime as dt
+import json
+import os
 
 from . import config, volatility
 from .data_sources.prices import DailyBar
@@ -151,3 +153,45 @@ def k_calibration(
             }
         )
     return rows
+
+
+def load() -> dict | None:
+    """Baseline salvate da baseline_run.py, o None se il file non c'è o è
+    illeggibile.
+
+    Il file è opzionale di proposito: sia REPORT.md sia il prompt di
+    previsione devono continuare a funzionare in un checkout che non l'ha
+    ancora generato, semplicemente senza la sezione che lo usa.
+    """
+    if not os.path.exists(config.BASELINE_FILE):
+        return None
+    try:
+        with open(config.BASELINE_FILE, "r", encoding="utf-8") as fh:
+            return json.load(fh)
+    except (json.JSONDecodeError, OSError):
+        return None
+
+
+def base_rates(asset: str, horizon_code: str, data: dict | None = None) -> dict | None:
+    """Frequenze storiche di UP/DOWN/FLAT per una coppia asset/orizzonte,
+    nella forma usata dal prompt di previsione. None se mancano.
+
+    `data` permette di passare il file già caricato, per non rileggerlo da
+    disco una volta per asset e orizzonte.
+    """
+    payload = data if data is not None else load()
+    if not payload:
+        return None
+    asset_data = payload.get("assets", {}).get(asset)
+    if not asset_data:
+        return None
+    horizon = asset_data.get("horizons", {}).get(horizon_code)
+    if not horizon:
+        return None
+    return {
+        "pct": horizon["pct"],
+        "observations": horizon["observations"],
+        "first_date": horizon["first_date"],
+        "majority_class": horizon["majority_class"],
+        "majority_pct": horizon["majority_pct"],
+    }

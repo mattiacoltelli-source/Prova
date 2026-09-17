@@ -4,11 +4,9 @@ confronto con baseline naive (random, persistenza e frequenza storica)."""
 from __future__ import annotations
 
 import datetime as dt
-import json
-import os
 from collections import defaultdict
 
-from . import config, storage
+from . import baseline, config, storage
 
 CLASSES = ["UP", "DOWN", "FLAT"]
 CONFIDENCE_BUCKETS = [(0, 50, "bassa (0-49)"), (50, 75, "media (50-74)"), (75, 101, "alta (75-100)")]
@@ -60,19 +58,6 @@ def _persistence_baseline(rows: list[dict]) -> tuple[int, int, float]:
                 correct += 1
     pct = round(correct / total * 100, 1) if total else 0.0
     return correct, total, pct
-
-
-def _load_baseline() -> dict | None:
-    """Baseline storiche prodotte da src/baseline_run.py, se presenti. Il
-    file è opzionale: REPORT.md deve continuare a generarsi anche in un
-    checkout che non l'ha ancora calcolato."""
-    if not os.path.exists(config.BASELINE_FILE):
-        return None
-    try:
-        with open(config.BASELINE_FILE, "r", encoding="utf-8") as fh:
-            return json.load(fh)
-    except (json.JSONDecodeError, OSError):
-        return None
 
 
 def _historical_baseline(rows: list[dict], baseline_data: dict) -> tuple[int, float] | None:
@@ -136,6 +121,25 @@ def render_markdown(rows: list[dict]) -> str:
         lines.append(f"| {label} | {n} | {cal_pct}% |")
     lines.append("")
 
+    by_version: dict[int, list[dict]] = defaultdict(list)
+    for r in rows:
+        by_version[r.get("prompt_version", 1)].append(r)
+    if len(by_version) > 1:
+        lines += [
+            "## Accuratezza per versione del prompt",
+            "",
+            "Cambiare il prompt cambia l'esperimento: un unico numero di accuratezza",
+            "sopra versioni diverse nasconderebbe l'effetto del cambio. Le versioni sono",
+            "descritte in `src/config.py` (`PROMPT_VERSION`).",
+            "",
+            "| Versione | N | Accuratezza |",
+            "|---|---|---|",
+        ]
+        for version in sorted(by_version):
+            _, v_total, v_pct = _accuracy(by_version[version])
+            lines.append(f"| v{version} | {v_total} | {v_pct}% |")
+        lines.append("")
+
     lines += ["## Confronto con baseline naive", ""]
     lines.append(f"- Random (3 classi equiprobabili): 33.3%")
     p_correct, p_total, p_pct = _persistence_baseline(rows)
@@ -143,7 +147,7 @@ def render_markdown(rows: list[dict]) -> str:
         lines.append(f"- Persistenza (ripete l'ultimo esito reale osservato): {p_pct}% (n={p_total})")
     else:
         lines.append("- Persistenza: non ancora calcolabile (serve più di un esito per coppia asset/orizzonte)")
-    baseline_data = _load_baseline()
+    baseline_data = baseline.load()
     if baseline_data:
         historical = _historical_baseline(rows, baseline_data)
         if historical:

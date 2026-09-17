@@ -99,6 +99,11 @@ def run(dry_run: bool, now_utc: dt.datetime | None = None) -> None:
                 "actual_class": actual_class,
                 "predicted_class": prediction["predicted_class"],
                 "confidence": prediction["confidence"],
+                # Copiata dalla previsione come predicted_class/confidence:
+                # serve a REPORT.md per separare l'accuratezza per versione
+                # di prompt. Le previsioni generate prima che il campo
+                # esistesse sono per definizione v1.
+                "prompt_version": prediction.get("prompt_version", 1),
                 "correct": actual_class == prediction["predicted_class"],
             }
 

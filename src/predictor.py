@@ -27,6 +27,7 @@ def build_prompt(
     news: list[dict],
     fundamentals: dict | None,
     macro: dict,
+    base_rates: dict | None = None,
     technicals: dict | None = None,
     analyst_outlook: dict | None = None,
     insider_summary: dict | None = None,
@@ -135,14 +136,63 @@ def build_prompt(
         )
     technicals_block = "\n".join(technical_lines) or "Non disponibili."
 
-    return f"""Sei un analista quantitativo che deve emettere una previsione REALE e verificabile
-sulla direzione del prezzo di {asset}, con orizzonte {horizon_code} da adesso.
+    # Frequenze storiche reali della coppia asset/orizzonte. Sono il pezzo
+    # che mancava nella v1 del prompt: senza di esse il modello riceveva
+    # una lunga lista di indicatori di trend e nessun riferimento su quanto
+    # spesso ciascuna classe si verifichi davvero. Il risultato misurato su
+    # 45 previsioni valutate è stato UP previsto nel 62% dei casi contro un
+    # 28-38% di occorrenza reale, e DOWN mai previsto contro un 45%.
+    if base_rates:
+        pct = base_rates["pct"]
+        base_rates_block = f"""Su {base_rates['observations']} osservazioni storiche di questo stesso asset e
+orizzonte (dal {base_rates['first_date']}), classificate con la STESSA formula di banda
+usata qui, le tre classi si sono verificate con questa frequenza:
+  UP {pct['UP']}%  ·  DOWN {pct['DOWN']}%  ·  FLAT {pct['FLAT']}%
+
+Non è un suggerimento su cosa rispondere: è il metro con cui la tua previsione
+verrà giudicata. Prevedere sempre "{base_rates['majority_class']}" senza guardare nulla otterrebbe
+{base_rates['majority_pct']}% di accuratezza, ed è esattamente la strategia con cui vieni
+confrontato. Per risultare utile devi discriminare meglio di così, non
+allinearti a queste percentuali."""
+    else:
+        base_rates_block = (
+            "Non disponibili per questa coppia asset/orizzonte."
+        )
+
+    return f"""Devi classificare quale dei tre esiti possibili è il più probabile per {asset}
+nell'orizzonte {horizon_code} a partire da adesso. Non è una valutazione del titolo né
+una raccomandazione: è una singola classificazione, verificabile con il prezzo reale
+alla scadenza dell'orizzonte.
 
 Prezzo attuale: {price} (rilevato: {price_asof})
 Banda neutra (FLAT) calcolata sulla volatilità storica recente: +/- {threshold_pct}%
-  → prevedi UP se ti aspetti una variazione superiore a +{threshold_pct}%
-  → prevedi DOWN se ti aspetti una variazione inferiore a -{threshold_pct}%
-  → prevedi FLAT se ti aspetti una variazione entro questa banda
+  → UP se la variazione alla scadenza sarà superiore a +{threshold_pct}%
+  → DOWN se sarà inferiore a -{threshold_pct}%
+  → FLAT se resterà entro la banda
+
+DUE COSE DA NON CONFONDERE. Gli indicatori qui sotto (medie mobili, MACD, forza
+relativa, consenso analisti) descrivono il REGIME ATTUALE del titolo: dicono se si
+trova in una tendenza rialzista o ribassista. Non dicono quanto è probabile che
+superi la banda di +/- {threshold_pct}% entro {horizon_code}. Sono domande diverse e
+possono avere risposte opposte: un titolo in forte tendenza rialzista passa comunque
+la maggior parte delle singole giornate dentro la banda, perché la tendenza è
+l'accumulo di molti movimenti piccoli, non la garanzia di un movimento grande in
+questo specifico orizzonte. "Il titolo sale" non implica "supererà +{threshold_pct}% entro {horizon_code}".
+
+FREQUENZE STORICHE
+{base_rates_block}
+
+Tutte e tre le classi sono risposte legittime. In particolare DOWN: se gli indicatori
+sono quasi sempre rialzisti su questi titoli, non ne segue che DOWN non si verifichi —
+la frequenza storica sopra dice quanto si verifica per davvero.
+
+Usa `confidence` con sincerità: alta solo se hai una ragione specifica e verificabile
+per aspettarti quell'esito in questo orizzonte, bassa se stai scegliendo la classe più
+plausibile senza un vero vantaggio informativo. Una confidence alta sistematicamente
+smentita dagli esiti è un difetto che il report misura.
+
+In `reasoning_short`, se ti discosti dalla frequenza storica, scrivi quale informazione
+specifica di oggi lo giustifica.
 
 News recenti:
 {news_block}
@@ -210,13 +260,27 @@ def generate_prediction(
     news: list[dict],
     fundamentals: dict | None,
     macro: dict,
+    base_rates: dict | None = None,
     technicals: dict | None = None,
     analyst_outlook: dict | None = None,
     insider_summary: dict | None = None,
 ) -> dict:
+    # Argomenti per nome, non posizionali: la firma di build_prompt ha già
+    # dieci parametri opzionali e un inserimento in mezzo sposterebbe in
+    # silenzio tutto quello che segue.
     prompt = build_prompt(
-        asset, horizon_code, price, price_asof, threshold_pct, news, fundamentals, macro,
-        technicals, analyst_outlook, insider_summary,
+        asset=asset,
+        horizon_code=horizon_code,
+        price=price,
+        price_asof=price_asof,
+        threshold_pct=threshold_pct,
+        news=news,
+        fundamentals=fundamentals,
+        macro=macro,
+        base_rates=base_rates,
+        technicals=technicals,
+        analyst_outlook=analyst_outlook,
+        insider_summary=insider_summary,
     )
     raw = call_model(prompt)
     return parse_prediction(raw)

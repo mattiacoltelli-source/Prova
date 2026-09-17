@@ -13,7 +13,7 @@ import os
 import sys
 import uuid
 
-from . import budget, config, predictor, storage, technicals, volatility
+from . import baseline, budget, config, predictor, storage, technicals, volatility
 from .data_sources import fundamentals, insider, macro, news, prices
 
 BENCHMARK_TICKER = "SPY"
@@ -251,6 +251,12 @@ def run(dry_run: bool, force: bool) -> None:
 
     now_utc = dt.datetime.now(dt.timezone.utc)
 
+    # Letto una volta per run: le frequenze di base sono un file statico,
+    # rileggerlo per ogni coppia asset/orizzonte sarebbe 9 letture identiche.
+    # None se il file non c'è ancora: il prompt lo gestisce e si limita a
+    # non mostrare la sezione.
+    baseline_data = baseline.load()
+
     try:
         benchmark_bars = _completed_bars(
             prices.fetch_daily_history(BENCHMARK_TICKER, range_=config.PRICE_HISTORY_RANGE),
@@ -332,8 +338,9 @@ def run(dry_run: bool, force: bool) -> None:
             try:
                 pred = predictor.generate_prediction(
                     asset, horizon.code, price, price_asof, threshold_pct,
-                    news_items, fundamentals_data, macro_data, technical_signals, analyst_outlook,
-                    insider_summary,
+                    news_items, fundamentals_data, macro_data,
+                    baseline.base_rates(asset, horizon.code, baseline_data),
+                    technical_signals, analyst_outlook, insider_summary,
                 )
             except Exception as exc:  # noqa: BLE001
                 print(f"[{asset}/{horizon.code}] skipped_model_error: {exc}")
@@ -351,6 +358,7 @@ def run(dry_run: bool, force: bool) -> None:
                 "confidence": pred["confidence"],
                 "volatility_threshold_pct": threshold_pct,
                 "model": config.ANTHROPIC_MODEL,
+                "prompt_version": config.PROMPT_VERSION,
                 "inputs_summary": {
                     "news_count": len(news_items),
                     "news_sentiment_avg": news.average_sentiment(news_items),
