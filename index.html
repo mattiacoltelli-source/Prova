@@ -819,11 +819,15 @@
                 (badge colorato) misura quanto il prezzo è sopra/sotto la propria media mobile a
                 200 settimane: rosso = molto estesa (storicamente a rischio correzione), verde =
                 compressa (storicamente punto di ingresso migliore).<br><br>
+                <strong>A quale orizzonte si riferiscono direzione/fase/confidence?</strong> Non a
+                uno specifico come nella pagina Tech (1g/7g/1m) — è una lettura strutturale valida
+                sull'insieme degli orizzonti 1-10 anni mostrati nella griglia CAGR di ogni card, non
+                una previsione puntuale su un singolo periodo.<br><br>
                 <strong>Driver macro:</strong> correlazione empirica con l'indice Philadelphia
                 Semiconductor (^SOX), non con la produzione industriale generica — è risultato il
                 driver dominante nell'analisi storica.<br><br>
-                <strong>Cadenza:</strong> analisi rigenerata al massimo una volta a settimana (non
-                ha senso più spesso su orizzonti pluriennali). Puoi farla partire a mano da
+                <strong>Cadenza:</strong> analisi rigenerata al massimo una volta al mese (non ha
+                senso più spesso su orizzonti pluriennali). Puoi farla partire a mano da
                 <a href="https://github.com/mattiacoltelli-source/Prova/actions/workflows/trend.yml" target="_blank" rel="noopener">GitHub Actions ↗</a>.
             </div>
         </details>
@@ -1053,16 +1057,20 @@
                 }).join('');
 
                 bodyEl.innerHTML = `
-                    <div style="margin-bottom: 10px;">
+                    <div style="margin-bottom: 4px;">
                         <span class="cycle-badge cycle-${cyclePhase}">Fase ciclo: ${cycleLabel}</span>
                         <span style="font-size:0.76rem; color: var(--text-dim); margin-left: 8px;">
                             ${m.price_vs_ma_pct != null ? `${formatPct(m.price_vs_ma_pct)} vs media ${m.ma_weeks || 200} sett.` : ''}
                         </span>
                     </div>
+                    <div style="font-size:0.72rem; color: var(--text-dim); margin-bottom: 10px;">
+                        Lettura strutturale sull'insieme degli orizzonti 1-10 anni sotto (non un singolo periodo) · aggiornata al massimo 1 volta/mese
+                    </div>
                     <div class="section-title">Prezzo vs media mobile (fase del ciclo)</div>
                     <div class="chart-container" id="robotics-chart-wrap-${a.key}">
                         <canvas id="robotics-chart-${a.key}"></canvas>
                     </div>
+                    <div class="section-title">CAGR per orizzonte (1-10 anni)</div>
                     <div class="cagr-grid">${cagrCells}</div>
                     <div class="section-title">Valutazione ciclo</div>
                     <p style="font-size:0.85rem; line-height:1.5; color: var(--text-main); margin-bottom: 10px;">
@@ -1085,9 +1093,12 @@
                         <span class="chevron-icon" style="transform: rotate(-90deg);">▼</span>
                     </div>
                     <div class="collapsible-content collapsed">
+                        <div style="font-size:0.72rem; color: var(--text-dim); margin-bottom: 8px;">
+                            Ogni riga è una lettura mensile del trend strutturale 1-10 anni, non una previsione a un orizzonte specifico.
+                        </div>
                         <div class="table-wrapper">
                             <table>
-                                <thead><tr><th>Data</th><th>Direzione</th><th>Fase Ciclo</th><th>Conf.</th></tr></thead>
+                                <thead><tr><th>Data</th><th>Direzione (1-10y)</th><th>Fase Ciclo</th><th>Conf.</th></tr></thead>
                                 <tbody>${historyRows}</tbody>
                             </table>
                         </div>
