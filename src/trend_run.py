@@ -1,12 +1,20 @@
 """Orchestratore chiamato da .github/workflows/trend.yml.
 
 Genera un'analisi di trend di lungo periodo per ogni asset in
-config.ROBOTICS_ASSETS, al massimo una volta al mese (stato in
-data/_state/trend_slots_<anno>-<mese>.json) — analogo di predict_run.py,
-ma con cadenza mensile invece che oraria: un ciclo semiconduttori/robotica
-si muove su anni, ricalcolarlo più spesso (anche solo settimanale, la
-cadenza originale) sprecherebbe solo budget AI senza aggiungere segnale —
-cambiato da settimanale a mensile il 2026-09-17 su feedback utente."""
+config.ROBOTICS_ASSETS, con cadenza per-asset (config.ASSET_CADENCE_MONTHS:
+1 mese per THK/Harmonic Drive/TER, 3 mesi/trimestrale per VRT — il segnale
+che conta per VRT, la crescita di backlog/ordini, esce solo con le
+trimestrali) — analogo di predict_run.py, ma su orizzonti pluriennali
+invece che orario/giornaliero.
+
+Stato in data/_state/trend_done.json: {"ASSET": "ultimo periodo fatto"},
+dove il periodo è "AAAA-MM" per cadenza mensile o "AAAA-MM" del primo mese
+del trimestre per cadenza trimestrale (vedi _period_key) — un solo file
+condiviso invece di un file per mese, così un asset trimestrale non
+richiede una logica separata dagli asset mensili: stesso schema, cadenza
+diversa. Sostituisce il precedente trend_slots_<anno>-<mese>.json (un
+file per mese, cadenza mensile fissa per tutti) il 2026-09-17 con
+l'aggiunta di VRT."""
 from __future__ import annotations
 
 import argparse
@@ -20,38 +28,46 @@ from . import budget, config, storage, technicals, trend_analysis, trend_predict
 from .data_sources import news, prices
 
 
-def _slot_state_path(year: int, month: int) -> str:
-    return f"{config.STATE_DIR}/trend_slots_{year}-{month:02d}.json"
+def _state_path() -> str:
+    return f"{config.STATE_DIR}/trend_done.json"
 
 
-def _current_month() -> tuple[int, int]:
-    today = dt.date.today()
-    return today.year, today.month
+def _period_key(asset: str, today: dt.date) -> str:
+    """"AAAA-MM" del primo mese del periodo corrente per la cadenza di
+    quell'asset — es. cadenza mensile: sempre il mese corrente; cadenza
+    trimestrale: 01/04/07/10 (il trimestre a cui appartiene oggi)."""
+    months = config.ASSET_CADENCE_MONTHS.get(asset, 1)
+    period_index = (today.month - 1) // months
+    period_start_month = period_index * months + 1
+    return f"{today.year}-{period_start_month:02d}"
 
 
-def _done_this_month() -> set[str]:
-    year, month = _current_month()
-    path = _slot_state_path(year, month)
-    if not os.path.exists(path):
-        return set()
-    with open(path, "r", encoding="utf-8") as fh:
-        return set(json.load(fh).get("done_assets", []))
+def _load_done() -> dict[str, str]:
+    if not os.path.exists(_state_path()):
+        return {}
+    with open(_state_path(), "r", encoding="utf-8") as fh:
+        return json.load(fh)
 
 
-def _mark_asset_done(asset: str) -> None:
-    year, month = _current_month()
+def _is_due(asset: str, today: dt.date, done: dict[str, str]) -> bool:
+    return done.get(asset) != _period_key(asset, today)
+
+
+def _mark_asset_done(asset: str, today: dt.date) -> None:
     os.makedirs(config.STATE_DIR, exist_ok=True)
-    done = _done_this_month() | {asset}
-    with open(_slot_state_path(year, month), "w", encoding="utf-8") as fh:
-        json.dump({"year": year, "month": month, "done_assets": sorted(done)}, fh)
+    done = _load_done()
+    done[asset] = _period_key(asset, today)
+    with open(_state_path(), "w", encoding="utf-8") as fh:
+        json.dump(done, fh)
 
 
 def run(dry_run: bool, force: bool) -> None:
     now_utc = dt.datetime.now(dt.timezone.utc)
-    done = _done_this_month()
+    today = now_utc.date()
+    done = _load_done()
 
-    if not force and set(config.ROBOTICS_ASSETS) <= done:
-        print("Tutti gli asset robotica già analizzati questo mese, esco senza consumare budget.")
+    if not force and not any(_is_due(a, today, done) for a in config.ROBOTICS_ASSETS):
+        print("Nessun asset in scadenza per questo periodo, esco senza consumare budget.")
         return
 
     try:
@@ -61,8 +77,8 @@ def run(dry_run: bool, force: bool) -> None:
         benchmark_bars = None
 
     for asset in config.ROBOTICS_ASSETS:
-        if not force and asset in done:
-            print(f"[{asset}] già analizzato questo mese, salto.")
+        if not force and not _is_due(asset, today, done):
+            print(f"[{asset}] già analizzato per questo periodo, salto.")
             continue
 
         ticker = config.ROBOTICS_TICKER[asset]
@@ -107,6 +123,7 @@ def run(dry_run: bool, force: bool) -> None:
         try:
             analysis = trend_predictor.generate_trend_analysis(
                 asset, ticker, metrics, news_items, sox_correlation, beta_vs_sox,
+                config.TREND_PROMPT_CONTEXT[asset],
             )
         except Exception as exc:  # noqa: BLE001
             print(f"[{asset}] skipped_model_error: {exc}")
@@ -148,13 +165,13 @@ def run(dry_run: bool, force: bool) -> None:
             f"[{asset}] analisi trend salvata: {saved['trend_direction']} "
             f"(confidence {saved['confidence']}%, fase ciclo {metrics['cycle_phase']})"
         )
-        _mark_asset_done(asset)
+        _mark_asset_done(asset, today)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--dry-run", action="store_true")
-    parser.add_argument("--force", action="store_true", help="ignora il controllo 'già fatto questo mese'")
+    parser.add_argument("--force", action="store_true", help="ignora il controllo 'già fatto per questo periodo'")
     args = parser.parse_args()
     try:
         run(dry_run=args.dry_run, force=args.force)

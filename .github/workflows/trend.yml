@@ -1,16 +1,27 @@
-name: Analisi trend robotica
+name: Analisi trend strutturali
 
-# Cadenza MENSILE (non oraria come predict.yml, e non più settimanale come
-# alla prima versione di questo workflow): un ciclo semiconduttori/robotica
-# si muove su anni (vedi src/config.py, ROBOTICS_ASSETS) — anche il
-# settimanale ricalcolava più spesso di quanto il segnale cambi davvero,
-# sprecando solo budget AI (cambiato il 2026-09-17 su feedback utente).
-# Primo giorno del mese, 08:00 UTC: nessun vincolo di giorno di borsa
-# aperta (a differenza di predict.yml) — fetch_daily_history ritorna
-# comunque l'ultima chiusura disponibile, qualunque sia il giorno.
+# Cadenza per-asset (config.ASSET_CADENCE_MONTHS), non oraria come
+# predict.yml: un ciclo semiconduttori/robotica o capex data center AI si
+# muove su anni — anche il settimanale (prima versione di questo workflow)
+# ricalcolava più spesso di quanto il segnale cambi davvero, sprecando solo
+# budget AI (cambiato il 2026-09-17 su feedback utente).
+#
+# Due cron mensili invece di uno: giorno 1 (THK/Harmonic Drive/TER,
+# cadenza mensile) e giorno 2 (VRT, cadenza trimestrale, aggiunto il
+# 2026-09-17 — stesso motore, tema diverso: infrastruttura data center AI
+# invece di robotica/precisione). Non serve smistare gli asset per cron:
+# ogni run processa tutti gli asset "dovuti per il periodo corrente" (vedi
+# trend_run._is_due), quindi il giorno 2 rigenera THK/Harmonic Drive/TER
+# semplicemente no-op (già fatti il giorno 1) mentre VRT scatta solo nei
+# mesi di inizio trimestre — le due chiamate non si sovrappongono mai sullo
+# stesso asset nello stesso giorno.
+# 08:00 UTC: nessun vincolo di giorno di borsa aperta (a differenza di
+# predict.yml) — fetch_daily_history ritorna comunque l'ultima chiusura
+# disponibile, qualunque sia il giorno.
 on:
   schedule:
     - cron: "0 8 1 * *"
+    - cron: "0 8 2 * *"
   workflow_dispatch:
     inputs:
       dry_run:
@@ -79,7 +90,7 @@ jobs:
             echo "Nessuna modifica da committare."
             exit 0
           fi
-          git commit -m "Analisi trend robotica $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          git commit -m "Analisi trend strutturali $(date -u +%Y-%m-%dT%H:%M:%SZ)"
           for i in 1 2 3 4 5; do
             if git push; then
               exit 0
@@ -107,7 +118,7 @@ jobs:
             echo "TELEGRAM_BOT_TOKEN/TELEGRAM_CHAT_ID non configurati nei secret del repo: notifica saltata."
             exit 0
           fi
-          MESSAGE=$'⚠️ <b>Analisi trend robotica fallita</b>\nRun: '"${RUN_URL}"
+          MESSAGE=$'⚠️ <b>Analisi trend strutturali fallita</b>\nRun: '"${RUN_URL}"
           curl -sS -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
             --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
             --data-urlencode "parse_mode=HTML" \

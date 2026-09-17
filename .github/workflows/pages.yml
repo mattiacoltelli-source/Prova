@@ -37,7 +37,7 @@ on:
       - "data/**"
       - "REPORT.md"
   workflow_run:
-    workflows: ["Genera previsioni", "Valuta previsioni scadute", "Istantanea prezzi", "Analisi trend robotica"]
+    workflows: ["Genera previsioni", "Valuta previsioni scadute", "Istantanea prezzi", "Analisi trend strutturali"]
     types: [completed]
   workflow_dispatch: {}
 

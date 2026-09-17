@@ -28,6 +28,7 @@ def build_trend_prompt(
     news: list[dict],
     sox_correlation: float | None,
     beta_vs_sox: float | None,
+    prompt_context: dict,
 ) -> str:
     cagr_lines = []
     for years, value in metrics["cagr_by_years"].items():
@@ -79,7 +80,7 @@ def build_trend_prompt(
 
     return f"""Sei un analista quantitativo specializzato in trend di lungo periodo (NON trading di breve
 termine). Devi valutare il REGIME DI TREND attuale di {asset_label} ({ticker}), un'azione del
-comparto robotica/automazione/meccanica di precisione, su orizzonti di 1, 3, 5 e 10 anni.
+comparto {prompt_context['sector_label']}, su orizzonti di 1, 3, 5 e 10 anni.
 
 Prezzo attuale: {metrics.get('last_price')} (al {metrics.get('last_date')})
 Storico disponibile da: {metrics.get('first_date')}
@@ -94,10 +95,9 @@ Drawdown massimo storico dai picchi: {f'{max_dd * 100:+.1f}%' if max_dd is not N
 Volatilità annualizzata: {f'{vol * 100:.1f}%' if vol is not None else 'non disponibile'}
 Posizione rispetto alla media mobile a {ma_weeks} settimane: {f'{price_vs_ma:+.1f}%' if price_vs_ma is not None else 'non disponibile'} (fase ciclo calcolata: {metrics.get('cycle_phase')})
 
-Driver macro dominante per questo paniere (scoperto empiricamente, non produzione industriale
-generica): correlazione storica dei rendimenti annuali con l'indice Philadelphia Semiconductor
-(^SOX) = {sox_correlation if sox_correlation is not None else 'non disponibile'}, beta vs SOX
-(circa 1 anno di barre) = {beta_vs_sox if beta_vs_sox is not None else 'non disponibile'}.
+{prompt_context['benchmark_intro']}: correlazione storica dei rendimenti annuali con l'indice
+Philadelphia Semiconductor (^SOX) = {sox_correlation if sox_correlation is not None else 'non disponibile'},
+beta vs SOX (circa 1 anno di barre) = {beta_vs_sox if beta_vs_sox is not None else 'non disponibile'}.
 
 Storico episodi "molto estesa" (numeri già calcolati sui prezzi storici, NON ricalcolarli):
 {episodes_block}
@@ -107,11 +107,9 @@ Storico episodi "molto estesa" (numeri già calcolati sui prezzi storici, NON ri
 News/contesto recente:
 {news_block}
 
-Nota importante: questo è un titolo storicamente CICLICO (boom-bust di 3-4 anni legati al ciclo
-capex semiconduttori/AI, con drawdown storici del 45-80% dai picchi), non un trend lineare. Una
-fase "molto_estesa" o "estesa" (prezzo ben sopra la propria media di lungo periodo) è
-storicamente seguita da correzioni significative, anche quando il trend di fondo resta
-strutturalmente positivo.
+Nota importante: {prompt_context['cyclicality_note']}. Una fase "molto_estesa" o "estesa" (prezzo
+ben sopra la propria media di lungo periodo) è storicamente seguita da correzioni significative,
+anche quando il trend di fondo resta strutturalmente positivo.
 
 Gli episodi storici e la distanza da ATH/52w high sopra sono GIÀ CALCOLATI su dati reali: usali
 per informare cycle_assessment/risk_notes, non provare a ricalcolarli o a stimarne altri con
@@ -178,7 +176,8 @@ def generate_trend_analysis(
     news: list[dict],
     sox_correlation: float | None,
     beta_vs_sox: float | None,
+    prompt_context: dict,
 ) -> dict:
-    prompt = build_trend_prompt(asset_label, ticker, metrics, news, sox_correlation, beta_vs_sox)
+    prompt = build_trend_prompt(asset_label, ticker, metrics, news, sox_correlation, beta_vs_sox, prompt_context)
     raw = call_model(prompt)
     return parse_trend_analysis(raw)

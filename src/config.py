@@ -44,33 +44,105 @@ SEC_EDGAR_CONTACT_EMAIL = "mattia.coltelli@gmail.com"
 # accesso al mercato per un broker generalista, e a differenza loro ha
 # copertura reale su SEC EDGAR (fondamentali) e Finnhub (news per ticker) —
 # le due fonti che per i ticker Tokyo restano vuote in questo sistema.
-ROBOTICS_ASSETS = ["THK", "HARMONIC_DRIVE", "TER"]
+#
+# VRT (Vertiv Holdings) aggiunta il 2026-09-17: non è robotica, è
+# infrastruttura elettrica/raffreddamento per data center AI — stessa
+# logica "domanda visibile perché già in backlog pluriennale, non ipotesi"
+# della tesi robotica/SOX, ma un tema diverso (capex data center AI, non
+# capex robotica/precisione). Per questo il sistema resta lo stesso
+# (trend_analysis.py è già agnostico rispetto al settore) ma la pagina è
+# stata rietichettata da "Robotica" a "Trend strutturali" nel frontend, e
+# il testo del prompt AI è parametrizzato per asset (vedi
+# TREND_PROMPT_CONTEXT sotto) invece di assumere sempre "robotica".
+# Quotata NYSE: nessun problema di accesso al mercato, fondamentali reali
+# disponibili via SEC EDGAR.
+ROBOTICS_ASSETS = ["THK", "HARMONIC_DRIVE", "TER", "VRT"]
 
 # Ticker Yahoo Finance. THK/Harmonic Drive: Tokyo Stock Exchange (Harmonic
 # Drive Systems ha ticker 6324, non 6371 come inizialmente ipotizzato —
 # verificato per disponibilità dati storici prima di essere fissato qui).
-# TER: NASDAQ, stesso ticker ovunque.
-ROBOTICS_TICKER = {"THK": "6481.T", "HARMONIC_DRIVE": "6324.T", "TER": "TER"}
+# TER/VRT: NASDAQ/NYSE, stesso ticker ovunque.
+ROBOTICS_TICKER = {"THK": "6481.T", "HARMONIC_DRIVE": "6324.T", "TER": "TER", "VRT": "VRT"}
 
 # Query passata a news.fetch_recent_news(): per THK/Harmonic Drive è testo
 # libero (non il ticker), perché Finnhub/Alpha Vantage in pratica non hanno
 # news per ticker Tokyo su piano gratuito — solo GDELT (fallback finale,
 # nessuna key) funziona lì, e gli serve una query sensata invece del
-# ticker crudo "6481.T". TER è invece un ticker USA con copertura reale su
-# Finnhub: qui la query è il ticker stesso, così la cascata funziona sul
+# ticker crudo "6481.T". TER/VRT sono invece ticker USA con copertura reale
+# su Finnhub: qui la query è il ticker stesso, così la cascata funziona sul
 # serio dal primo livello invece di scendere sempre a GDELT.
 ROBOTICS_NEWS_QUERY = {
     "THK": "THK Co Ltd linear motion robotics",
     "HARMONIC_DRIVE": "Harmonic Drive Systems robot reducer",
     "TER": "TER",
+    "VRT": "VRT",
 }
 
-# Benchmark macro dominante per questo paniere: scoperto empiricamente
-# (correlazione 0.55-0.76 sui rendimenti annuali 2016-2026, vs quasi zero
-# con la Produzione Industriale USA) — il vero driver è il ciclo capex
-# semiconduttori/AI, non l'industria generica. Indice Philadelphia
-# Semiconductor, nessuna key richiesta (stessa fonte Yahoo dei prezzi).
+# Benchmark macro per questo sistema: scoperto empiricamente per il
+# paniere robotica (correlazione 0.55-0.76 sui rendimenti annuali
+# 2016-2026, vs quasi zero con la Produzione Industriale USA) — il vero
+# driver è il ciclo capex semiconduttori/AI, non l'industria generica.
+# Indice Philadelphia Semiconductor, nessuna key richiesta (stessa fonte
+# Yahoo dei prezzi). Riusato anche per VRT come proxy ragionevole dello
+# stesso ciclo di spesa AI (semiconduttori e data center sono finanziati
+# dallo stesso capex degli hyperscaler), ma senza la stessa verifica
+# empirica specifica fatta per la robotica — vedi TREND_PROMPT_CONTEXT,
+# che tiene il claim onesto (proxy non validata) invece di spacciarlo per
+# lo stesso "driver dominante scoperto empiricamente" della robotica.
 ROBOTICS_BENCHMARK_TICKER = "^SOX"
+
+# Cadenza di rigenerazione per asset, in mesi. THK/Harmonic Drive/TER
+# restano mensili (feedback utente 2026-09-17). VRT è trimestrale: il
+# segnale che conta davvero per la tesi (crescita backlog/ordini) esce
+# solo con le trimestrali, quindi rigenerare la lettura ogni mese
+# sprecherebbe budget AI senza nuovo segnale reale nel mezzo.
+ASSET_CADENCE_MONTHS = {"THK": 1, "HARMONIC_DRIVE": 1, "TER": 1, "VRT": 3}
+
+# Testo del prompt che varia per asset (trend_predictor.build_trend_prompt):
+# la robotica ha un'analisi storica specifica alle spalle (correlazione
+# SOX verificata, range di drawdown 45-80% osservato sui 10 anni di dati),
+# VRT no — il testo per VRT è più cauto invece di riciclare claim empirici
+# validati solo per l'altro paniere.
+TREND_PROMPT_CONTEXT = {
+    "THK": {
+        "sector_label": "robotica/automazione/meccanica di precisione",
+        "benchmark_intro": "Driver macro dominante per questo paniere (scoperto empiricamente, non produzione industriale generica)",
+        "cyclicality_note": (
+            "questo è un titolo storicamente CICLICO (boom-bust di 3-4 anni legati al ciclo capex "
+            "semiconduttori/AI, con drawdown storici del 45-80% dai picchi), non un trend lineare"
+        ),
+    },
+    "HARMONIC_DRIVE": {
+        "sector_label": "robotica/automazione/meccanica di precisione",
+        "benchmark_intro": "Driver macro dominante per questo paniere (scoperto empiricamente, non produzione industriale generica)",
+        "cyclicality_note": (
+            "questo è un titolo storicamente CICLICO (boom-bust di 3-4 anni legati al ciclo capex "
+            "semiconduttori/AI, con drawdown storici del 45-80% dai picchi), non un trend lineare"
+        ),
+    },
+    "TER": {
+        "sector_label": "robotica/automazione/meccanica di precisione (test equipment per semiconduttori)",
+        "benchmark_intro": "Driver macro dominante per questo paniere (scoperto empiricamente, non produzione industriale generica)",
+        "cyclicality_note": (
+            "questo è un titolo storicamente CICLICO (boom-bust di 3-4 anni legati al ciclo capex "
+            "semiconduttori/AI, con drawdown storici del 45-80% dai picchi), non un trend lineare"
+        ),
+    },
+    "VRT": {
+        "sector_label": "infrastruttura elettrica e di raffreddamento per data center AI",
+        "benchmark_intro": (
+            "Indice preso come proxy del ciclo di spesa in semiconduttori/infrastrutture AI (stessa area "
+            "di domanda del paniere robotica di questo sistema, ma correlazione non ancora validata in "
+            "modo specifico su questo titolo)"
+        ),
+        "cyclicality_note": (
+            "valuta la ciclicità di questo titolo sui numeri sopra (drawdown massimo, volatilità, fase "
+            "rispetto alla media mobile) invece di assumere il pattern osservato sul paniere robotica: "
+            "una fase 'molto_estesa' tende comunque a essere seguita da correzioni anche quando il trend "
+            "di fondo resta positivo, ma l'ampiezza storica dei drawdown non è verificata per questo titolo"
+        ),
+    },
+}
 
 # Orizzonti di analisi trend, in anni (non giorni/orizzonti brevi come
 # HORIZONS sopra).
