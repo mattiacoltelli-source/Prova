@@ -1058,6 +1058,18 @@
                 const cycleLabel = CYCLE_PHASE_LABEL[cyclePhase] || cyclePhase;
                 const drivers = (latest.key_drivers || []).map(d => `<span class="driver-chip">${d}</span>`).join('');
 
+                // Episodi storici "molto estesa" + esiti (correzione/recupero) e
+                // distanza da ATH/52w high: numeri calcolati da trend_analysis.py
+                // sui prezzi storici (mai dall'AI) — vedi trend_run.py.
+                const ep = m.extended_episodes || {};
+                const episodesText = ep.num_episodes
+                    ? `Su ${ep.num_episodes} episod${ep.num_episodes === 1 ? 'io' : 'i'} storic${ep.num_episodes === 1 ? 'o' : 'i'} simile/i (fase molto estesa come ora), la correzione media dal picco è stata ${formatPct(ep.avg_correction_pct)}` +
+                      (ep.avg_recovery_months != null ? `, con recupero medio in ${ep.avg_recovery_months} mesi` : '') +
+                      (ep.num_not_recovered ? `. ${ep.num_not_recovered}/${ep.num_episodes} non ha ancora recuperato il livello del picco.` : '.')
+                    : 'Nessun episodio storico simile risolto nello storico disponibile (dato insufficiente, non zero episodi accertati).';
+
+                const ath = m.ath_distance || {};
+
                 // Storico: TUTTE le letture in data (non solo l'ultima),
                 // più recenti prima — rende il sistema verificabile nel
                 // tempo ("a settimana X dicevamo Y"), stesso principio
@@ -1091,6 +1103,16 @@
                     </div>
                     <div class="section-title">CAGR per orizzonte (1-10 anni)</div>
                     <div class="cagr-grid">${cagrCells}</div>
+
+                    <div class="section-title">Storico correzioni dopo fasi simili</div>
+                    <p style="font-size:0.82rem; line-height:1.5; color: var(--text-main); margin-bottom: 6px;">
+                        ${episodesText}
+                    </p>
+                    <div style="font-size:0.76rem; color: var(--text-muted); margin-bottom: 10px;">
+                        Distanza da ATH: ${ath.pct_from_ath != null ? formatPct(ath.pct_from_ath) : '—'}${ath.ath_date ? ` (${ath.ath_date})` : ''} ·
+                        Distanza da massimo 52 sett.: ${ath.pct_from_52w_high != null ? formatPct(ath.pct_from_52w_high) : '—'}
+                    </div>
+
                     <div class="section-title">Valutazione ciclo</div>
                     <p style="font-size:0.85rem; line-height:1.5; color: var(--text-main); margin-bottom: 10px;">
                         ${latest.cycle_assessment || 'Non disponibile.'}
