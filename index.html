@@ -929,6 +929,63 @@
             },
         };
 
+        // Fondamentali statici (P/E, EPS, capitalizzazione, ricavi/utile
+        // TTM), verificati manualmente il 2026-09-17 da stockanalysis.com —
+        // non recuperati a runtime da nessuna API. Per THK e Harmonic Drive
+        // non esiste un fallback automatico affidabile (l'unica fonte
+        // ufficiale strutturata sarebbe EDINET, che richiede registrazione
+        // e parsing XBRL non ancora integrati); dato che questi numeri
+        // cambiano solo con le trimestrali, un aggiornamento manuale
+        // periodico è una soluzione pratica migliore di non avere il dato.
+        // Teradyne è incluso per coerenza di UI tra i tre asset robotica
+        // (in futuro potrebbe passare a un fetch automatico via SEC EDGAR,
+        // come già avviene per i fondamentali degli asset Tech).
+        const ROBOTICS_FUNDAMENTALS = {
+            THK: {
+                asOf: '2026-09-17', price: 5999, currency: 'JPY',
+                peTrailing: 27.78, peForward: 15.06, epsTtm: -355.92,
+                marketCapB: 685.66, revenueTtmB: 215.27, netIncomeTtmB: -39.87,
+                dividendYield: 3.09,
+                note: 'EPS e utile netto TTM negativi (perdita nell\'ultimo anno). Il P/E trailing riportato dalla fonte può riflettere una base di utile rettificata, diversa da quella GAAP mostrata qui: da prendere con cautela.',
+                source: 'stockanalysis.com',
+            },
+            HARMONIC_DRIVE: {
+                asOf: '2026-09-17', price: 5970, currency: 'JPY',
+                peTrailing: 193.53, peForward: 77.36, epsTtm: 30.85,
+                marketCapB: 565.16, revenueTtmB: 62.74, netIncomeTtmB: 2.92,
+                dividendYield: 0.37,
+                source: 'stockanalysis.com',
+            },
+            TER: {
+                asOf: '2026-09-17', price: 341.15, currency: 'USD',
+                peTrailing: 46.83, peForward: 34.98, epsTtm: 7.29,
+                marketCapB: 53.34, revenueTtmB: 4.46, netIncomeTtmB: 1.15,
+                dividendYield: 0.15,
+                source: 'stockanalysis.com',
+            },
+        };
+
+        function renderFundamentalsBlock(ticker) {
+            const f = ROBOTICS_FUNDAMENTALS[ticker];
+            if (!f) return '';
+            const cur = f.currency === 'JPY' ? '¥' : '$';
+            const fmtB = (v) => `${cur}${v.toLocaleString('it-IT', { maximumFractionDigits: 2 })} mld`;
+            return `
+                <hr style="border-color: rgba(255,255,255,0.08); margin: 10px 0;">
+                <strong>Fondamentali (dati inseriti manualmente, aggiornati al ${f.asOf})</strong><br>
+                Prezzo: ${cur}${f.price.toLocaleString('it-IT')}<br>
+                P/E trailing: ${f.peTrailing} &nbsp;·&nbsp; P/E forward: ${f.peForward}<br>
+                EPS (TTM): ${cur}${f.epsTtm}<br>
+                Capitalizzazione: ${fmtB(f.marketCapB)}<br>
+                Ricavi (TTM): ${fmtB(f.revenueTtmB)} &nbsp;·&nbsp; Utile netto (TTM): ${fmtB(f.netIncomeTtmB)}<br>
+                Dividend yield: ${f.dividendYield}%
+                ${f.note ? `<div class="risk-note" style="margin-top:6px;">${f.note}</div>` : ''}
+                <div style="font-size: 11px; opacity: 0.6; margin-top: 6px;">
+                    Fonte: ${f.source}, verificato manualmente il ${f.asOf}. Non aggiornato in automatico: per THK/Harmonic Drive non esiste ancora un'integrazione API affidabile, questi valori vengono controllati e aggiornati a mano periodicamente.
+                </div>
+            `;
+        }
+
         function renderCompanyInfoPanel(ticker) {
             const c = COMPANY_INFO[ticker];
             if (!c) return '';
@@ -942,6 +999,7 @@
                         Settore: ${c.sector}<br>
                         Quotata: ${c.exchange}<br><br>
                         ${c.description}
+                        ${renderFundamentalsBlock(ticker)}
                     </div>
                 </details>
             `;
