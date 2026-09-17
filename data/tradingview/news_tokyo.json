@@ -1,0 +1,84 @@
+{
+  "fetched_at": "2026-09-17",
+  "source": "TradingView MCP (account personale)",
+  "nota_licenza": "Snapshot statico per uso personale del progetto. Sono salvati valori aggregati e metadati (titoli, date, cifre di bilancio), non il testo integrale degli articoli. Non è un feed: non si aggiorna da solo.",
+  "perche_esiste": "Per i ticker Tokyo la cascata news del progetto (Finnhub -> Alpha Vantage -> GDELT) arriva in pratica sempre a GDELT, che cerca per testo libero e non per ticker. Qui ci sono titoli agganciati al simbolo, incluse sintesi delle earnings call (Quartr) che GDELT non ha.",
+  "contenuto": "Solo metadati: titolo, data, fonte, link. Nessun testo integrale.",
+  "THK": {
+    "tv_symbol": "TSE:6481",
+    "totale_disponibili": 30,
+    "headlines": [
+      {
+        "data": "2026-08-05",
+        "fonte": "Quartr",
+        "titolo": "THK: Revenue and profit surged on semiconductor demand and reforms, with FY 2026 outlook raised"
+      },
+      {
+        "data": "2026-08-05",
+        "fonte": "Quartr",
+        "titolo": "THK: Revenue and profit surged on strong industrial demand and reforms, with forecasts raised for FY2026"
+      },
+      {
+        "data": "2026-08-05",
+        "fonte": "Quartr",
+        "titolo": "THK: Profit soared on strong machinery demand and a major business divestiture gain"
+      },
+      {
+        "data": "2026-08-05",
+        "fonte": "Reuters",
+        "titolo": "TABLE-THK 6-MTH group results (IFRS)"
+      },
+      {
+        "data": "2026-05-11",
+        "fonte": "Quartr",
+        "titolo": "THK: Stable financials post-automotive transfer, with improved margins and global focus"
+      }
+    ]
+  },
+  "HARMONIC_DRIVE": {
+    "tv_symbol": "TSE:6324",
+    "totale_disponibili": 24,
+    "headlines": [
+      {
+        "data": "2026-08-07",
+        "fonte": "Quartr",
+        "titolo": "Harmonic Drive Systems: Q1 FY2026 delivered strong sales and profit growth, with robust full-year outlook maintained"
+      },
+      {
+        "data": "2026-08-07",
+        "fonte": "Reuters",
+        "titolo": "TABLE-Harmonic Drive Systems -Q1 group results"
+      },
+      {
+        "data": "2026-08-07",
+        "fonte": "Reuters",
+        "titolo": "TABLE-Harmonic Drive Systems -2026/27 parent forecast"
+      },
+      {
+        "data": "2026-08-07",
+        "fonte": "Reuters",
+        "titolo": "TABLE-Harmonic Drive Systems Inc -2026 6-month parent forecast"
+      },
+      {
+        "data": "2026-08-07",
+        "fonte": "Quartr",
+        "titolo": "Harmonic Drive Systems: Upward forecast revisions reflect strong demand and improved profitability in key sectors"
+      },
+      {
+        "data": "2026-05-22",
+        "fonte": "Quartr",
+        "titolo": "Harmonic Drive Systems: FY 2026/3 saw higher sales but sharply lower net income; strong growth forecast for FY 2027/3"
+      },
+      {
+        "data": "2026-05-13",
+        "fonte": "Quartr",
+        "titolo": "Harmonic Drive Systems: Sales rose 7%, but profit fell; FY2027 forecasts strong recovery and higher dividends"
+      },
+      {
+        "data": "2026-05-13",
+        "fonte": "Reuters",
+        "titolo": "TABLE-Harmonic Drive Systems -2025/26 group results"
+      }
+    ]
+  }
+}

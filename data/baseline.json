@@ -1,0 +1,485 @@
+{
+  "generated_at": "2026-09-17T16:56:21.267678+00:00",
+  "volatility_k": 0.4,
+  "history_range": "max",
+  "source": "Yahoo Finance (fallback Twelve Data) — prezzi rettificati per split",
+  "assets": {
+    "NVDA": {
+      "bars": 6956,
+      "first_bar": "1999-01-22",
+      "last_bar": "2026-09-17",
+      "horizons": {
+        "1d": {
+          "horizon": "1d",
+          "observations": 6941,
+          "first_date": "1999-02-11",
+          "last_date": "2026-09-16",
+          "counts": {
+            "UP": 1947,
+            "DOWN": 1718,
+            "FLAT": 3276
+          },
+          "pct": {
+            "UP": 28.1,
+            "DOWN": 24.8,
+            "FLAT": 47.2
+          },
+          "majority_class": "FLAT",
+          "majority_pct": 47.2
+        },
+        "7d": {
+          "horizon": "7d",
+          "observations": 6937,
+          "first_date": "1999-02-11",
+          "last_date": "2026-09-10",
+          "counts": {
+            "UP": 2229,
+            "DOWN": 1663,
+            "FLAT": 3045
+          },
+          "pct": {
+            "UP": 32.1,
+            "DOWN": 24.0,
+            "FLAT": 43.9
+          },
+          "majority_class": "FLAT",
+          "majority_pct": 43.9
+        },
+        "1m": {
+          "horizon": "1m",
+          "observations": 6921,
+          "first_date": "1999-02-11",
+          "last_date": "2026-08-18",
+          "counts": {
+            "UP": 2641,
+            "DOWN": 1458,
+            "FLAT": 2822
+          },
+          "pct": {
+            "UP": 38.2,
+            "DOWN": 21.1,
+            "FLAT": 40.8
+          },
+          "majority_class": "FLAT",
+          "majority_pct": 40.8
+        }
+      },
+      "k_calibration": {
+        "1d": [
+          {
+            "k": 0.2,
+            "flat_pct": 24.5,
+            "is_current": false
+          },
+          {
+            "k": 0.3,
+            "flat_pct": 36.8,
+            "is_current": false
+          },
+          {
+            "k": 0.4,
+            "flat_pct": 47.2,
+            "is_current": true
+          },
+          {
+            "k": 0.5,
+            "flat_pct": 56.0,
+            "is_current": false
+          },
+          {
+            "k": 0.6,
+            "flat_pct": 64.0,
+            "is_current": false
+          },
+          {
+            "k": 0.8,
+            "flat_pct": 76.7,
+            "is_current": false
+          }
+        ],
+        "7d": [
+          {
+            "k": 0.2,
+            "flat_pct": 23.0,
+            "is_current": false
+          },
+          {
+            "k": 0.3,
+            "flat_pct": 33.3,
+            "is_current": false
+          },
+          {
+            "k": 0.4,
+            "flat_pct": 43.9,
+            "is_current": true
+          },
+          {
+            "k": 0.5,
+            "flat_pct": 52.9,
+            "is_current": false
+          },
+          {
+            "k": 0.6,
+            "flat_pct": 61.4,
+            "is_current": false
+          },
+          {
+            "k": 0.8,
+            "flat_pct": 75.1,
+            "is_current": false
+          }
+        ],
+        "1m": [
+          {
+            "k": 0.2,
+            "flat_pct": 21.3,
+            "is_current": false
+          },
+          {
+            "k": 0.3,
+            "flat_pct": 31.5,
+            "is_current": false
+          },
+          {
+            "k": 0.4,
+            "flat_pct": 40.8,
+            "is_current": true
+          },
+          {
+            "k": 0.5,
+            "flat_pct": 49.9,
+            "is_current": false
+          },
+          {
+            "k": 0.6,
+            "flat_pct": 57.3,
+            "is_current": false
+          },
+          {
+            "k": 0.8,
+            "flat_pct": 69.8,
+            "is_current": false
+          }
+        ]
+      }
+    },
+    "MSFT": {
+      "bars": 10207,
+      "first_bar": "1986-03-13",
+      "last_bar": "2026-09-17",
+      "horizons": {
+        "1d": {
+          "horizon": "1d",
+          "observations": 10192,
+          "first_date": "1986-04-03",
+          "last_date": "2026-09-16",
+          "counts": {
+            "UP": 2914,
+            "DOWN": 2505,
+            "FLAT": 4773
+          },
+          "pct": {
+            "UP": 28.6,
+            "DOWN": 24.6,
+            "FLAT": 46.8
+          },
+          "majority_class": "FLAT",
+          "majority_pct": 46.8
+        },
+        "7d": {
+          "horizon": "7d",
+          "observations": 10188,
+          "first_date": "1986-04-03",
+          "last_date": "2026-09-10",
+          "counts": {
+            "UP": 3172,
+            "DOWN": 2340,
+            "FLAT": 4676
+          },
+          "pct": {
+            "UP": 31.1,
+            "DOWN": 23.0,
+            "FLAT": 45.9
+          },
+          "majority_class": "FLAT",
+          "majority_pct": 45.9
+        },
+        "1m": {
+          "horizon": "1m",
+          "observations": 10172,
+          "first_date": "1986-04-03",
+          "last_date": "2026-08-18",
+          "counts": {
+            "UP": 3734,
+            "DOWN": 2038,
+            "FLAT": 4400
+          },
+          "pct": {
+            "UP": 36.7,
+            "DOWN": 20.0,
+            "FLAT": 43.3
+          },
+          "majority_class": "FLAT",
+          "majority_pct": 43.3
+        }
+      },
+      "k_calibration": {
+        "1d": [
+          {
+            "k": 0.2,
+            "flat_pct": 25.3,
+            "is_current": false
+          },
+          {
+            "k": 0.3,
+            "flat_pct": 36.6,
+            "is_current": false
+          },
+          {
+            "k": 0.4,
+            "flat_pct": 46.8,
+            "is_current": true
+          },
+          {
+            "k": 0.5,
+            "flat_pct": 56.8,
+            "is_current": false
+          },
+          {
+            "k": 0.6,
+            "flat_pct": 64.1,
+            "is_current": false
+          },
+          {
+            "k": 0.8,
+            "flat_pct": 76.7,
+            "is_current": false
+          }
+        ],
+        "7d": [
+          {
+            "k": 0.2,
+            "flat_pct": 24.8,
+            "is_current": false
+          },
+          {
+            "k": 0.3,
+            "flat_pct": 35.5,
+            "is_current": false
+          },
+          {
+            "k": 0.4,
+            "flat_pct": 45.9,
+            "is_current": true
+          },
+          {
+            "k": 0.5,
+            "flat_pct": 55.1,
+            "is_current": false
+          },
+          {
+            "k": 0.6,
+            "flat_pct": 63.0,
+            "is_current": false
+          },
+          {
+            "k": 0.8,
+            "flat_pct": 76.2,
+            "is_current": false
+          }
+        ],
+        "1m": [
+          {
+            "k": 0.2,
+            "flat_pct": 21.8,
+            "is_current": false
+          },
+          {
+            "k": 0.3,
+            "flat_pct": 32.7,
+            "is_current": false
+          },
+          {
+            "k": 0.4,
+            "flat_pct": 43.3,
+            "is_current": true
+          },
+          {
+            "k": 0.5,
+            "flat_pct": 51.9,
+            "is_current": false
+          },
+          {
+            "k": 0.6,
+            "flat_pct": 60.2,
+            "is_current": false
+          },
+          {
+            "k": 0.8,
+            "flat_pct": 73.2,
+            "is_current": false
+          }
+        ]
+      }
+    },
+    "AAPL": {
+      "bars": 11533,
+      "first_bar": "1980-12-12",
+      "last_bar": "2026-09-17",
+      "horizons": {
+        "1d": {
+          "horizon": "1d",
+          "observations": 11518,
+          "first_date": "1981-01-05",
+          "last_date": "2026-09-16",
+          "counts": {
+            "UP": 3246,
+            "DOWN": 2924,
+            "FLAT": 5348
+          },
+          "pct": {
+            "UP": 28.2,
+            "DOWN": 25.4,
+            "FLAT": 46.4
+          },
+          "majority_class": "FLAT",
+          "majority_pct": 46.4
+        },
+        "7d": {
+          "horizon": "7d",
+          "observations": 11514,
+          "first_date": "1981-01-05",
+          "last_date": "2026-09-10",
+          "counts": {
+            "UP": 3651,
+            "DOWN": 2834,
+            "FLAT": 5029
+          },
+          "pct": {
+            "UP": 31.7,
+            "DOWN": 24.6,
+            "FLAT": 43.7
+          },
+          "majority_class": "FLAT",
+          "majority_pct": 43.7
+        },
+        "1m": {
+          "horizon": "1m",
+          "observations": 11498,
+          "first_date": "1981-01-05",
+          "last_date": "2026-08-18",
+          "counts": {
+            "UP": 4469,
+            "DOWN": 2661,
+            "FLAT": 4368
+          },
+          "pct": {
+            "UP": 38.9,
+            "DOWN": 23.1,
+            "FLAT": 38.0
+          },
+          "majority_class": "UP",
+          "majority_pct": 38.9
+        }
+      },
+      "k_calibration": {
+        "1d": [
+          {
+            "k": 0.2,
+            "flat_pct": 25.0,
+            "is_current": false
+          },
+          {
+            "k": 0.3,
+            "flat_pct": 36.5,
+            "is_current": false
+          },
+          {
+            "k": 0.4,
+            "flat_pct": 46.4,
+            "is_current": true
+          },
+          {
+            "k": 0.5,
+            "flat_pct": 55.5,
+            "is_current": false
+          },
+          {
+            "k": 0.6,
+            "flat_pct": 63.3,
+            "is_current": false
+          },
+          {
+            "k": 0.8,
+            "flat_pct": 75.5,
+            "is_current": false
+          }
+        ],
+        "7d": [
+          {
+            "k": 0.2,
+            "flat_pct": 23.4,
+            "is_current": false
+          },
+          {
+            "k": 0.3,
+            "flat_pct": 33.9,
+            "is_current": false
+          },
+          {
+            "k": 0.4,
+            "flat_pct": 43.7,
+            "is_current": true
+          },
+          {
+            "k": 0.5,
+            "flat_pct": 52.5,
+            "is_current": false
+          },
+          {
+            "k": 0.6,
+            "flat_pct": 60.0,
+            "is_current": false
+          },
+          {
+            "k": 0.8,
+            "flat_pct": 72.2,
+            "is_current": false
+          }
+        ],
+        "1m": [
+          {
+            "k": 0.2,
+            "flat_pct": 20.4,
+            "is_current": false
+          },
+          {
+            "k": 0.3,
+            "flat_pct": 29.1,
+            "is_current": false
+          },
+          {
+            "k": 0.4,
+            "flat_pct": 38.0,
+            "is_current": true
+          },
+          {
+            "k": 0.5,
+            "flat_pct": 46.6,
+            "is_current": false
+          },
+          {
+            "k": 0.6,
+            "flat_pct": 54.1,
+            "is_current": false
+          },
+          {
+            "k": 0.8,
+            "flat_pct": 66.8,
+            "is_current": false
+          }
+        ]
+      }
+    }
+  }
+}
