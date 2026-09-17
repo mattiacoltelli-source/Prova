@@ -1,0 +1,82 @@
+{
+  "fetched_at": "2026-09-17",
+  "source": "TradingView MCP — get_economic_calendar (US, importance=high, category=prices)",
+  "contenuto": "Date di PUBBLICAZIONE del CPI statunitense (indicatori 'Inflation Rate' e 'Core Inflation Rate'), non le date di riferimento del dato.",
+  "perche_e_stato_scaricato_ora": "Il calendario economico di TradingView copre lo storico dal 2003 ma richiede un abbonamento attivo, e accetta finestre di al massimo ~6 mesi per chiamata (una finestra di 12 mesi torna vuota SENZA errore). Una volta committate, queste date restano disponibili per sempre.",
+  "limiti": [
+    "Raccolta non continua: coperti solo i periodi usati nello studio dei regimi.",
+    "Nel 2025 alcune pubblicazioni mancano e due date sono anomale (24/10, 18/12), coerentemente con le interruzioni del calendario statistico USA di quell'anno.",
+    "get_economic_data NON è un'alternativa: restituisce le date di riferimento (inizio mese) e non quelle di rilascio."
+  ],
+  "alternativa_gratuita_da_verificare": "L'API FRED (già usata dal progetto in src/data_sources/macro.py) espone le date di rilascio via endpoint dedicato. Non verificabile senza FRED_API_KEY, che è un secret del repo: se funziona, sostituisce questa fonte in modo permanente e utilizzabile anche in CI.",
+  "regimi": {
+    "bassa_inflazione_2016_2017": {
+      "inflazione_yoy_pct": "circa 2",
+      "dates": [
+        "2016-01-20",
+        "2016-02-19",
+        "2016-03-16",
+        "2016-04-14",
+        "2016-05-17",
+        "2016-06-16",
+        "2016-07-15",
+        "2016-08-16",
+        "2016-09-16",
+        "2016-10-18",
+        "2016-11-17",
+        "2016-12-15",
+        "2017-01-18",
+        "2017-02-15",
+        "2017-03-15",
+        "2017-04-14",
+        "2017-05-12",
+        "2017-06-14",
+        "2017-07-14",
+        "2017-08-11",
+        "2017-09-14",
+        "2017-10-13",
+        "2017-11-15",
+        "2017-12-13"
+      ]
+    },
+    "alta_inflazione_2021_2022": {
+      "inflazione_yoy_pct": "5-9",
+      "dates": [
+        "2021-07-13",
+        "2021-08-11",
+        "2021-09-14",
+        "2021-10-13",
+        "2021-11-10",
+        "2021-12-10",
+        "2022-01-12",
+        "2022-02-10",
+        "2022-03-10",
+        "2022-04-12",
+        "2022-05-11",
+        "2022-06-10",
+        "2022-07-13",
+        "2022-08-10",
+        "2022-09-13",
+        "2022-10-13",
+        "2022-11-10",
+        "2022-12-13"
+      ]
+    },
+    "moderata_2025": {
+      "inflazione_yoy_pct": "2.3-3.0",
+      "dates": [
+        "2025-01-15",
+        "2025-02-12",
+        "2025-03-12",
+        "2025-04-10",
+        "2025-05-13",
+        "2025-06-11",
+        "2025-07-15",
+        "2025-08-12",
+        "2025-09-11",
+        "2025-10-24",
+        "2025-12-18"
+      ]
+    }
+  }
+}

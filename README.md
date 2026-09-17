@@ -218,6 +218,88 @@ soglia.
 > su barre mensili credendole giornaliere. Per lo storico completo
 > `_yahoo_daily_history()` usa quindi la coppia `period1`/`period2`.
 
+## La banda FLAT e gli eventi macro: cosa dicono i dati
+
+La banda FLAT è `VOLATILITY_K * ATR%(14) * sqrt(giorni)` e **non guarda cosa
+cade dentro la finestra**: un orizzonte a 7 giorni che contiene la
+pubblicazione del CPI riceve la stessa banda di una settimana vuota.
+Sembrava un difetto evidente da correggere con un moltiplicatore per i
+giorni di evento. I dati dicono che non è così semplice.
+
+`src/event_study.py` confronta il movimento giornaliero medio assoluto nei
+giorni CPI con quello degli altri giorni **della stessa finestra** (così il
+livello di volatilità del periodo si semplifica da solo, e il rapporto
+misura l'effetto evento *in aggiunta* a ciò che l'ATR già cattura). IC 95%
+via bootstrap, perché la distribuzione dei movimenti ha code spesse e un
+test t darebbe intervalli troppo stretti proprio sui movimenti grandi.
+
+Risultato su tre regimi di inflazione (NVDA/MSFT/AAPL aggregati):
+
+| Regime | Inflazione YoY | Date CPI | Rapporto | IC 95% | Significativo |
+|---|---|---|---|---|---|
+| Bassa (2016-2017) | ~2% | 24 | **0,79x** | 0,60 – 0,99 | sì |
+| Moderata (2025) | 2,3-3,0% | 11 | 1,22x | 0,85 – 1,65 | no |
+| Alta (2021-2022) | 5-9% | 18 | **1,49x** | 1,12 – 1,92 | sì |
+
+L'effetto è reale ma **dipende dal regime e cambia segno**. Con inflazione
+al 5-9% i giorni CPI si muovono una volta e mezza tanto; con inflazione al
+2% si muovono *meno* del normale (il CPI era un non-evento e usciva in
+giornate tranquille). In mezzo, non si distingue da zero.
+
+### Perché NON è stato aggiunto un moltiplicatore
+
+Un fattore statico peggiorerebbe le cose: allargherebbe la banda nei periodi
+calmi, dove i dati dicono di stringerla, spingendo tutto verso FLAT proprio
+quando FLAT è già la classe più frequente. E la banda è congelata al momento
+della previsione, quindi un errore qui si propaga a tutti gli esiti valutati
+con quella soglia.
+
+L'inflazione oggi è al 3,4% YoY: regime "moderato", dove il rapporto misurato
+è 1,22x ma l'intervallo contiene 1,0. **Non c'è evidenza per attivare nulla
+adesso.** La ricerca è committata e riproducibile; la regola per attivarla è
+scritta qui sotto, così la decisione sarà deliberata e non a intuito.
+
+### Quando avrebbe senso attivarla
+
+Tre condizioni insieme, non una sola:
+
+1. Inflazione YoY stabilmente sopra il ~4%, cioè il regime in cui l'effetto
+   è misurato e significativo.
+2. Un rapporto ricalcolato sui dati recenti con IC che **esclude 1,0**.
+3. Una fonte di date CPI **future** che sopravviva all'abbonamento (vedi
+   sotto), altrimenti la feature si rompe in silenzio appena scade.
+
+### Il problema della fonte
+
+Le date storiche sono in `data/tradingview/cpi_release_dates.json`,
+committate e quindi permanenti. Le date **future** no: il calendario
+TradingView guarda avanti ~31 giorni e richiede l'abbonamento. Candidato
+permanente e gratuito: l'API FRED, già usata dal progetto in
+`src/data_sources/macro.py`, che espone le date di rilascio da un endpoint
+dedicato. **Non verificata**: `FRED_API_KEY` è un secret del repo e non era
+disponibile nell'ambiente in cui è stata fatta questa analisi.
+
+### Rieseguire
+
+```bash
+python -m src.event_study_run            # scrive data/event_study.json
+python -m src.event_study_run --dry-run
+```
+
+Analisi offline come `src/baseline_run.py`: non gira in CI. Va rilanciata
+quando si aggiungono date di evento, asset o un regime da confrontare.
+
+> **Vincoli del calendario TradingView trovati strada facendo**: le finestre
+> oltre i ~6 mesi tornano **vuote senza errore** (una richiesta di 12 mesi dà
+> `[]`), quindi la raccolta va spezzata in semestri. Le categorie vanno
+> passate in forma lunga (`prices`), mentre le risposte usano codici brevi
+> (`prce`). `get_economic_data` non è un'alternativa per le date di rilascio:
+> restituisce le date di *riferimento* del dato (inizio mese) ed è
+> incompleta. Il calendario earnings storico non esiste affatto (una query
+> sul 2015-2016 torna vuota), ma le date passate degli utili sono
+> ricostruibili da `get_documents`, dove il campo `reported` è il timestamp
+> dell'evento.
+
 ## Snapshot TradingView (una tantum, 2026-09-17)
 
 `data/tradingview/` contiene una fotografia datata di dati scaricati una
