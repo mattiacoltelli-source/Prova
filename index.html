@@ -965,9 +965,41 @@
             },
         };
 
+        // I fondamentali sono verificati a mano (nessuna API affidabile per
+        // THK/Harmonic Drive): senza una scadenza resterebbero visibili
+        // all'infinito come se fossero attuali, anche se nessuno li
+        // riguarda più. Scadenza automatica lato client, ricalcolata ad
+        // ogni caricamento pagina: oltre questa soglia il blocco smette di
+        // mostrare i numeri, invece di lasciare che un P/E/EPS vecchio
+        // continui silenziosamente a influenzare chi legge l'app. 6 mesi =
+        // margine di circa due trimestrali (i bilanci escono ogni ~3 mesi)
+        // prima che i multipli calcolati su quei numeri siano da considerare
+        // non più affidabili.
+        const FUNDAMENTALS_MAX_AGE_MONTHS = 6;
+
+        function monthsSince(dateStr) {
+            const then = new Date(dateStr + 'T00:00:00Z');
+            const now = new Date();
+            let months = (now.getUTCFullYear() - then.getUTCFullYear()) * 12
+                + (now.getUTCMonth() - then.getUTCMonth());
+            if (now.getUTCDate() < then.getUTCDate()) months -= 1;
+            return months;
+        }
+
         function renderFundamentalsBlock(ticker) {
             const f = ROBOTICS_FUNDAMENTALS[ticker];
             if (!f) return '';
+            const age = monthsSince(f.asOf);
+            if (age > FUNDAMENTALS_MAX_AGE_MONTHS) {
+                return `
+                    <hr style="border-color: rgba(255,255,255,0.08); margin: 10px 0;">
+                    <div class="risk-note">
+                        Fondamentali nascosti automaticamente: l'ultima verifica manuale risale al ${f.asOf}
+                        (oltre ${FUNDAMENTALS_MAX_AGE_MONTHS} mesi fa), quindi P/E ed EPS non sono più
+                        considerati affidabili. Serve un nuovo controllo manuale per aggiornarli.
+                    </div>
+                `;
+            }
             const cur = f.currency === 'JPY' ? '¥' : '$';
             const fmtB = (v) => `${cur}${v.toLocaleString('it-IT', { maximumFractionDigits: 2 })} mld`;
             return `
