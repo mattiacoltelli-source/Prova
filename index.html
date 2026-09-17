@@ -948,70 +948,34 @@
             },
         };
 
-        // Fondamentali statici (P/E, EPS, capitalizzazione, ricavi/utile
-        // TTM), verificati manualmente il 2026-09-17 da stockanalysis.com —
-        // non recuperati a runtime da nessuna API. Per THK e Harmonic Drive
-        // non esiste un fallback automatico affidabile (l'unica fonte
-        // ufficiale strutturata sarebbe EDINET, che richiede registrazione
-        // e parsing XBRL non ancora integrati); dato che questi numeri
-        // cambiano solo con le trimestrali, un aggiornamento manuale
-        // periodico è una soluzione pratica migliore di non avere il dato.
-        // Teradyne e Vertiv sono inclusi per coerenza di UI con THK/Harmonic
-        // Drive (in futuro potrebbero passare a un fetch automatico via SEC
-        // EDGAR, come già avviene per i fondamentali degli asset Tech —
-        // entrambi NYSE/NASDAQ, a differenza dei ticker Tokyo). Vertiv ha
-        // anche il target di prezzo consensus analisti (campi target*):
-        // dato reale aggregato da terzi, non generato dall'AI, con la
-        // stessa scadenza automatica a 6 mesi degli altri fondamentali —
-        // un fetch live via Yahoo richiederebbe un crumb anti-bot inaffidabile
-        // per un job schedulato, quindi stesso pattern manuale.
-        const ROBOTICS_FUNDAMENTALS = {
-            THK: {
-                asOf: '2026-09-17', price: 5999, currency: 'JPY',
-                peTrailing: 27.78, peForward: 15.06, epsTtm: -355.92,
-                marketCapB: 685.66, revenueTtmB: 215.27, netIncomeTtmB: -39.87,
-                dividendYield: 3.09,
-                note: 'EPS e utile netto TTM negativi (perdita nell\'ultimo anno). Il P/E trailing riportato dalla fonte può riflettere una base di utile rettificata, diversa da quella GAAP mostrata qui: da prendere con cautela.',
-                source: 'stockanalysis.com',
-            },
-            HARMONIC_DRIVE: {
-                asOf: '2026-09-17', price: 5970, currency: 'JPY',
-                peTrailing: 193.53, peForward: 77.36, epsTtm: 30.85,
-                marketCapB: 565.16, revenueTtmB: 62.74, netIncomeTtmB: 2.92,
-                dividendYield: 0.37,
-                source: 'stockanalysis.com',
-            },
-            TER: {
-                asOf: '2026-09-17', price: 341.15, currency: 'USD',
-                peTrailing: 46.83, peForward: 34.98, epsTtm: 7.29,
-                marketCapB: 53.34, revenueTtmB: 4.46, netIncomeTtmB: 1.15,
-                dividendYield: 0.15,
-                source: 'stockanalysis.com',
-            },
-            VRT: {
-                asOf: '2026-09-17', price: 239.41, currency: 'USD',
-                peTrailing: 54.18, peForward: 30.55, epsTtm: 4.42,
-                marketCapB: 92.17, revenueTtmB: 11.48, netIncomeTtmB: 1.73,
-                dividendYield: 0.10,
-                // Target di prezzo consensus analisti: dato reale aggregato (non generato
-                // dall'AI), stessa fonte e stessa scadenza automatica dei fondamentali sopra —
-                // un fetch live via Yahoo Finance richiederebbe un token anti-bot (crumb) che si
-                // rompe in modo silenzioso su un job schedulato, quindi stesso pattern manuale.
-                targetMean: 338.15, targetLow: 236, targetHigh: 427, targetAnalysts: 28, targetRating: 'Strong Buy',
-                source: 'stockanalysis.com',
-            },
-        };
+        // Fondamentali caricati da data/tradingview/fundamentals.json, uno
+        // snapshot datato preso da TradingView (vedi il README in quella
+        // cartella). Fino al 2026-09-17 erano una costante scritta a mano in
+        // questo file, con i numeri copiati da stockanalysis.com: quel
+        // pattern richiedeva un aggiornamento manuale ad ogni trimestrale e
+        // faceva sparire il blocco dopo 6 mesi se nessuno lo rifaceva.
+        //
+        // Lo snapshot NON si aggiorna da solo (l'abbonamento TradingView non
+        // è permanente e nessun workflow lo rigenera), quindi la scadenza
+        // automatica resta: cambia la fonte, non il fatto che sia una
+        // fotografia datata.
+        let TV_FUNDAMENTALS = null;
 
-        // I fondamentali sono verificati a mano (nessuna API affidabile per
-        // THK/Harmonic Drive): senza una scadenza resterebbero visibili
-        // all'infinito come se fossero attuali, anche se nessuno li
-        // riguarda più. Scadenza automatica lato client, ricalcolata ad
-        // ogni caricamento pagina: oltre questa soglia il blocco smette di
-        // mostrare i numeri, invece di lasciare che un P/E/EPS vecchio
-        // continui silenziosamente a influenzare chi legge l'app. 6 mesi =
-        // margine di circa due trimestrali (i bilanci escono ogni ~3 mesi)
-        // prima che i multipli calcolati su quei numeri siano da considerare
-        // non più affidabili.
+        async function loadFundamentals() {
+            try {
+                const res = await fetch('data/tradingview/fundamentals.json', { cache: 'no-store' });
+                if (!res.ok) return;
+                TV_FUNDAMENTALS = await res.json();
+            } catch (e) {
+                TV_FUNDAMENTALS = null;
+            }
+        }
+
+        // Oltre questa soglia il blocco smette di mostrare i numeri invece di
+        // lasciare che un P/E o un EPS vecchio continui silenziosamente a
+        // influenzare chi legge. 6 mesi = margine di circa due trimestrali
+        // prima che i multipli calcolati su quei numeri non siano più
+        // affidabili.
         const FUNDAMENTALS_MAX_AGE_MONTHS = 6;
 
         function monthsSince(dateStr) {
@@ -1023,39 +987,151 @@
             return months;
         }
 
-        function renderFundamentalsBlock(ticker) {
-            const f = ROBOTICS_FUNDAMENTALS[ticker];
-            if (!f) return '';
-            const age = monthsSince(f.asOf);
+        const NUM_IT = (v, dec = 2) =>
+            v.toLocaleString('it-IT', { maximumFractionDigits: dec });
+
+        // Il segno va PRIMA del simbolo di valuta: "-¥69,89 mld" e non
+        // "¥-69,89 mld", che si legge male e per un attimo sembra un errore
+        // di formattazione invece di una perdita.
+        function fmtMoney(v, cur, suffix = '') {
+            if (typeof v !== 'number') return '—';
+            const sign = v < 0 ? '-' : '';
+            return `${sign}${cur}${NUM_IT(Math.abs(v))}${suffix}`;
+        }
+
+        // I valori nel JSON sono grezzi (es. 685345014221), non pre-scalati
+        // come nella vecchia costante manuale che li teneva già in miliardi.
+        function fmtBig(v, cur) {
+            if (typeof v !== 'number') return '—';
+            const abs = Math.abs(v);
+            if (abs >= 1e9) return fmtMoney(v / 1e9, cur, ' mld');
+            if (abs >= 1e6) return fmtMoney(v / 1e6, cur, ' mln');
+            return fmtMoney(v, cur);
+        }
+
+        const fmtPct = (v) => (typeof v === 'number' ? `${NUM_IT(v)}%` : '—');
+
+        // Variazione YoY come segno esplicito: "+51,4%" si legge meglio di
+        // "51,4%" quando accanto c'è un valore assoluto.
+        function fmtYoy(v) {
+            if (typeof v !== 'number') return '';
+            const sign = v > 0 ? '+' : '';
+            return ` <span style="opacity:0.7">(${sign}${NUM_IT(v, 1)}% a/a)</span>`;
+        }
+
+        function renderAnalystRating(r, cur, targets, targetNote) {
+            if (!r && !targets) return '';
+            let html = '<br><br><strong>Consensus analisti</strong><br>';
+            if (r) {
+                html += `Rating: ${r.recommendation} &nbsp;·&nbsp; ${r.total_analysts} analisti<br>`;
+                html += `<span style="opacity:0.8">Buy ${r.buy} · Overweight ${r.overweight} · Hold ${r.hold} · Underweight ${r.underweight} · Sell ${r.sell}</span><br>`;
+            }
+            if (targets && typeof targets.average === 'number') {
+                html += `Target medio: ${cur}${NUM_IT(targets.average)}`;
+                if (typeof targets.upside_pct === 'number') {
+                    html += ` &nbsp;·&nbsp; upside ${fmtPct(targets.upside_pct)}`;
+                }
+                html += `<br>Range: ${cur}${NUM_IT(targets.low)} - ${cur}${NUM_IT(targets.high)}`;
+            } else if (targetNote) {
+                html += `<div class="risk-note" style="margin-top:6px;">Target di prezzo non mostrato: ${targetNote}</div>`;
+            }
+            return html;
+        }
+
+        // Alcuni ticker (TSE:6481) non hanno i campi TTM nella fonte: si
+        // mostra allora l'ultimo esercizio chiuso, ETICHETTATO come tale.
+        // Mai un TTM ricostruito sommando i trimestri: per quel ticker le due
+        // serie usano convenzioni di esercizio diverse e la somma non
+        // coincide con l'annuale (vedi nota_riconciliazione nel JSON).
+        function renderPeriodFigures(a, cur) {
+            if (typeof a.total_revenue_ttm === 'number') {
+                const rows = [
+                    `<strong>Ultimi 12 mesi (TTM)</strong><br>`,
+                    typeof a.price_earnings_ttm === 'number' ? `P/E: ${NUM_IT(a.price_earnings_ttm)}<br>` : '',
+                    typeof a.eps_diluted_ttm === 'number'
+                        ? `EPS diluito: ${fmtMoney(a.eps_diluted_ttm, cur)}${fmtYoy(a.eps_diluted_yoy_growth_ttm)}<br>` : '',
+                    `Ricavi: ${fmtBig(a.total_revenue_ttm, cur)}${fmtYoy(a.total_revenue_yoy_growth_ttm)}<br>`,
+                    typeof a.net_income_ttm === 'number'
+                        ? `Utile netto: ${fmtBig(a.net_income_ttm, cur)}${fmtYoy(a.net_income_yoy_growth_ttm)}<br>` : '',
+                    typeof a.net_margin === 'number'
+                        ? `Margine netto: ${fmtPct(a.net_margin)} &nbsp;·&nbsp; Margine operativo: ${fmtPct(a.operating_margin)}<br>` : '',
+                ];
+                return rows.join('');
+            }
+            const ann = a.annual;
+            if (!ann || !ann.labels || !ann.labels.length) return '';
+            const i = ann.labels.length - 1;
+            const year = ann.labels[i];
+            return [
+                `<strong>Ultimo esercizio chiuso (FY${year})</strong><br>`,
+                `Ricavi: ${fmtBig(ann.revenue[i], cur)}<br>`,
+                `Utile netto: ${fmtBig(ann.net_income[i], cur)}<br>`,
+                `EPS: ${fmtMoney(ann.eps[i], cur)}<br>`,
+                `EBITDA: ${fmtBig(ann.ebitda[i], cur)}<br>`,
+                `<div class="risk-note" style="margin-top:6px;">`,
+                `La fonte non espone i dati sugli ultimi 12 mesi per questo titolo, `,
+                `quindi qui c'è l'ultimo <em>esercizio chiuso</em>, non un TTM. `,
+                `Non è un dato aggiornato al trimestre corrente e non è confrontabile `,
+                `direttamente con i TTM degli altri titoli.`,
+                `</div>`,
+            ].join('');
+        }
+
+        function fundamentalsHtml(ticker) {
+            if (!TV_FUNDAMENTALS) {
+                return `
+                    <hr style="border-color: rgba(255,255,255,0.08); margin: 10px 0;">
+                    <div class="risk-note">
+                        Fondamentali non caricati (file <code>data/tradingview/fundamentals.json</code>
+                        non raggiungibile).
+                    </div>
+                `;
+            }
+            const a = (TV_FUNDAMENTALS.assets || {})[ticker];
+            if (!a) return '';
+
+            const asOf = TV_FUNDAMENTALS.fetched_at;
+            const age = monthsSince(asOf);
             if (age > FUNDAMENTALS_MAX_AGE_MONTHS) {
                 return `
                     <hr style="border-color: rgba(255,255,255,0.08); margin: 10px 0;">
                     <div class="risk-note">
-                        Fondamentali nascosti automaticamente: l'ultima verifica manuale risale al ${f.asOf}
-                        (oltre ${FUNDAMENTALS_MAX_AGE_MONTHS} mesi fa), quindi P/E ed EPS non sono più
-                        considerati affidabili. Serve un nuovo controllo manuale per aggiornarli.
+                        Fondamentali nascosti automaticamente: lo snapshot risale al ${asOf}
+                        (oltre ${FUNDAMENTALS_MAX_AGE_MONTHS} mesi fa), quindi i multipli non sono
+                        più considerati affidabili. Serve un nuovo snapshot per aggiornarli.
                     </div>
                 `;
             }
-            const cur = f.currency === 'JPY' ? '¥' : '$';
-            const fmtB = (v) => `${cur}${v.toLocaleString('it-IT', { maximumFractionDigits: 2 })} mld`;
+
+            const cur = a.currency === 'JPY' ? '¥' : '$';
             return `
                 <hr style="border-color: rgba(255,255,255,0.08); margin: 10px 0;">
-                <strong>Fondamentali (dati inseriti manualmente, aggiornati al ${f.asOf})</strong><br>
-                Prezzo: ${cur}${f.price.toLocaleString('it-IT')}<br>
-                P/E trailing: ${f.peTrailing} &nbsp;·&nbsp; P/E forward: ${f.peForward}<br>
-                EPS (TTM): ${cur}${f.epsTtm}<br>
-                Capitalizzazione: ${fmtB(f.marketCapB)}<br>
-                Ricavi (TTM): ${fmtB(f.revenueTtmB)} &nbsp;·&nbsp; Utile netto (TTM): ${fmtB(f.netIncomeTtmB)}<br>
-                Dividend yield: ${f.dividendYield}%
-                ${f.targetMean != null ? `<br><br><strong>Target di prezzo (consensus analisti)</strong><br>
-                Media: ${cur}${f.targetMean} &nbsp;·&nbsp; Range: ${cur}${f.targetLow} - ${cur}${f.targetHigh}<br>
-                ${f.targetAnalysts} analisti &nbsp;·&nbsp; Rating: ${f.targetRating}` : ''}
-                ${f.note ? `<div class="risk-note" style="margin-top:6px;">${f.note}</div>` : ''}
+                <strong>Fondamentali</strong><br>
+                Prezzo: ${cur}${NUM_IT(a.close)} &nbsp;·&nbsp; Capitalizzazione: ${fmtBig(a.market_cap, cur)}<br>
+                ${typeof a.price_book_ratio === 'number' ? `P/B: ${NUM_IT(a.price_book_ratio)} &nbsp;·&nbsp; ` : ''}
+                ${typeof a.debt_to_equity === 'number' ? `Debito/Equity: ${NUM_IT(a.debt_to_equity)} &nbsp;·&nbsp; ` : ''}
+                Dividend yield: ${fmtPct(a.dividends_yield)}<br><br>
+                ${renderPeriodFigures(a, cur)}
+                ${renderAnalystRating(a.analyst_rating, cur, a.price_targets, a.price_target_escluso_perche)}
                 <div style="font-size: 11px; opacity: 0.6; margin-top: 6px;">
-                    Fonte: ${f.source}, verificato manualmente il ${f.asOf}. Non aggiornato in automatico (per THK/Harmonic Drive manca un'integrazione API affidabile; il target di prezzo, dove mostrato, non ha una fonte gratuita fetchabile in automatico su nessun titolo): questi valori vengono controllati e aggiornati a mano periodicamente.
+                    Fonte: ${TV_FUNDAMENTALS.source}, snapshot del ${asOf}. Non si aggiorna in
+                    automatico: è una fotografia datata, non un feed.
                 </div>
             `;
+        }
+
+        // Le card vengono costruite in modo sincrono, mentre lo snapshot
+        // arriva da una fetch: si inserisce un contenitore vuoto e lo si
+        // riempie quando il JSON è pronto. Evita di dover rendere asincrona
+        // tutta la catena di rendering per un solo blocco.
+        function renderFundamentalsBlock(ticker) {
+            return `<div class="fundamentals-slot" data-fundamentals="${ticker}"></div>`;
+        }
+
+        function fillFundamentalsSlots() {
+            document.querySelectorAll('[data-fundamentals]').forEach((el) => {
+                el.innerHTML = fundamentalsHtml(el.getAttribute('data-fundamentals'));
+            });
         }
 
         function renderCompanyInfoPanel(ticker) {
@@ -2193,6 +2269,10 @@
         renderRoboticsAssetFilter();
         applyRoboticsAssetFilter();
         loadRoboticsData();
+
+        // Dopo che entrambe le griglie (Tech e Trend) hanno creato i loro
+        // contenitori vuoti: una sola fetch riempie tutti gli slot.
+        loadFundamentals().then(fillFundamentalsSlots);
     </script>
 </body>
 </html>

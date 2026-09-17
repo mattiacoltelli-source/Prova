@@ -1,0 +1,64 @@
+{
+  "generated_at": "2026-09-17T17:31:52.646597+00:00",
+  "domanda": "La banda FLAT (VOLATILITY_K * ATR14 * sqrt(giorni)) va allargata quando l'orizzonte contiene la pubblicazione del CPI?",
+  "metodo": "Rapporto fra movimento giornaliero medio assoluto nei giorni CPI e negli altri giorni della STESSA finestra temporale, aggregando NVDA/MSFT/AAPL. IC 95% via bootstrap. Vedi src/event_study.py.",
+  "regimes": {
+    "bassa_inflazione_2016_2017": {
+      "event_days_observed": 69,
+      "normal_days_observed": 1374,
+      "mean_abs_move_event_pct": 0.896,
+      "mean_abs_move_normal_pct": 1.141,
+      "ratio": 0.785,
+      "ci_95": [
+        0.602,
+        0.987
+      ],
+      "significant": true,
+      "ratio_by_asset": {
+        "NVDA": 0.792,
+        "MSFT": 0.931,
+        "AAPL": 0.639
+      },
+      "inflation_yoy_pct": "circa 2",
+      "event_dates_in_regime": 24
+    },
+    "alta_inflazione_2021_2022": {
+      "event_days_observed": 54,
+      "normal_days_observed": 1026,
+      "mean_abs_move_event_pct": 2.838,
+      "mean_abs_move_normal_pct": 1.908,
+      "ratio": 1.487,
+      "ci_95": [
+        1.121,
+        1.924
+      ],
+      "significant": true,
+      "ratio_by_asset": {
+        "NVDA": 1.274,
+        "MSFT": 1.716,
+        "AAPL": 1.679
+      },
+      "inflation_yoy_pct": "5-9",
+      "event_dates_in_regime": 18
+    },
+    "moderata_2025": {
+      "event_days_observed": 33,
+      "normal_days_observed": 669,
+      "mean_abs_move_event_pct": 1.82,
+      "mean_abs_move_normal_pct": 1.493,
+      "ratio": 1.219,
+      "ci_95": [
+        0.852,
+        1.648
+      ],
+      "significant": false,
+      "ratio_by_asset": {
+        "NVDA": 1.372,
+        "MSFT": 0.96,
+        "AAPL": 1.176
+      },
+      "inflation_yoy_pct": "2.3-3.0",
+      "event_dates_in_regime": 11
+    }
+  }
+}

@@ -139,6 +139,262 @@ a finestra fissa usata in una versione precedente.
 > NVDA/MSFT/AAPL — SPY non toccato, è già storico archiviato a parte.
 > Recuperabile su `Main` fino al commit `00ed2c4`.
 
+## Il prompt: v1, il bias misurato, e la v2
+
+La v1 del prompt chiedeva al modello di "emettere una previsione sulla
+direzione del prezzo" e gli passava una lunga lista di indicatori — medie
+mobili, MACD, forza relativa, consenso analisti — **senza mai dirgli quanto
+spesso ciascuna classe si verifichi davvero**. Il risultato, su 45 previsioni
+valutate:
+
+- **UP previsto nel 62% dei casi**, contro un'occorrenza reale del 28-38%.
+- **DOWN previsto zero volte**, contro un'occorrenza reale del 45%.
+
+La diagnosi non è "il modello è ottimista". È più specifica: il modello
+confondeva due domande diverse. Gli indicatori dicevano *"il titolo è in
+tendenza rialzista"*, che era vero — anche l'aggregato tecnico indipendente di
+TradingView segnalava BUY su tutti e tre i titoli il 2026-09-17. Ma la
+domanda posta era un'altra: *"supererà la banda di +/- X% entro l'orizzonte?"*
+E la baseline storica risponde che a 1 giorno questo accade in salita solo il
+28% delle volte, perché **una tendenza è l'accumulo di molti movimenti
+piccoli, non la garanzia di un movimento grande in un orizzonte specifico**.
+
+La v2 corregge esattamente questo:
+
+1. **Riformula il compito**: da "previsione sulla direzione" a
+   "classificazione di quale dei tre esiti è più probabile in questo
+   orizzonte".
+2. **Espone le frequenze storiche reali** della coppia asset/orizzonte,
+   prese da `data/baseline.json` e calcolate con la stessa formula di banda
+   usata nella previsione.
+3. **Distingue esplicitamente** regime di trend e probabilità di superare la
+   banda, dicendo che sono domande diverse con risposte possibilmente
+   opposte.
+4. **Nomina DOWN** come esito legittimo, con la sua frequenza reale.
+5. **Chiede sincerità sulla confidence**, ricordando che la calibrazione è
+   misurata nel report.
+
+Un rischio c'era, opposto a quello della v1: dare le frequenze può far
+collassare il modello sulla classe più frequente, ottenendo la baseline e
+nessun valore aggiunto. Per questo il prompt dice esplicitamente che quelle
+percentuali **non sono un suggerimento su cosa rispondere** ma il metro di
+giudizio, e che prevedere sempre la classe più frequente è esattamente la
+strategia con cui viene confrontato. `tests/test_prompt_v2.py` blocca
+entrambe le derive.
+
+### Lo storico non è stato azzerato
+
+Il README documenta due azzeramenti passati, fatti per non mescolare regole
+diverse in un unico numero. Qui la soluzione è migliore: ogni previsione
+registra `prompt_version`, `evaluate_run.py` la copia nell'esito, e
+`REPORT.md` mostra una tabella di accuratezza **per versione**. Le previsioni
+generate prima che il campo esistesse sono v1 per definizione.
+
+Così i 45 esiti reali già raccolti si tengono tutti — sono dati, cancellarli
+è una perdita — e il confronto resta comunque pulito. Le versioni sono
+descritte in `src/config.py` (`PROMPT_VERSION`).
+
+> Attenzione per il futuro: la v2 aggiunge un parametro `base_rates` in mezzo
+> alla firma di `build_prompt()`, che ha molti parametri opzionali.
+> `generate_prediction()` ora li passa **per nome** e non per posizione,
+> perché un inserimento in mezzo avrebbe spostato in silenzio `technicals` e
+> tutti i successivi. C'è un test di regressione che lo verifica.
+
+## Baseline storiche (il metro di paragone)
+
+`REPORT.md` dice "accuratezza 33%". Da solo quel numero non significa nulla:
+va confrontato con quanto farebbe qualcuno che non guarda niente. Il report
+mostra quindi tre baseline, in ordine crescente di difficoltà:
+
+1. **Random** — 33.3% fisso, tre classi equiprobabili.
+2. **Persistenza** — ripete l'ultimo esito reale osservato per quella coppia
+   asset/orizzonte. Calcolata sullo storico dell'agente.
+3. **Classe più frequente** — prevede sempre la classe che storicamente si
+   verifica più spesso, senza guardare né prezzi né notizie. È la più dura
+   delle tre e viene da `data/baseline.json`.
+
+La terza è calcolata da `src/baseline_run.py` su **tutto** lo storico di
+prezzo disponibile (da 6.900 a 11.500 barre giornaliere per asset — AAPL
+parte dal 1980, MSFT dal 1986, NVDA dal 1999), con la stessa identica
+formula della soglia usata in produzione e con lo stesso vincolo anti
+look-ahead: la banda FLAT di ogni osservazione è calcolata solo sulle barre
+precedenti. Nel report viene pesata sullo **stesso mix** di asset e
+orizzonti su cui l'agente è stato realmente valutato, altrimenti sarebbe un
+confronto tra insiemi diversi.
+
+Risultato al 2026-09-17 (`VOLATILITY_K = 0.4`):
+
+| Orizzonte | UP | DOWN | FLAT | Baseline |
+|---|---|---|---|---|
+| 1d | ~28% | ~25% | ~47% | FLAT ~47% |
+| 7d | ~32% | ~24% | ~44% | FLAT ~44% |
+| 1m | ~38% | ~21% | ~41% | FLAT ~41% (UP per AAPL) |
+
+Due letture che ne escono, entrambe scomode e per questo utili:
+
+- **DOWN è strutturalmente la classe più rara** (20-25%) su tutti e tre gli
+  asset e tutti gli orizzonti: sono titoli che storicamente salgono. Che il
+  modello non l'abbia mai prevista (vedi `ERROR_ANALYSIS.md`) non è quindi
+  del tutto irrazionale — ma prevederla *mai* resta un bias, visto che DOWN
+  si è verificata nel 45% degli esiti reali finora raccolti.
+- **La soglia `VOLATILITY_K = 0.4` è tarata bene.** Era stata scelta a mano
+  con 1-2 giorni di dati reali, dichiaratamente "troppo presto". La tabella
+  di calibrazione in `data/baseline.json` mostra che su 20-45 anni produce
+  una banda FLAT che cattura il 40-47% dei movimenti, in modo notevolmente
+  coerente fra i tre asset (scarto massimo 2 punti). Per classi il più
+  possibile equiprobabili servirebbe K ≈ 0.33. Nessuna modifica fatta: il
+  valore in uso regge alla verifica.
+
+Il file è un derivato statistico, non uno storico append-only: si rigenera
+in qualsiasi momento da prezzi pubblici e gratuiti con
+
+```bash
+python -m src.baseline_run          # scrive data/baseline.json
+python -m src.baseline_run --dry-run
+```
+
+Non gira in CI e non ha bisogno di girare spesso: aggiungere qualche
+settimana a venticinque anni di storico non sposta una distribuzione. Va
+rigenerato quando cambiano gli asset, gli orizzonti o la formula della
+soglia.
+
+> **Nota storica (2026-09-17)**: `predict_run.py` chiamava
+> `fetch_daily_history()` senza argomenti, quindi usava il default `"1y"`
+> (~252 barre) — non una scelta, solo il default mai alzato. Con quel
+> margine `compute_sma_trend(50, 200)` lavorava a ridosso del minimo di 200
+> barre, e `compute_52w_range_position(lookback=252)` ne riceveva sempre
+> meno di 252 (`_completed_bars()` toglie la barra di oggi), calcolando
+> quindi massimi e minimi su poco meno di 52 settimane pur dichiarandone 52.
+> Ora la profondità è in `config.PRICE_HISTORY_RANGE` (10 anni). **Lo
+> storico di previsioni/esiti non è stato azzerato** — a differenza dei due
+> cambi di stimatore documentati sopra, qui le feature sono le stesse di
+> prima: cambiano i dati su cui vengono calcolate, non la loro definizione,
+> e la soglia congelata (ATR a 14 giorni) dà lo stesso identico valore con 1
+> o 10 anni alle spalle.
+
+> **Trappola Yahoo trovata il 2026-09-17**: `range=max` con `interval=1d`
+> **non** restituisce barre giornaliere — Yahoo degrada silenziosamente a
+> barre **mensili** (333 invece di 6956 su NVDA), senza errore e senza alcun
+> campo che lo segnali. Un chiamante ignaro calcolerebbe ATR e medie mobili
+> su barre mensili credendole giornaliere. Per lo storico completo
+> `_yahoo_daily_history()` usa quindi la coppia `period1`/`period2`.
+
+## La banda FLAT e gli eventi macro: cosa dicono i dati
+
+La banda FLAT è `VOLATILITY_K * ATR%(14) * sqrt(giorni)` e **non guarda cosa
+cade dentro la finestra**: un orizzonte a 7 giorni che contiene la
+pubblicazione del CPI riceve la stessa banda di una settimana vuota.
+Sembrava un difetto evidente da correggere con un moltiplicatore per i
+giorni di evento. I dati dicono che non è così semplice.
+
+`src/event_study.py` confronta il movimento giornaliero medio assoluto nei
+giorni CPI con quello degli altri giorni **della stessa finestra** (così il
+livello di volatilità del periodo si semplifica da solo, e il rapporto
+misura l'effetto evento *in aggiunta* a ciò che l'ATR già cattura). IC 95%
+via bootstrap, perché la distribuzione dei movimenti ha code spesse e un
+test t darebbe intervalli troppo stretti proprio sui movimenti grandi.
+
+Risultato su tre regimi di inflazione (NVDA/MSFT/AAPL aggregati):
+
+| Regime | Inflazione YoY | Date CPI | Rapporto | IC 95% | Significativo |
+|---|---|---|---|---|---|
+| Bassa (2016-2017) | ~2% | 24 | **0,79x** | 0,60 – 0,99 | sì |
+| Moderata (2025) | 2,3-3,0% | 11 | 1,22x | 0,85 – 1,65 | no |
+| Alta (2021-2022) | 5-9% | 18 | **1,49x** | 1,12 – 1,92 | sì |
+
+L'effetto è reale ma **dipende dal regime e cambia segno**. Con inflazione
+al 5-9% i giorni CPI si muovono una volta e mezza tanto; con inflazione al
+2% si muovono *meno* del normale (il CPI era un non-evento e usciva in
+giornate tranquille). In mezzo, non si distingue da zero.
+
+### Perché NON è stato aggiunto un moltiplicatore
+
+Un fattore statico peggiorerebbe le cose: allargherebbe la banda nei periodi
+calmi, dove i dati dicono di stringerla, spingendo tutto verso FLAT proprio
+quando FLAT è già la classe più frequente. E la banda è congelata al momento
+della previsione, quindi un errore qui si propaga a tutti gli esiti valutati
+con quella soglia.
+
+L'inflazione oggi è al 3,4% YoY: regime "moderato", dove il rapporto misurato
+è 1,22x ma l'intervallo contiene 1,0. **Non c'è evidenza per attivare nulla
+adesso.** La ricerca è committata e riproducibile; la regola per attivarla è
+scritta qui sotto, così la decisione sarà deliberata e non a intuito.
+
+### Quando avrebbe senso attivarla
+
+Tre condizioni insieme, non una sola:
+
+1. Inflazione YoY stabilmente sopra il ~4%, cioè il regime in cui l'effetto
+   è misurato e significativo.
+2. Un rapporto ricalcolato sui dati recenti con IC che **esclude 1,0**.
+3. Una fonte di date CPI **future** che sopravviva all'abbonamento (vedi
+   sotto), altrimenti la feature si rompe in silenzio appena scade.
+
+### Il problema della fonte
+
+Le date storiche sono in `data/tradingview/cpi_release_dates.json`,
+committate e quindi permanenti. Le date **future** no: il calendario
+TradingView guarda avanti ~31 giorni e richiede l'abbonamento. Candidato
+permanente e gratuito: l'API FRED, già usata dal progetto in
+`src/data_sources/macro.py`, che espone le date di rilascio da un endpoint
+dedicato. **Non verificata**: `FRED_API_KEY` è un secret del repo e non era
+disponibile nell'ambiente in cui è stata fatta questa analisi.
+
+### Rieseguire
+
+```bash
+python -m src.event_study_run            # scrive data/event_study.json
+python -m src.event_study_run --dry-run
+```
+
+Analisi offline come `src/baseline_run.py`: non gira in CI. Va rilanciata
+quando si aggiungono date di evento, asset o un regime da confrontare.
+
+> **Vincoli del calendario TradingView trovati strada facendo**: le finestre
+> oltre i ~6 mesi tornano **vuote senza errore** (una richiesta di 12 mesi dà
+> `[]`), quindi la raccolta va spezzata in semestri. Le categorie vanno
+> passate in forma lunga (`prices`), mentre le risposte usano codici brevi
+> (`prce`). `get_economic_data` non è un'alternativa per le date di rilascio:
+> restituisce le date di *riferimento* del dato (inizio mese) ed è
+> incompleta. Il calendario earnings storico non esiste affatto (una query
+> sul 2015-2016 torna vuota), ma le date passate degli utili sono
+> ricostruibili da `get_documents`, dove il campo `reported` è il timestamp
+> dell'evento.
+
+## Snapshot TradingView (una tantum, 2026-09-17)
+
+`data/tradingview/` contiene una fotografia datata di dati scaricati una
+volta sola da TradingView, prima della scadenza dell'abbonamento. **Non è un
+feed**: nessun workflow li aggiorna e nessun codice li rigenera. Copre le
+sole cose che le fonti gratuite qui sotto non danno — in particolare
+fondamentali e news dei due ticker Tokyo (THK e Harmonic Drive), per cui SEC
+EDGAR non ha copertura e Finnhub/Alpha Vantage sul piano gratuito nemmeno.
+
+Dettagli, verifiche fatte e i tre limiti trovati (price target Tokyo
+inaffidabili e non propagati, calendario earnings che non copre Tokyo, TTM
+vuoti per THK) sono in `data/tradingview/README.md`.
+
+La pipeline di previsione **non dipende da questi file**: continua a girare
+esclusivamente sulle fonti gratuite.
+
+`index.html` legge `fundamentals.json` al posto della costante
+`ROBOTICS_FUNDAMENTALS` che prima conteneva i numeri copiati a mano da
+stockanalysis.com. Le card mostrano quindi anche crescita anno su anno,
+margini, rating analisti e range dei target — dati che l'inserimento manuale
+non aveva. La scadenza automatica a 6 mesi resta: lo snapshot non si aggiorna
+da solo, quindi il blocco continua a nascondersi quando invecchia.
+
+Due cose che il codice del frontend fa apposta, e che conviene non
+"semplificare" in futuro:
+
+- **Per THK mostra l'ultimo esercizio chiuso, non un TTM.** La fonte non
+  espone i campi TTM per quel ticker, e ricostruirli sommando i quattro
+  trimestri darebbe 293,7 mld contro i 240,4 mld dell'annuale: le due serie
+  usano convenzioni di esercizio diverse. Il blocco è etichettato come
+  esercizio chiuso e avvisa che non è confrontabile con i TTM degli altri.
+- **Per i due ticker Tokyo non mostra alcun target di prezzo**, e spiega in
+  pagina il perché (TradingView segnala `target_mismatch`).
+
 ## Fonti dati (tutte gratuite, nessun abbonamento)
 
 | Categoria | Fonte | Fallback | Note |

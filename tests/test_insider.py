@@ -3,9 +3,24 @@ discrezionali sul mercato aperto (P/S) e aggregazione, senza rete reale
 (risposte HTTP mockate)."""
 from __future__ import annotations
 
+import datetime as dt
 from unittest.mock import MagicMock, patch
 
 from src.data_sources import insider
+
+
+def _days_ago(n: int) -> str:
+    """Data relativa a oggi, MAI una data fissa.
+
+    _recent_form4_filings() filtra i filing confrontandoli con
+    `date.today() - lookback_days`: una data scritta a mano nel test entra
+    nella finestra quando il test viene scritto ed esce silenziosamente dopo
+    `lookback_days` giorni, facendo fallire la suite senza che nulla sia
+    cambiato nel codice di produzione. È successo davvero: il filing era
+    fissato al 2026-08-15 con finestra di 30 giorni, quindi il test ha
+    smesso di passare il 2026-09-14.
+    """
+    return (dt.date.today() - dt.timedelta(days=n)).isoformat()
 
 _FORM4_SAMPLE = b"""<?xml version="1.0"?>
 <ownershipDocument>
@@ -94,7 +109,7 @@ def test_fetch_insider_summary_aggrega_acquisti_e_vendite():
         "filings": {
             "recent": {
                 "form": ["4", "10-K"],
-                "filingDate": ["2026-08-15", "2026-08-01"],
+                "filingDate": [_days_ago(5), _days_ago(20)],
                 "accessionNumber": ["0001-26-000001", "0002-26-000002"],
                 "primaryDocument": ["xslF345X06/form4.xml", "10-k.htm"],
             }
@@ -115,6 +130,32 @@ def test_fetch_insider_summary_aggrega_acquisti_e_vendite():
         "sell_transactions": 1,
         "net_shares": 200 - 1000,
     }
+
+
+def test_fetch_insider_summary_ignora_i_filing_fuori_finestra():
+    """Il comportamento che il test precedente stava testando per sbaglio,
+    qui reso esplicito: un Form 4 più vecchio di lookback_days non entra nel
+    riepilogo, e senza altri filing validi il risultato è None."""
+    filings_payload = {
+        "filings": {
+            "recent": {
+                "form": ["4"],
+                "filingDate": [_days_ago(45)],
+                "accessionNumber": ["0001-26-000001"],
+                "primaryDocument": ["xslF345X06/form4.xml"],
+            }
+        }
+    }
+    with patch("src.data_sources.insider.sec_cik_for_ticker", return_value="0000320193"), patch(
+        "src.data_sources.insider.http.get"
+    ) as mock_get:
+        mock_get.side_effect = [_fake_response(json_data=filings_payload)]
+        result = insider.fetch_insider_summary("AAPL", lookback_days=30)
+
+    assert result is None
+    # Una sola chiamata: quella alle submissions. Il form4.xml del filing
+    # scartato non deve essere nemmeno scaricato.
+    assert mock_get.call_count == 1
 
 
 def test_fetch_insider_summary_none_se_nessun_filing_form4():

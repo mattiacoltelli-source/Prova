@@ -1,0 +1,153 @@
+{
+  "fetched_at": "2026-09-17",
+  "source": "TradingView MCP (account personale)",
+  "nota_licenza": "Snapshot statico per uso personale del progetto. Sono salvati valori aggregati e metadati (titoli, date, cifre di bilancio), non il testo integrale degli articoli. Non è un feed: non si aggiorna da solo.",
+  "earnings": {
+    "nota": "release_next_date è la prossima trimestrale attesa. Utile perché la banda FLAT è tarata sull'ATR di giorni normali e sottostima il gap da utili: una previsione il cui orizzonte attraversa questa data lavora su una volatilità attesa più alta del normale.",
+    "lacuna_nota": "I due ticker Tokyo (TSE:6481, TSE:6324) NON sono coperti dal calendario earnings di TradingView: la chiamata con 7 simboli ne ritorna 5. Per loro la data va presa dalle news (Quartr/Reuters pubblicano i risultati) o dal sito investor relations.",
+    "assets": [
+      {
+        "asset": "NVDA",
+        "tv_symbol": "NASDAQ:NVDA",
+        "last_release": "2026-08-26",
+        "next_release": "2026-10-31",
+        "eps_forecast_next_fq": 2.470272,
+        "revenue_forecast_next_fq": 108688607329
+      },
+      {
+        "asset": "MSFT",
+        "tv_symbol": "NASDAQ:MSFT",
+        "last_release": "2026-07-29",
+        "next_release": "2026-09-30",
+        "eps_forecast_next_fq": 4.714622,
+        "revenue_forecast_next_fq": 90585590186
+      },
+      {
+        "asset": "AAPL",
+        "tv_symbol": "NASDAQ:AAPL",
+        "last_release": "2026-07-30",
+        "next_release": "2026-09-30",
+        "eps_forecast_next_fq": 1.9815,
+        "revenue_forecast_next_fq": 113210569717
+      },
+      {
+        "asset": "TER",
+        "tv_symbol": "NASDAQ:TER",
+        "last_release": "2026-07-28",
+        "next_release": "2026-09-30",
+        "eps_forecast_next_fq": 2.076829,
+        "revenue_forecast_next_fq": 1259579400
+      },
+      {
+        "asset": "VRT",
+        "tv_symbol": "NYSE:VRT",
+        "last_release": "2026-07-29",
+        "next_release": "2026-09-30",
+        "eps_forecast_next_fq": 1.822894,
+        "revenue_forecast_next_fq": 3758729033
+      },
+      {
+        "asset": "THK",
+        "tv_symbol": "TSE:6481",
+        "last_release": null,
+        "next_release": null,
+        "nota": "non coperto dal calendario TradingView"
+      },
+      {
+        "asset": "HARMONIC_DRIVE",
+        "tv_symbol": "TSE:6324",
+        "last_release": null,
+        "next_release": null,
+        "nota": "non coperto dal calendario TradingView"
+      }
+    ]
+  },
+  "macro_us_alta_importanza": {
+    "nota_scadenza": "ATTENZIONE: questo è l'unico blocco con vita breve. Il calendario economico di TradingView guarda avanti solo ~31 giorni, quindi questa lista è esaurita dopo il 2026-10-17 e non è rigenerabile senza abbonamento attivo. Per una soluzione durevole serve FRED (già integrato in src/data_sources/macro.py, gratuito), che però dà i valori pubblicati e non le date programmate.",
+    "finestra": {
+      "da": "2026-09-17",
+      "a": "2026-10-17"
+    },
+    "eventi": [
+      {
+        "data": "2026-09-25T12:30:00Z",
+        "evento": "Durable Goods Orders MoM",
+        "precedente": 1.1
+      },
+      {
+        "data": "2026-09-29T14:00:00Z",
+        "evento": "JOLTs Job Openings",
+        "precedente": 7271000
+      },
+      {
+        "data": "2026-09-30T12:30:00Z",
+        "evento": "GDP Growth Rate QoQ Final",
+        "forecast": 1.5,
+        "precedente": 2.1
+      },
+      {
+        "data": "2026-09-30T12:30:00Z",
+        "evento": "Core PCE Price Index MoM",
+        "precedente": 0.2
+      },
+      {
+        "data": "2026-09-30T12:30:00Z",
+        "evento": "Personal Spending MoM",
+        "precedente": 0.2
+      },
+      {
+        "data": "2026-10-01T14:00:00Z",
+        "evento": "ISM Manufacturing PMI",
+        "precedente": 54.6
+      },
+      {
+        "data": "2026-10-02T12:30:00Z",
+        "evento": "Non Farm Payrolls",
+        "precedente": 162000
+      },
+      {
+        "data": "2026-10-02T12:30:00Z",
+        "evento": "Unemployment Rate",
+        "precedente": 4.1
+      },
+      {
+        "data": "2026-10-05T14:00:00Z",
+        "evento": "ISM Services PMI",
+        "precedente": 55.4
+      },
+      {
+        "data": "2026-10-07T18:00:00Z",
+        "evento": "FOMC Minutes"
+      },
+      {
+        "data": "2026-10-09T14:00:00Z",
+        "evento": "Michigan Consumer Sentiment Prel"
+      },
+      {
+        "data": "2026-10-13T14:00:00Z",
+        "evento": "Existing Home Sales",
+        "precedente": 3980000
+      },
+      {
+        "data": "2026-10-14T12:30:00Z",
+        "evento": "Inflation Rate YoY (CPI)",
+        "precedente": 3.4
+      },
+      {
+        "data": "2026-10-14T12:30:00Z",
+        "evento": "Core Inflation Rate YoY",
+        "precedente": 2.4
+      },
+      {
+        "data": "2026-10-15T12:30:00Z",
+        "evento": "PPI MoM",
+        "precedente": 0.4
+      },
+      {
+        "data": "2026-10-15T13:30:00Z",
+        "evento": "Retail Sales MoM",
+        "precedente": 1.2
+      }
+    ]
+  }
+}
