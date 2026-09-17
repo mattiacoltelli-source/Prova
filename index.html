@@ -726,7 +726,7 @@
 
     <div class="page-tabs">
         <button class="page-tab active" id="tab-btn-tech" onclick="switchPage('tech')">Tech (breve termine)</button>
-        <button class="page-tab" id="tab-btn-robotics" onclick="switchPage('robotics')">Robotica (trend lungo)</button>
+        <button class="page-tab" id="tab-btn-robotics" onclick="switchPage('robotics')">Trend strutturali</button>
     </div>
 
     <div id="page-tech">
@@ -825,34 +825,47 @@
             <div class="info-panel-body">
                 Sistema separato dalla pagina Tech: qui l'obiettivo non è prevedere il prezzo di
                 domani, ma leggere il <strong>regime di trend di lungo periodo</strong> (1/3/5/10
-                anni) di tre aziende legate a robotica/automazione — <strong>THK</strong>
-                (guide lineari/cuscinetti di precisione), <strong>Harmonic Drive Systems</strong>
-                (riduttori a gioco zero) e <strong>Teradyne</strong> (possiede Universal Robots/MiR,
-                core business test equipment semiconduttori — quotata NASDAQ, a differenza delle
-                altre due comprabile da qualunque broker generalista).<br><br>
+                anni) di quattro titoli con domanda pluriennale insolitamente visibile (capex già
+                annunciato/in backlog, non solo un'ipotesi) — tre legati a robotica/automazione,
+                <strong>THK</strong> (guide lineari/cuscinetti di precisione),
+                <strong>Harmonic Drive Systems</strong> (riduttori a gioco zero) e
+                <strong>Teradyne</strong> (possiede Universal Robots/MiR, core business test
+                equipment semiconduttori — quotata NASDAQ, a differenza delle altre due comprabile
+                da qualunque broker generalista), e uno legato all'infrastruttura per i data center
+                AI: <strong>Vertiv</strong> (power/raffreddamento, quotata NYSE).<br><br>
                 <strong>Perché non ABB?</strong> Ha ceduto la divisione Robotics a SoftBank
                 (chiusura prevista H2 2026): da qui in avanti non è più un puro player robotica.<br><br>
-                <strong>Perché fasi cicliche invece di UP/DOWN?</strong> Questo paniere si è mosso
-                storicamente a boom-bust di 3-4 anni (drawdown 45-80% dai picchi), legati al ciclo
-                capex semiconduttori/AI — non a un trend lineare. La <strong>fase del ciclo</strong>
-                (badge colorato) misura quanto il prezzo è sopra/sotto la propria media mobile a
-                200 settimane: rosso = molto estesa (storicamente a rischio correzione), verde =
-                compressa (storicamente punto di ingresso migliore).<br><br>
+                <strong>Perché fasi cicliche invece di UP/DOWN?</strong> Il paniere robotica si è
+                mosso storicamente a boom-bust di 3-4 anni (drawdown 45-80% dai picchi), legati al
+                ciclo capex semiconduttori/AI — non a un trend lineare; per Vertiv la stessa lettura
+                di fase si applica, ma l'ampiezza storica dei drawdown non è (ancora) verificata su
+                questo titolo, quindi il modello viene istruito a non assumerla. La
+                <strong>fase del ciclo</strong> (badge colorato) misura quanto il prezzo è
+                sopra/sotto la propria media mobile a 200 settimane: rosso = molto estesa
+                (storicamente a rischio correzione), verde = compressa (storicamente punto di
+                ingresso migliore).<br><br>
                 <strong>A quale orizzonte si riferiscono direzione/fase/confidence?</strong> Non a
                 uno specifico come nella pagina Tech (1g/7g/1m) — è una lettura strutturale valida
                 sull'insieme degli orizzonti 1-10 anni mostrati nella griglia CAGR di ogni card, non
                 una previsione puntuale su un singolo periodo.<br><br>
-                <strong>Driver macro:</strong> correlazione empirica con l'indice Philadelphia
-                Semiconductor (^SOX), non con la produzione industriale generica — è risultato il
-                driver dominante nell'analisi storica.<br><br>
-                <strong>Cadenza:</strong> analisi rigenerata al massimo una volta al mese, il giorno
-                1 (non ha senso più spesso su orizzonti pluriennali).<br><br>
+                <strong>Driver macro:</strong> correlazione con l'indice Philadelphia Semiconductor
+                (^SOX). Per THK/Harmonic Drive/Teradyne è un driver dominante scoperto empiricamente
+                (correlazione 0.55-0.76 sui rendimenti annuali, non produzione industriale generica).
+                Per Vertiv è usato come proxy ragionevole dello stesso ciclo di spesa AI (data center
+                e semiconduttori condividono lo stesso capex degli hyperscaler), ma senza la stessa
+                verifica empirica specifica: da leggere con più cautela.<br><br>
+                <strong>Cadenza:</strong> THK/Harmonic Drive/Teradyne restano mensili (il giorno 1).
+                Vertiv è trimestrale (il giorno 2, solo nei mesi di inizio trimestre gennaio/aprile/
+                luglio/ottobre): il segnale che conta per la sua tesi, la crescita di backlog/ordini,
+                esce solo con le trimestrali, quindi un'analisi mensile sprecherebbe budget AI senza
+                nuovo segnale nel mezzo.<br><br>
                 <strong>Analisi non partita in automatico?</strong> Può capitare che GitHub Actions
-                non faccia scattare il cron mensile in tempo. Puoi farla partire a mano da
+                non faccia scattare il cron in tempo. Puoi farla partire a mano da
                 <a href="https://github.com/mattiacoltelli-source/Prova/actions/workflows/trend.yml" target="_blank" rel="noopener">GitHub Actions ↗</a>
                 (richiede il login al tuo account GitHub, non è esposto qui sul sito) — se lo fai, il
                 sistema se ne accorge da solo e non ne rigenera una seconda per lo stesso asset nello
-                stesso mese, anche se poi il cron automatico del giorno 1 scatta comunque più tardi.
+                stesso periodo (mese per THK/Harmonic Drive/Teradyne, trimestre per Vertiv), anche se
+                poi il cron automatico scatta comunque più tardi.
             </div>
         </details>
 
@@ -876,6 +889,7 @@
             { key: 'THK', label: 'THK', ticker: '6481.T', currencySymbol: '¥' },
             { key: 'HARMONIC_DRIVE', label: 'Harmonic Drive Systems', ticker: '6324.T', currencySymbol: '¥' },
             { key: 'TER', label: 'Teradyne', ticker: 'TER', currencySymbol: '$' },
+            { key: 'VRT', label: 'Vertiv', ticker: 'VRT', currencySymbol: '$' },
         ];
         const CYCLE_PHASE_LABEL = {
             molto_estesa: 'Molto estesa',
@@ -927,6 +941,11 @@
                 sector: 'Semiconduttori / Automazione', exchange: 'NASDAQ',
                 description: 'Equipment per testare semiconduttori e dispositivi elettronici. Possiede Universal Robots (cobot) e MiR (robot mobili autonomi per magazzini).',
             },
+            VRT: {
+                name: 'Vertiv Holdings Co', hq: 'Westerville, Ohio, USA', founded: 1946,
+                sector: 'Infrastruttura elettrica / Raffreddamento data center', exchange: 'NYSE',
+                description: 'Power management e sistemi di raffreddamento per data center, reti di telecomunicazioni e ambienti industriali. Fornitore chiave per il buildout dei data center AI: backlog ordini raddoppiato a oltre $15 mld nel 2026.',
+            },
         };
 
         // Fondamentali statici (P/E, EPS, capitalizzazione, ricavi/utile
@@ -937,9 +956,15 @@
         // e parsing XBRL non ancora integrati); dato che questi numeri
         // cambiano solo con le trimestrali, un aggiornamento manuale
         // periodico è una soluzione pratica migliore di non avere il dato.
-        // Teradyne è incluso per coerenza di UI tra i tre asset robotica
-        // (in futuro potrebbe passare a un fetch automatico via SEC EDGAR,
-        // come già avviene per i fondamentali degli asset Tech).
+        // Teradyne e Vertiv sono inclusi per coerenza di UI con THK/Harmonic
+        // Drive (in futuro potrebbero passare a un fetch automatico via SEC
+        // EDGAR, come già avviene per i fondamentali degli asset Tech —
+        // entrambi NYSE/NASDAQ, a differenza dei ticker Tokyo). Vertiv ha
+        // anche il target di prezzo consensus analisti (campi target*):
+        // dato reale aggregato da terzi, non generato dall'AI, con la
+        // stessa scadenza automatica a 6 mesi degli altri fondamentali —
+        // un fetch live via Yahoo richiederebbe un crumb anti-bot inaffidabile
+        // per un job schedulato, quindi stesso pattern manuale.
         const ROBOTICS_FUNDAMENTALS = {
             THK: {
                 asOf: '2026-09-17', price: 5999, currency: 'JPY',
@@ -961,6 +986,18 @@
                 peTrailing: 46.83, peForward: 34.98, epsTtm: 7.29,
                 marketCapB: 53.34, revenueTtmB: 4.46, netIncomeTtmB: 1.15,
                 dividendYield: 0.15,
+                source: 'stockanalysis.com',
+            },
+            VRT: {
+                asOf: '2026-09-17', price: 239.41, currency: 'USD',
+                peTrailing: 54.18, peForward: 30.55, epsTtm: 4.42,
+                marketCapB: 92.17, revenueTtmB: 11.48, netIncomeTtmB: 1.73,
+                dividendYield: 0.10,
+                // Target di prezzo consensus analisti: dato reale aggregato (non generato
+                // dall'AI), stessa fonte e stessa scadenza automatica dei fondamentali sopra —
+                // un fetch live via Yahoo Finance richiederebbe un token anti-bot (crumb) che si
+                // rompe in modo silenzioso su un job schedulato, quindi stesso pattern manuale.
+                targetMean: 338.15, targetLow: 236, targetHigh: 427, targetAnalysts: 28, targetRating: 'Strong Buy',
                 source: 'stockanalysis.com',
             },
         };
@@ -1011,9 +1048,12 @@
                 Capitalizzazione: ${fmtB(f.marketCapB)}<br>
                 Ricavi (TTM): ${fmtB(f.revenueTtmB)} &nbsp;·&nbsp; Utile netto (TTM): ${fmtB(f.netIncomeTtmB)}<br>
                 Dividend yield: ${f.dividendYield}%
+                ${f.targetMean != null ? `<br><br><strong>Target di prezzo (consensus analisti)</strong><br>
+                Media: ${cur}${f.targetMean} &nbsp;·&nbsp; Range: ${cur}${f.targetLow} - ${cur}${f.targetHigh}<br>
+                ${f.targetAnalysts} analisti &nbsp;·&nbsp; Rating: ${f.targetRating}` : ''}
                 ${f.note ? `<div class="risk-note" style="margin-top:6px;">${f.note}</div>` : ''}
                 <div style="font-size: 11px; opacity: 0.6; margin-top: 6px;">
-                    Fonte: ${f.source}, verificato manualmente il ${f.asOf}. Non aggiornato in automatico: per THK/Harmonic Drive non esiste ancora un'integrazione API affidabile, questi valori vengono controllati e aggiornati a mano periodicamente.
+                    Fonte: ${f.source}, verificato manualmente il ${f.asOf}. Non aggiornato in automatico (per THK/Harmonic Drive manca un'integrazione API affidabile; il target di prezzo, dove mostrato, non ha una fonte gratuita fetchabile in automatico su nessun titolo): questi valori vengono controllati e aggiornati a mano periodicamente.
                 </div>
             `;
         }
