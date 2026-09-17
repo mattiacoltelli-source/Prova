@@ -218,6 +218,24 @@ soglia.
 > su barre mensili credendole giornaliere. Per lo storico completo
 > `_yahoo_daily_history()` usa quindi la coppia `period1`/`period2`.
 
+## Snapshot TradingView (una tantum, 2026-09-17)
+
+`data/tradingview/` contiene una fotografia datata di dati scaricati una
+volta sola da TradingView, prima della scadenza dell'abbonamento. **Non è un
+feed**: nessun workflow li aggiorna e nessun codice li rigenera. Copre le
+sole cose che le fonti gratuite qui sotto non danno — in particolare
+fondamentali e news dei due ticker Tokyo (THK e Harmonic Drive), per cui SEC
+EDGAR non ha copertura e Finnhub/Alpha Vantage sul piano gratuito nemmeno.
+
+Dettagli, verifiche fatte e i tre limiti trovati (price target Tokyo
+inaffidabili e non propagati, calendario earnings che non copre Tokyo, TTM
+vuoti per THK) sono in `data/tradingview/README.md`.
+
+La pipeline di previsione **non dipende da questi file**: continua a girare
+esclusivamente sulle fonti gratuite. Sono materiale di consultazione e una
+base per sostituire, quando si vorrà, i fondamentali inseriti a mano in
+`index.html`.
+
 ## Fonti dati (tutte gratuite, nessun abbonamento)
 
 | Categoria | Fonte | Fallback | Note |
