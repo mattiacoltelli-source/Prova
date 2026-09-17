@@ -119,6 +119,17 @@ def run(dry_run: bool, force: bool) -> None:
             continue
 
         saved = storage.append_record(config.trend_file(asset), record)
+
+        # Non hash-chained come predictions.jsonl/trend.jsonl (qui non c'è
+        # nulla da verificare, è solo il dato per il grafico prezzo+MA sulla
+        # pagina Robotica): sovrascritto ad ogni run, stesso pattern di
+        # snapshot_file() per gli asset Tech.
+        weekly_series = trend_analysis.build_weekly_series(bars, config.TREND_MA_WEEKS)
+        series_path = config.price_series_file(asset)
+        os.makedirs(os.path.dirname(series_path), exist_ok=True)
+        with open(series_path, "w", encoding="utf-8") as fh:
+            json.dump({"asset": asset, "ticker": ticker, "ma_weeks": config.TREND_MA_WEEKS, "weekly": weekly_series}, fh)
+
         print(
             f"[{asset}] analisi trend salvata: {saved['trend_direction']} "
             f"(confidence {saved['confidence']}%, fase ciclo {metrics['cycle_phase']})"

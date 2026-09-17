@@ -216,3 +216,7 @@ def robotics_asset_dir(asset: str) -> str:
 
 def trend_file(asset: str) -> str:
     return f"{robotics_asset_dir(asset)}/trend.jsonl"
+
+
+def price_series_file(asset: str) -> str:
+    return f"{robotics_asset_dir(asset)}/price_series.json"

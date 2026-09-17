@@ -169,6 +169,24 @@ def compute_annual_return_correlation(asset_bars: list[DailyBar], benchmark_bars
     return round(cov / (var_x**0.5 * var_y**0.5), 3)
 
 
+def build_weekly_series(bars: list[DailyBar], ma_weeks: int) -> list[dict]:
+    """Serie settimanale completa (prezzo + media mobile a `ma_weeks`) per
+    il grafico "in che fase del ciclo siamo" sulla pagina Robotica — a
+    differenza di compute_price_vs_long_ma_pct (che ritorna solo l'ultimo
+    punto), qui serve l'intera serie da disegnare. ma è null finché la
+    finestra non è piena (prime `ma_weeks` settimane): niente MA calcolata
+    su una finestra parziale, che sarebbe fuorviante da leggere su un
+    grafico senza un'indicazione esplicita."""
+    weekly = _weekly_closes(bars)
+    closes = [c for _, c in weekly]
+    out: list[dict] = []
+    for i, (d, close) in enumerate(weekly):
+        window = closes[max(0, i - ma_weeks + 1) : i + 1]
+        ma = sum(window) / len(window) if len(window) >= ma_weeks else None
+        out.append({"date": d.isoformat(), "close": close, "ma": round(ma, 4) if ma is not None else None})
+    return out
+
+
 def build_trend_metrics(
     bars: list[DailyBar],
     years_list: list[int],
