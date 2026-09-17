@@ -154,11 +154,19 @@ TREND_HORIZONS_YEARS = [1, 3, 5, 10]
 # anni su questo paniere.
 TREND_MA_WEEKS = 200
 
-# Tetto di spesa AI separato da MAX_AI_CALLS_PER_DAY: cadenza MENSILE (non
+# Tetto di spesa AI separato da MAX_AI_CALLS_PER_DAY: cadenza per-asset (non
 # settimanale — un ciclo pluriennale non ha senso ricalcolarlo più spesso,
-# feedback utente 2026-09-17), 3 asset x 1 chiamata = 3 attese, margine
-# ampio per eventuali retry/test manuali nello stesso mese.
-MAX_TREND_AI_CALLS_PER_MONTH = 9
+# feedback utente 2026-09-17). Un mese normale usa solo THK/Harmonic
+# Drive/TER (mensili) = 3 chiamate attese; nei mesi di inizio trimestre
+# (gennaio/aprile/luglio/ottobre) si aggiunge VRT = 4. 9 -> 12 il
+# 2026-09-17 (aggiunta VRT): il tetto precedente si è esaurito lo stesso
+# giorno per via dei tanti dispatch manuali di test fatti durante lo
+# sviluppo (force=true rigenera TUTTI gli asset, non solo quello dovuto),
+# lasciando VRT senza budget per la sua prima lettura reale — 12 mantiene
+# lo stesso margine "ampio per retry/test manuali" del tetto originale
+# (3x il fabbisogno di un mese normale) invece di limarlo esattamente sul
+# minimo necessario.
+MAX_TREND_AI_CALLS_PER_MONTH = 12
 
 # --- Orizzonti (fase 1) ----------------------------------------------------
 
