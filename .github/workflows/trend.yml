@@ -1,14 +1,16 @@
 name: Analisi trend robotica
 
-# Cadenza settimanale (non oraria come predict.yml): un ciclo
-# semiconduttori/robotica si muove su mesi/anni (vedi src/config.py,
-# ROBOTICS_ASSETS), ricalcolarlo più spesso sprecherebbe solo budget AI
-# senza aggiungere segnale. Lunedì 08:00 UTC: dopo la chiusura del mercato
-# di Tokyo di venerdì (THK/Harmonic Drive, JST = UTC+9, chiusura 06:00 UTC
-# venerdì) e prima dell'apertura europea/USA della settimana.
+# Cadenza MENSILE (non oraria come predict.yml, e non più settimanale come
+# alla prima versione di questo workflow): un ciclo semiconduttori/robotica
+# si muove su anni (vedi src/config.py, ROBOTICS_ASSETS) — anche il
+# settimanale ricalcolava più spesso di quanto il segnale cambi davvero,
+# sprecando solo budget AI (cambiato il 2026-09-17 su feedback utente).
+# Primo giorno del mese, 08:00 UTC: nessun vincolo di giorno di borsa
+# aperta (a differenza di predict.yml) — fetch_daily_history ritorna
+# comunque l'ultima chiusura disponibile, qualunque sia il giorno.
 on:
   schedule:
-    - cron: "0 8 * * 1"
+    - cron: "0 8 1 * *"
   workflow_dispatch:
     inputs:
       dry_run:
@@ -16,7 +18,7 @@ on:
         type: boolean
         default: false
       force:
-        description: "Ignora il controllo 'già fatto questa settimana'"
+        description: "Ignora il controllo 'già fatto questo mese'"
         type: boolean
         default: true
 

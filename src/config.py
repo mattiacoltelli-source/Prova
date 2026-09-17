@@ -25,8 +25,9 @@ SEC_EDGAR_CONTACT_EMAIL = "mattia.coltelli@gmail.com"
 # Sistema separato da ASSETS/HORIZONS sopra: qui l'obiettivo non è una
 # previsione puntuale UP/DOWN/FLAT a breve termine, ma la classificazione
 # del regime di trend di lungo periodo (vedi trend_analysis.py). Cadenza
-# settimanale (trend.yml), non oraria: un ciclo semiconduttori/robotica si
-# muove su mesi/anni, non ha senso ricalcolarlo ogni giorno.
+# mensile (trend.yml — era settimanale, portata a mensile il 2026-09-17 su
+# feedback utente): un ciclo semiconduttori/robotica si muove su anni, non
+# ha senso ricalcolarlo più di una volta al mese.
 #
 # Perché THK/Harmonic Drive e non ABB: analisi storica del 2026-09-17 (10
 # anni di dati) — ABB ha ceduto la divisione Robotics a SoftBank (chiusura
@@ -81,10 +82,11 @@ TREND_HORIZONS_YEARS = [1, 3, 5, 10]
 # anni su questo paniere.
 TREND_MA_WEEKS = 200
 
-# Tetto di spesa AI separato da MAX_AI_CALLS_PER_DAY: cadenza settimanale,
-# 3 asset x 1 chiamata = 3 attese (era 2 prima di TER), margine ampio per
-# eventuali retry/test manuali nella stessa settimana.
-MAX_TREND_AI_CALLS_PER_WEEK = 9
+# Tetto di spesa AI separato da MAX_AI_CALLS_PER_DAY: cadenza MENSILE (non
+# settimanale — un ciclo pluriennale non ha senso ricalcolarlo più spesso,
+# feedback utente 2026-09-17), 3 asset x 1 chiamata = 3 attese, margine
+# ampio per eventuali retry/test manuali nello stesso mese.
+MAX_TREND_AI_CALLS_PER_MONTH = 9
 
 # --- Orizzonti (fase 1) ----------------------------------------------------
 

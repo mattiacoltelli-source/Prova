@@ -1,11 +1,12 @@
 """Orchestratore chiamato da .github/workflows/trend.yml.
 
 Genera un'analisi di trend di lungo periodo per ogni asset in
-config.ROBOTICS_ASSETS, al massimo una volta per settimana ISO (stato in
-data/_state/trend_slots_<anno>-W<settimana>.json) — analogo di
-predict_run.py, ma con cadenza settimanale invece che oraria: un ciclo
-semiconduttori/robotica non cambia in modo significativo da un giorno
-all'altro, ricalcolarlo più spesso sprecherebbe solo budget AI."""
+config.ROBOTICS_ASSETS, al massimo una volta al mese (stato in
+data/_state/trend_slots_<anno>-<mese>.json) — analogo di predict_run.py,
+ma con cadenza mensile invece che oraria: un ciclo semiconduttori/robotica
+si muove su anni, ricalcolarlo più spesso (anche solo settimanale, la
+cadenza originale) sprecherebbe solo budget AI senza aggiungere segnale —
+cambiato da settimanale a mensile il 2026-09-17 su feedback utente."""
 from __future__ import annotations
 
 import argparse
@@ -19,18 +20,18 @@ from . import budget, config, storage, technicals, trend_analysis, trend_predict
 from .data_sources import news, prices
 
 
-def _slot_state_path(iso_year: int, iso_week: int) -> str:
-    return f"{config.STATE_DIR}/trend_slots_{iso_year}-W{iso_week:02d}.json"
+def _slot_state_path(year: int, month: int) -> str:
+    return f"{config.STATE_DIR}/trend_slots_{year}-{month:02d}.json"
 
 
-def _current_iso_week() -> tuple[int, int]:
-    iso = dt.date.today().isocalendar()
-    return iso[0], iso[1]
+def _current_month() -> tuple[int, int]:
+    today = dt.date.today()
+    return today.year, today.month
 
 
-def _done_this_week() -> set[str]:
-    year, week = _current_iso_week()
-    path = _slot_state_path(year, week)
+def _done_this_month() -> set[str]:
+    year, month = _current_month()
+    path = _slot_state_path(year, month)
     if not os.path.exists(path):
         return set()
     with open(path, "r", encoding="utf-8") as fh:
@@ -38,19 +39,19 @@ def _done_this_week() -> set[str]:
 
 
 def _mark_asset_done(asset: str) -> None:
-    year, week = _current_iso_week()
+    year, month = _current_month()
     os.makedirs(config.STATE_DIR, exist_ok=True)
-    done = _done_this_week() | {asset}
-    with open(_slot_state_path(year, week), "w", encoding="utf-8") as fh:
-        json.dump({"iso_year": year, "iso_week": week, "done_assets": sorted(done)}, fh)
+    done = _done_this_month() | {asset}
+    with open(_slot_state_path(year, month), "w", encoding="utf-8") as fh:
+        json.dump({"year": year, "month": month, "done_assets": sorted(done)}, fh)
 
 
 def run(dry_run: bool, force: bool) -> None:
     now_utc = dt.datetime.now(dt.timezone.utc)
-    done = _done_this_week()
+    done = _done_this_month()
 
     if not force and set(config.ROBOTICS_ASSETS) <= done:
-        print("Tutti gli asset robotica già analizzati questa settimana, esco senza consumare budget.")
+        print("Tutti gli asset robotica già analizzati questo mese, esco senza consumare budget.")
         return
 
     try:
@@ -61,7 +62,7 @@ def run(dry_run: bool, force: bool) -> None:
 
     for asset in config.ROBOTICS_ASSETS:
         if not force and asset in done:
-            print(f"[{asset}] già analizzato questa settimana, salto.")
+            print(f"[{asset}] già analizzato questo mese, salto.")
             continue
 
         ticker = config.ROBOTICS_TICKER[asset]
@@ -86,7 +87,7 @@ def run(dry_run: bool, force: bool) -> None:
         news_items = news.fetch_recent_news(config.ROBOTICS_NEWS_QUERY[asset], lookback_days=14, limit=6)
 
         if not dry_run and not budget.reserve_trend_call():
-            print(f"[{asset}] skipped_budget_cap: tetto settimanale raggiunto")
+            print(f"[{asset}] skipped_budget_cap: tetto mensile raggiunto")
             continue
 
         try:
@@ -140,7 +141,7 @@ def run(dry_run: bool, force: bool) -> None:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--dry-run", action="store_true")
-    parser.add_argument("--force", action="store_true", help="ignora il controllo 'già fatto questa settimana'")
+    parser.add_argument("--force", action="store_true", help="ignora il controllo 'già fatto questo mese'")
     args = parser.parse_args()
     try:
         run(dry_run=args.dry_run, force=args.force)
