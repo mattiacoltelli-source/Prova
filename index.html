@@ -856,6 +856,10 @@
             </div>
         </details>
 
+        <div class="horizon-filter" id="robotics-asset-filter">
+            <span class="horizon-filter-label">Asset:</span>
+        </div>
+
         <div class="grid-two-assets" id="robotics-grid"></div>
 
     </div><!-- /page-robotics -->
@@ -1004,10 +1008,42 @@
             return `${sign}${value.toFixed(digits)}%`;
         }
 
+        // Stesso pattern del filtro asset in Tech (setAssetFilter/
+        // applyAssetFilter): con 3 titoli le card impilate diventavano una
+        // lista lunga anche qui, mostriamo una sola card alla volta.
+        let currentRoboticsAssetFilter = ROBOTICS_ASSETS[0].key;
+
+        function renderRoboticsAssetFilter() {
+            const container = document.getElementById('robotics-asset-filter');
+            container.innerHTML = '<span class="horizon-filter-label">Asset:</span>' + ROBOTICS_ASSETS.map(a => `
+                <button class="horizon-filter-btn${a.key === currentRoboticsAssetFilter ? ' active' : ''}" data-asset="${a.key}" onclick="setRoboticsAssetFilter('${a.key}')">${a.label}</button>
+            `).join('');
+        }
+
+        function setRoboticsAssetFilter(assetKey) {
+            currentRoboticsAssetFilter = assetKey;
+            document.querySelectorAll('#robotics-asset-filter .horizon-filter-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.asset === assetKey);
+            });
+            applyRoboticsAssetFilter();
+        }
+
+        function applyRoboticsAssetFilter() {
+            document.querySelectorAll('#robotics-grid > .asset-card').forEach(card => {
+                card.style.display = card.dataset.asset === currentRoboticsAssetFilter ? '' : 'none';
+            });
+            // Stesso motivo di applyAssetFilter(): un canvas creato mentre
+            // la card è nascosta nasce a larghezza 0 e va ridimensionato
+            // esplicitamente alla prima apertura.
+            Object.entries(chartInstances).forEach(([key, chart]) => {
+                if (key.includes(currentRoboticsAssetFilter)) chart.resize();
+            });
+        }
+
         function renderRoboticsCards() {
             const grid = document.getElementById('robotics-grid');
             grid.innerHTML = ROBOTICS_ASSETS.map(a => `
-                <div class="asset-card">
+                <div class="asset-card" data-asset="${a.key}">
                     <div class="asset-header">
                         <span class="asset-title">${a.label}<span class="asset-price" id="robotics-price-${a.key}"></span></span>
                         <span id="robotics-direction-${a.key}"></span>
@@ -2024,6 +2060,8 @@
         loadDashboardData();
 
         renderRoboticsCards();
+        renderRoboticsAssetFilter();
+        applyRoboticsAssetFilter();
         loadRoboticsData();
     </script>
 </body>
