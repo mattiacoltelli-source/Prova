@@ -385,6 +385,25 @@
             overflow-x: auto;
         }
 
+        .table-show-all {
+            text-align: center;
+            padding: 8px 0 2px;
+        }
+
+        .table-show-all button {
+            background: none;
+            border: none;
+            color: var(--accent-signal);
+            font-size: 0.78rem;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 4px 10px;
+        }
+
+        .table-show-all button:hover {
+            text-decoration: underline;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
@@ -1199,6 +1218,7 @@
                                 <tbody id="outcomes-body-${asset}">${skeletonRows(5)}</tbody>
                             </table>
                         </div>
+                        <div class="table-show-all" id="outcomes-footer-${asset}"></div>
                     </div>
 
                     <div class="collapsible-header" onclick="toggleCollapsible(this)" style="margin-top: 16px;">
@@ -1217,6 +1237,7 @@
                                 <tbody id="predictions-body-${asset}">${skeletonRows(4)}</tbody>
                             </table>
                         </div>
+                        <div class="table-show-all" id="predictions-footer-${asset}"></div>
                     </div>
                 </div>
             `).join('');
@@ -1519,6 +1540,75 @@
             if (row.previousElementSibling) row.previousElementSibling.setAttribute('aria-expanded', 'true');
         }
 
+        // Le tabelle mostrano solo le ROW_LIMIT righe più recenti di default
+        // (feedback utente: la lista completa appena aperta era troppo
+        // lunga), con un pulsante "Mostra tutto" per chi vuole vedere lo
+        // storico intero — fullTableData tiene i dati ordinati completi
+        // così il pulsante può ri-renderizzare senza un nuovo fetch.
+        const ROW_LIMIT = 6;
+        const tableExpanded = {}; // "outcome-AAPL" / "pred-AAPL" -> true se espansa
+        const fullTableData = {}; // asset -> { sortedOutcomes, sortedPredictions, predsMap, ...messaggi vuoti }
+
+        function toggleShowAllRows(kind, asset) {
+            const key = `${kind}-${asset}`;
+            tableExpanded[key] = !tableExpanded[key];
+            if (kind === 'outcome') renderOutcomesTable(asset);
+            else renderPredictionsTable(asset);
+        }
+
+        function renderOutcomesTable(asset) {
+            const cached = fullTableData[asset];
+            if (!cached) return;
+            const { sortedOutcomes, predsMap } = cached;
+            const expanded = !!tableExpanded[`outcome-${asset}`];
+            const rows = expanded ? sortedOutcomes : sortedOutcomes.slice(0, ROW_LIMIT);
+            const outcomesBody = document.getElementById(`outcomes-body-${asset}`);
+            detailStore[`outcome-${asset}`] = rows.map(o => ({ ...o, _prediction: predsMap[o.prediction_id] }));
+            outcomesBody.innerHTML = rows.length === 0 ? cached.outcomesEmptyMessage : rows.map((row, i) => `
+                <tr class="outcome-row" tabindex="0" role="button" aria-expanded="false" onclick="toggleDetail('outcome-${asset}', ${i})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleDetail('outcome-${asset}', ${i});}">
+                    <td>${(row.evaluated_at || '').slice(0, 10)}</td>
+                    <td>${row.horizon || '-'}</td>
+                    <td><span class="badge badge-${row.predicted_class}">${row.predicted_class}</span></td>
+                    <td><span class="badge badge-${row.actual_class}">${row.actual_class}</span></td>
+                    <td><span class="outcome-verdict correct-${row.correct}">${row.correct ? ICON_CHECK : ICON_CROSS}${row.correct ? 'Sì' : 'No'}</span></td>
+                </tr>
+                <tr class="detail-row" id="detail-outcome-${asset}-${i}"><td class="pred-detail-cell" colspan="5"></td></tr>
+            `).join('');
+            renderShowAllButton(`outcomes-footer-${asset}`, 'outcome', asset, sortedOutcomes.length, expanded);
+        }
+
+        function renderPredictionsTable(asset) {
+            const cached = fullTableData[asset];
+            if (!cached) return;
+            const { sortedPredictions } = cached;
+            const expanded = !!tableExpanded[`pred-${asset}`];
+            const rows = expanded ? sortedPredictions : sortedPredictions.slice(0, ROW_LIMIT);
+            const predictionsBody = document.getElementById(`predictions-body-${asset}`);
+            detailStore[`pred-${asset}`] = rows;
+            predictionsBody.innerHTML = rows.length === 0 ? cached.predictionsEmptyMessage : rows.map((p, i) => `
+                <tr class="pred-row" tabindex="0" role="button" aria-expanded="false" onclick="toggleDetail('pred-${asset}', ${i})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleDetail('pred-${asset}', ${i});}">
+                    <td>${(p.generated_at || '').slice(0, 10)}</td>
+                    <td>${p.horizon || '-'}</td>
+                    <td><span class="badge badge-${p.predicted_class}">${p.predicted_class}</span></td>
+                    <td>${p.confidence || 0}%</td>
+                </tr>
+                <tr class="detail-row" id="detail-pred-${asset}-${i}"><td class="pred-detail-cell" colspan="4"></td></tr>
+            `).join('');
+            renderShowAllButton(`predictions-footer-${asset}`, 'pred', asset, sortedPredictions.length, expanded);
+        }
+
+        function renderShowAllButton(footerId, kind, asset, totalCount, expanded) {
+            const footerEl = document.getElementById(footerId);
+            if (!footerEl) return;
+            if (totalCount <= ROW_LIMIT) {
+                footerEl.innerHTML = '';
+                return;
+            }
+            footerEl.innerHTML = expanded
+                ? `<button onclick="toggleShowAllRows('${kind}', '${asset}')">Mostra solo le recenti</button>`
+                : `<button onclick="toggleShowAllRows('${kind}', '${asset}')">Mostra tutto (${totalCount})</button>`;
+        }
+
         function renderAssetData(asset, predictions, outcomes, rawPredictions, snapshot, status = {}) {
             const total = outcomes.length;
             const correct = outcomes.filter(o => o.correct === true).length;
@@ -1541,31 +1631,21 @@
             const predsMap = {};
             predictions.forEach(p => { if (p.id) predsMap[p.id] = p; });
 
-            // Sort Outcomes descending for table
-            const recentOutcomes = [...outcomes].sort((a, b) => (b.evaluated_at || '').localeCompare(a.evaluated_at || '')).slice(0, 6);
-            const outcomesBody = document.getElementById(`outcomes-body-${asset}`);
-            detailStore[`outcome-${asset}`] = recentOutcomes.map(o => ({ ...o, _prediction: predsMap[o.prediction_id] }));
-            if (recentOutcomes.length === 0) {
-                outcomesBody.innerHTML = status.outcomesOk === false
-                    ? tableMessageRow(5, 'Dati non raggiungibili al momento. Riprova più tardi.', true)
-                    : tableMessageRow(5, 'Nessuna valutazione ancora.', false);
-            } else {
-                outcomesBody.innerHTML = recentOutcomes.map((row, i) => `
-                    <tr class="outcome-row" tabindex="0" role="button" aria-expanded="false" onclick="toggleDetail('outcome-${asset}', ${i})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleDetail('outcome-${asset}', ${i});}">
-                        <td>${(row.evaluated_at || '').slice(0, 10)}</td>
-                        <td>${row.horizon || '-'}</td>
-                        <td><span class="badge badge-${row.predicted_class}">${row.predicted_class}</span></td>
-                        <td><span class="badge badge-${row.actual_class}">${row.actual_class}</span></td>
-                        <td><span class="outcome-verdict correct-${row.correct}">${row.correct ? ICON_CHECK : ICON_CROSS}${row.correct ? 'Sì' : 'No'}</span></td>
-                    </tr>
-                    <tr class="detail-row" id="detail-outcome-${asset}-${i}"><td class="pred-detail-cell" colspan="5"></td></tr>
-                `).join('');
-            }
+            const sortedOutcomes = [...outcomes].sort((a, b) => (b.evaluated_at || '').localeCompare(a.evaluated_at || ''));
+            const sortedPredictions = [...predictions].sort((a, b) => (b.generated_at || '').localeCompare(a.generated_at || ''));
 
-            // Sort Predictions descending for table
-            const recentPredictions = [...predictions].sort((a, b) => (b.generated_at || '').localeCompare(a.generated_at || '')).slice(0, 6);
-            const predictionsBody = document.getElementById(`predictions-body-${asset}`);
-            detailStore[`pred-${asset}`] = recentPredictions;
+            fullTableData[asset] = {
+                sortedOutcomes, sortedPredictions, predsMap,
+                outcomesEmptyMessage: status.outcomesOk === false
+                    ? tableMessageRow(5, 'Dati non raggiungibili al momento. Riprova più tardi.', true)
+                    : tableMessageRow(5, 'Nessuna valutazione ancora.', false),
+                predictionsEmptyMessage: status.predictionsOk === false
+                    ? tableMessageRow(4, 'Dati non raggiungibili al momento. Riprova più tardi.', true)
+                    : tableMessageRow(4, 'Nessuna predizione registrata.', false),
+            };
+
+            renderOutcomesTable(asset);
+            renderPredictionsTable(asset);
 
             // Prezzo di riferimento dell'ultima previsione: lo stesso valore
             // (price_at_generation) rispetto al quale UP/DOWN/FLAT viene
@@ -1573,31 +1653,15 @@
             // dettaglio per capire "UP rispetto a cosa?".
             const priceEl = document.getElementById(`price-${asset}`);
             if (priceEl) {
-                const lastPrice = recentPredictions[0]?.price_at_generation;
+                const lastPrice = sortedPredictions[0]?.price_at_generation;
                 priceEl.textContent = typeof lastPrice === 'number' ? `$${lastPrice.toFixed(2)}` : '';
             }
 
             const statusEl = document.getElementById(`data-status-${asset}`);
             if (statusEl) {
-                const note = missingDataNote(recentPredictions[0]);
+                const note = missingDataNote(sortedPredictions[0]);
                 statusEl.innerHTML = note ? `<span class="icon">${ICON_WARNING}</span><span>${escapeHtml(note)}</span>` : '';
                 statusEl.style.display = note ? 'flex' : 'none';
-            }
-
-            if (recentPredictions.length === 0) {
-                predictionsBody.innerHTML = status.predictionsOk === false
-                    ? tableMessageRow(4, 'Dati non raggiungibili al momento. Riprova più tardi.', true)
-                    : tableMessageRow(4, 'Nessuna predizione registrata.', false);
-            } else {
-                predictionsBody.innerHTML = recentPredictions.map((p, i) => `
-                    <tr class="pred-row" tabindex="0" role="button" aria-expanded="false" onclick="toggleDetail('pred-${asset}', ${i})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleDetail('pred-${asset}', ${i});}">
-                        <td>${(p.generated_at || '').slice(0, 10)}</td>
-                        <td>${p.horizon || '-'}</td>
-                        <td><span class="badge badge-${p.predicted_class}">${p.predicted_class}</span></td>
-                        <td>${p.confidence || 0}%</td>
-                    </tr>
-                    <tr class="detail-row" id="detail-pred-${asset}-${i}"><td class="pred-detail-cell" colspan="4"></td></tr>
-                `).join('');
             }
 
             const toChartPoints = (rows) => rows
