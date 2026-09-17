@@ -1188,9 +1188,9 @@
                             <span>Ultimi Risultati Valutati</span>
                             <span style="font-size: 0.8rem; font-weight: 400; color: var(--text-muted);">(tocca una riga per i dettagli)</span>
                         </span>
-                        <span class="chevron-icon">▼</span>
+                        <span class="chevron-icon" style="transform: rotate(-90deg);">▼</span>
                     </div>
-                    <div class="collapsible-content">
+                    <div class="collapsible-content collapsed">
                         <div class="table-wrapper">
                             <table>
                                 <thead>
@@ -1206,9 +1206,9 @@
                             <span>Ultimi Segnali Generati</span>
                             <span style="font-size: 0.8rem; font-weight: 400; color: var(--text-muted);">(tocca una riga per i dettagli)</span>
                         </span>
-                        <span class="chevron-icon">▼</span>
+                        <span class="chevron-icon" style="transform: rotate(-90deg);">▼</span>
                     </div>
-                    <div class="collapsible-content">
+                    <div class="collapsible-content collapsed">
                         <div class="table-wrapper">
                             <table>
                                 <thead>
@@ -1542,7 +1542,7 @@
             predictions.forEach(p => { if (p.id) predsMap[p.id] = p; });
 
             // Sort Outcomes descending for table
-            const recentOutcomes = [...outcomes].sort((a, b) => (b.evaluated_at || '').localeCompare(a.evaluated_at || '')).slice(0, 10);
+            const recentOutcomes = [...outcomes].sort((a, b) => (b.evaluated_at || '').localeCompare(a.evaluated_at || '')).slice(0, 6);
             const outcomesBody = document.getElementById(`outcomes-body-${asset}`);
             detailStore[`outcome-${asset}`] = recentOutcomes.map(o => ({ ...o, _prediction: predsMap[o.prediction_id] }));
             if (recentOutcomes.length === 0) {
@@ -1563,7 +1563,7 @@
             }
 
             // Sort Predictions descending for table
-            const recentPredictions = [...predictions].sort((a, b) => (b.generated_at || '').localeCompare(a.generated_at || '')).slice(0, 10);
+            const recentPredictions = [...predictions].sort((a, b) => (b.generated_at || '').localeCompare(a.generated_at || '')).slice(0, 6);
             const predictionsBody = document.getElementById(`predictions-body-${asset}`);
             detailStore[`pred-${asset}`] = recentPredictions;
 
