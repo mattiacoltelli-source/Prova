@@ -851,6 +851,17 @@
             sconosciuta: 'Sconosciuta',
         };
         const TREND_DIRECTION_BADGE_CLASS = { RIALZISTA: 'badge-UP', RIBASSISTA: 'badge-DOWN', LATERALE: 'badge-FLAT' };
+        // Stessi colori di .cycle-badge (CSS) usati per riempire l'area tra
+        // prezzo e media mobile nel grafico: colpo d'occhio coerente tra
+        // badge testuale e grafico sulla stessa fase.
+        const CYCLE_PHASE_CHART_COLOR = {
+            molto_estesa: '#f87171',
+            estesa: '#f87171',
+            neutrale: '#f5b942',
+            sconosciuta: '#f5b942',
+            compressa: '#3ddc9a',
+            molto_compressa: '#3ddc9a',
+        };
 
         // Icone SVG coerenti con lo stile già in uso in header/info-panel
         // (stroke, currentColor), al posto delle emoji usate in precedenza
@@ -960,12 +971,33 @@
                 const cycleLabel = CYCLE_PHASE_LABEL[cyclePhase] || cyclePhase;
                 const drivers = (latest.key_drivers || []).map(d => `<span class="driver-chip">${d}</span>`).join('');
 
+                // Storico: TUTTE le letture in data (non solo l'ultima),
+                // più recenti prima — rende il sistema verificabile nel
+                // tempo ("a settimana X dicevamo Y"), stesso principio
+                // dell'accuratezza già mostrata sulla pagina Tech.
+                const history = [...data].sort((x, y) => (y.generated_at || '').localeCompare(x.generated_at || ''));
+                const historyRows = history.map(r => {
+                    const rp = (r.metrics && r.metrics.cycle_phase) || 'sconosciuta';
+                    const rBadge = TREND_DIRECTION_BADGE_CLASS[r.trend_direction] || 'badge-FLAT';
+                    const rDate = r.generated_at ? new Date(r.generated_at).toLocaleDateString('it-IT') : '—';
+                    return `<tr>
+                        <td>${rDate}</td>
+                        <td><span class="badge ${rBadge}">${r.trend_direction || '—'}</span></td>
+                        <td><span class="cycle-badge cycle-${rp}" style="font-size:0.68rem; padding:3px 8px;">${CYCLE_PHASE_LABEL[rp] || rp}</span></td>
+                        <td>${r.confidence != null ? r.confidence + '%' : '—'}</td>
+                    </tr>`;
+                }).join('');
+
                 bodyEl.innerHTML = `
                     <div style="margin-bottom: 10px;">
                         <span class="cycle-badge cycle-${cyclePhase}">Fase ciclo: ${cycleLabel}</span>
                         <span style="font-size:0.76rem; color: var(--text-dim); margin-left: 8px;">
                             ${m.price_vs_ma_pct != null ? `${formatPct(m.price_vs_ma_pct)} vs media ${m.ma_weeks || 200} sett.` : ''}
                         </span>
+                    </div>
+                    <div class="section-title">Prezzo vs media mobile (fase del ciclo)</div>
+                    <div class="chart-container" id="robotics-chart-wrap-${a.key}">
+                        <canvas id="robotics-chart-${a.key}"></canvas>
                     </div>
                     <div class="cagr-grid">${cagrCells}</div>
                     <div class="section-title">Valutazione ciclo</div>
@@ -980,7 +1012,26 @@
                         Confidence: ${latest.confidence != null ? latest.confidence + '%' : '—'}
                     </div>
                     <div class="trend-generated-at">Aggiornato: ${latest.generated_at ? new Date(latest.generated_at).toLocaleDateString('it-IT') : '—'}</div>
+
+                    <div class="collapsible-header" onclick="toggleCollapsible(this)" style="margin-top: 16px;">
+                        <span class="collapsible-title">
+                            <span>Storico Letture</span>
+                            <span style="font-size: 0.8rem; font-weight: 400; color: var(--text-muted);">(${history.length})</span>
+                        </span>
+                        <span class="chevron-icon" style="transform: rotate(-90deg);">▼</span>
+                    </div>
+                    <div class="collapsible-content collapsed">
+                        <div class="table-wrapper">
+                            <table>
+                                <thead><tr><th>Data</th><th>Direzione</th><th>Fase Ciclo</th><th>Conf.</th></tr></thead>
+                                <tbody>${historyRows}</tbody>
+                            </table>
+                        </div>
+                    </div>
                 `;
+
+                const seriesData = await fetchPriceSeries(a.key);
+                renderRoboticsCycleChart(a.key, seriesData, cyclePhase);
             }
         }
 
@@ -1552,6 +1603,83 @@
                     scales: {
                         x: { ticks: { color: '#8a94a8', font: { size: showLegend ? 9 : 8 } }, grid: { color: 'rgba(255,255,255,0.05)' } },
                         y: { ticks: { color: '#8a94a8', font: { size: showLegend ? 9 : 8 } }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                    }
+                }
+            });
+        }
+
+        async function fetchPriceSeries(asset) {
+            try {
+                const res = await fetch(`data/robotics/${asset.toLowerCase()}/price_series.json`, { cache: 'no-store' });
+                if (!res.ok) return null;
+                return await res.json();
+            } catch (err) {
+                return null;
+            }
+        }
+
+        // Il grafico "in che fase del ciclo siamo": prezzo vs la sua media
+        // mobile di lungo periodo, con l'area tra le due linee colorata
+        // secondo la fase del ciclo (stessi colori del badge testuale) —
+        // sopra la MA e rosso = estesa/rischio correzione, sotto e verde =
+        // compressa, come nel badge.
+        function renderRoboticsCycleChart(assetKey, seriesData, cyclePhase) {
+            const canvasId = `robotics-chart-${assetKey}`;
+            const weekly = seriesData && seriesData.weekly;
+            if (!weekly || weekly.length === 0) {
+                showEmptyChart(canvasId, 'Nessuno storico prezzo disponibile ancora.');
+                return;
+            }
+            const canvasEl = document.getElementById(canvasId);
+            if (!canvasEl) return;
+            const ctx = canvasEl.getContext('2d');
+            const labels = weekly.map(p => p.date);
+            const priceData = weekly.map(p => p.close);
+            const maData = weekly.map(p => p.ma);
+            const fillColor = CYCLE_PHASE_CHART_COLOR[cyclePhase] || '#8a94a8';
+
+            const key = `robotics-chart-${assetKey}`;
+            if (chartInstances[key]) {
+                chartInstances[key].destroy();
+            }
+
+            chartInstances[key] = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Prezzo (settimanale)',
+                            data: priceData,
+                            borderColor: '#38b6d9',
+                            backgroundColor: fillColor + '26',
+                            borderWidth: 1.4,
+                            pointRadius: 0,
+                            tension: 0.1,
+                            fill: '+1'
+                        },
+                        {
+                            label: `Media mobile ${seriesData.ma_weeks || 200} sett.`,
+                            data: maData,
+                            borderColor: '#f5b942',
+                            borderDash: [5, 4],
+                            borderWidth: 1.4,
+                            pointRadius: 0,
+                            tension: 0.1,
+                            fill: false,
+                            spanGaps: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: true, labels: { color: '#8a94a8', font: { size: 10 }, boxWidth: 14 } }
+                    },
+                    scales: {
+                        x: { ticks: { color: '#8a94a8', font: { size: 8 }, maxTicksLimit: 8 }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                        y: { ticks: { color: '#8a94a8', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.05)' } }
                     }
                 }
             });
