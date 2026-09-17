@@ -1,40 +1,40 @@
-# Report accuratezza — aggiornato al 2026-09-17T16:58:20.622836+00:00
+# Report accuratezza — aggiornato al 2026-09-17T22:50:38.152700+00:00
 
-**Previsioni valutate: 45 — accuratezza complessiva: 33.3%**
+**Previsioni valutate: 51 — accuratezza complessiva: 35.3%**
 
 ## Per asset / orizzonte
 
 | Asset | Orizzonte | N | Accuratezza |
 |---|---|---|---|
-| AAPL | 1d | 10 | 40.0% |
-| AAPL | 7d | 5 | 80.0% |
-| MSFT | 1d | 10 | 20.0% |
-| MSFT | 7d | 5 | 20.0% |
-| NVDA | 1d | 10 | 40.0% |
-| NVDA | 7d | 5 | 0.0% |
+| AAPL | 1d | 11 | 45.5% |
+| AAPL | 7d | 6 | 83.3% |
+| MSFT | 1d | 11 | 18.2% |
+| MSFT | 7d | 6 | 16.7% |
+| NVDA | 1d | 11 | 36.4% |
+| NVDA | 7d | 6 | 16.7% |
 
 ## Matrice di confusione (predetto vs reale, tutti gli asset/orizzonti)
 
 | Predetto \ Reale | UP | DOWN | FLAT |
 |---|---|---|---|
-| UP | 6 | 13 | 9 |
+| UP | 8 | 13 | 10 |
 | DOWN | 0 | 0 | 0 |
-| FLAT | 2 | 6 | 9 |
+| FLAT | 4 | 6 | 10 |
 
 ## Calibrazione (confidence dichiarata vs accuratezza reale)
 
 | Fascia confidence | N | Accuratezza |
 |---|---|---|
 | bassa (0-49) | 0 | 0.0% |
-| media (50-74) | 39 | 30.8% |
+| media (50-74) | 45 | 33.3% |
 | alta (75-100) | 6 | 50.0% |
 
 ## Confronto con baseline naive
 
 - Random (3 classi equiprobabili): 33.3%
-- Persistenza (ripete l'ultimo esito reale osservato): 64.1% (n=39)
-- Classe più frequente (frequenza storica su decenni di prezzi, pesata sullo stesso mix asset/orizzonte): 46.0% (n=45)
-- **Agente AI: 33.3%**
+- Persistenza (ripete l'ultimo esito reale osservato): 60.0% (n=45)
+- Classe più frequente (frequenza storica su decenni di prezzi, pesata sullo stesso mix asset/orizzonte): 46.0% (n=51)
+- **Agente AI: 35.3%**
 
 > La baseline "classe più frequente" è la più dura delle tre: è
 > l'accuratezza di chi prevede sempre la stessa classe senza
