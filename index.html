@@ -854,6 +854,66 @@
             sconosciuta: 'Sconosciuta',
         };
         const TREND_DIRECTION_BADGE_CLASS = { RIALZISTA: 'badge-UP', RIBASSISTA: 'badge-DOWN', LATERALE: 'badge-FLAT' };
+
+        // Dati aziendali statici, verificati manualmente (fonti: sito
+        // ufficiale/Wikipedia/registri societari) il 2026-09-17 — non
+        // generati né recuperati a runtime da nessuna API: sono fatti che
+        // cambiano raramente (sede legale, anno di fondazione, cosa fa
+        // l'azienda), quindi scriverli una volta e verificarli è più
+        // affidabile di una fonte dinamica che potrebbe non coprire i
+        // ticker giapponesi (stesso problema già visto con fondamentali/
+        // news per THK e Harmonic Drive) o restituire un riassunto diverso
+        // ad ogni fetch.
+        const COMPANY_INFO = {
+            AAPL: {
+                name: 'Apple Inc.', hq: 'Cupertino, California, USA', founded: 1976,
+                sector: 'Tecnologia / Elettronica di consumo', exchange: 'NASDAQ',
+                description: 'Progetta e vende iPhone, Mac, iPad, Apple Watch e servizi digitali (App Store, iCloud, Apple Music, Apple TV+).',
+            },
+            MSFT: {
+                name: 'Microsoft Corporation', hq: 'Redmond, Washington, USA', founded: 1975,
+                sector: 'Tecnologia / Software', exchange: 'NASDAQ',
+                description: 'Sistema operativo Windows, suite Office, cloud Azure, console Xbox, LinkedIn.',
+            },
+            NVDA: {
+                name: 'NVIDIA Corporation', hq: 'Santa Clara, California, USA', founded: 1993,
+                sector: 'Semiconduttori', exchange: 'NASDAQ',
+                description: 'Progetta GPU per gaming, data center e intelligenza artificiale; leader nei chip per l\'addestramento di modelli AI.',
+            },
+            THK: {
+                name: 'THK Co., Ltd.', hq: 'Minato-ku, Tokyo, Giappone', founded: 1971,
+                sector: 'Meccanica di precisione', exchange: 'Tokyo Stock Exchange (6481)',
+                description: 'Guide lineari, cuscinetti a sfera e componenti di precisione per macchine utensili, robot industriali e apparecchiature per semiconduttori.',
+            },
+            HARMONIC_DRIVE: {
+                name: 'Harmonic Drive Systems Inc.', hq: 'Shinagawa-ku, Tokyo, Giappone', founded: 1970,
+                sector: 'Meccanica di precisione / Robotica', exchange: 'Tokyo Stock Exchange (6324)',
+                description: 'Riduttori a gioco zero (harmonic drive) e attuatori di precisione per robot industriali, apparecchiature per semiconduttori e chirurgia robotica.',
+            },
+            TER: {
+                name: 'Teradyne, Inc.', hq: 'North Reading, Massachusetts, USA', founded: 1960,
+                sector: 'Semiconduttori / Automazione', exchange: 'NASDAQ',
+                description: 'Equipment per testare semiconduttori e dispositivi elettronici. Possiede Universal Robots (cobot) e MiR (robot mobili autonomi per magazzini).',
+            },
+        };
+
+        function renderCompanyInfoPanel(ticker) {
+            const c = COMPANY_INFO[ticker];
+            if (!c) return '';
+            return `
+                <details class="info-panel" style="margin-bottom: 12px;">
+                    <summary>Info azienda</summary>
+                    <div class="info-panel-body">
+                        <strong>${c.name}</strong><br>
+                        Sede: ${c.hq}<br>
+                        Fondata: ${c.founded}<br>
+                        Settore: ${c.sector}<br>
+                        Quotata: ${c.exchange}<br><br>
+                        ${c.description}
+                    </div>
+                </details>
+            `;
+        }
         // Stessi colori di .cycle-badge (CSS) usati per riempire l'area tra
         // prezzo e media mobile nel grafico: colpo d'occhio coerente tra
         // badge testuale e grafico sulla stessa fase.
@@ -924,6 +984,7 @@
                         <span class="asset-title">${a.label}<span class="asset-price" id="robotics-price-${a.key}"></span></span>
                         <span id="robotics-direction-${a.key}"></span>
                     </div>
+                    ${renderCompanyInfoPanel(a.key)}
                     <div id="robotics-body-${a.key}" style="font-size:0.85rem; color: var(--text-muted);">Caricamento…</div>
                 </div>
             `).join('');
@@ -1081,6 +1142,7 @@
                         <span class="asset-title">${asset}<span class="asset-price" id="price-${asset}"></span></span>
                         <span class="badge-accuracy" id="accuracy-${asset}">Accuratezza: 0.0%</span>
                     </div>
+                    ${renderCompanyInfoPanel(asset)}
                     <div class="snapshot-status" id="snapshot-status-${asset}"></div>
                     <div class="data-status" id="data-status-${asset}"></div>
                     <div class="section-title">Accuratezza nel tempo</div>
