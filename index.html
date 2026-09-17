@@ -1266,135 +1266,174 @@
         // trend). trend.jsonl può non esistere ancora finché trend.yml non
         // ha fatto il primo run reale: gestito come lista vuota, non errore.
         async function loadRoboticsData() {
+            // Una card per volta, ognuna isolata dalle altre: prima questo ciclo
+            // non aveva try/catch e un solo errore (tipicamente Chart.js non
+            // caricato dal CDN, che fa lanciare renderRoboticsCycleChart)
+            // interrompeva il for — le card degli asset successivi restavano per
+            // sempre su "Caricamento…", senza nessun messaggio. Stessa protezione
+            // già presente nella pagina Tech attorno a renderAssetData().
             for (const a of ROBOTICS_ASSETS) {
-                const bodyEl = document.getElementById(`robotics-body-${a.key}`);
-                const priceEl = document.getElementById(`robotics-price-${a.key}`);
-                const dirEl = document.getElementById(`robotics-direction-${a.key}`);
-                const { ok, data } = await parseJsonl(`data/robotics/${a.key.toLowerCase()}/trend.jsonl`);
-                if (!ok || data.length === 0) {
-                    bodyEl.innerHTML = `<div class="data-status" style="display:flex">
-                        <span class="icon">${ICON_CROSS}</span>
-                        Nessuna analisi trend ancora disponibile per ${a.label} (il primo run
-                        settimanale non è ancora partito, o è in corso).
-                    </div>`;
-                    continue;
+                try {
+                    await renderRoboticsAssetCard(a);
+                } catch (err) {
+                    console.error(`Errore nel render trend di ${a.key}:`, err);
+                    showRoboticsCardError(a);
                 }
-                const latest = data.reduce((acc, cur) => (cur.generated_at || '') > (acc.generated_at || '') ? cur : acc);
-                const m = latest.metrics || {};
+            }
+        }
 
-                if (priceEl && typeof m.last_price === 'number') {
-                    priceEl.textContent = `${a.currencySymbol}${m.last_price.toLocaleString('it-IT')}`;
-                }
+        // Se la card è rimasta sullo scheletro di caricamento, l'errore va detto
+        // lì: un asset fermo su "Caricamento…" è indistinguibile da uno lento. Se
+        // invece il contenuto era già stato scritto (errore arrivato dopo), si
+        // lascia quello che c'è: è comunque corretto.
+        function showRoboticsCardError(a) {
+            const bodyEl = document.getElementById(`robotics-body-${a.key}`);
+            if (!bodyEl || bodyEl.textContent.trim() !== 'Caricamento…') return;
+            bodyEl.innerHTML = `<div class="data-status" style="display:flex">
+                <span class="icon">${ICON_WARNING}</span>
+                Non è stato possibile mostrare la lettura di ${a.label} in questo
+                momento. Le altre card non sono influenzate: prova a ricaricare.
+            </div>`;
+        }
 
-                if (dirEl) {
-                    const badgeClass = TREND_DIRECTION_BADGE_CLASS[latest.trend_direction] || 'badge-FLAT';
-                    dirEl.innerHTML = `<span class="badge ${badgeClass}">${latest.trend_direction || '—'}</span>`;
-                }
+        async function renderRoboticsAssetCard(a) {
+            const bodyEl = document.getElementById(`robotics-body-${a.key}`);
+            const priceEl = document.getElementById(`robotics-price-${a.key}`);
+            const dirEl = document.getElementById(`robotics-direction-${a.key}`);
+            const { ok, data } = await parseJsonl(`data/robotics/${a.key.toLowerCase()}/trend.jsonl`);
+            if (!ok || data.length === 0) {
+                bodyEl.innerHTML = `<div class="data-status" style="display:flex">
+                    <span class="icon">${ICON_CROSS}</span>
+                    Nessuna analisi trend ancora disponibile per ${a.label} (il primo run
+                    programmato non è ancora partito, o è in corso).
+                </div>`;
+                return;
+            }
+            const latest = data.reduce((acc, cur) => (cur.generated_at || '') > (acc.generated_at || '') ? cur : acc);
+            const m = latest.metrics || {};
 
-                const cagr = (m.cagr_by_years) || {};
-                const cagrCells = ['1', '3', '5', '10'].map(y => {
-                    const v = cagr[y];
-                    const color = v == null ? 'var(--text-dim)' : (v >= 0 ? 'var(--accent-green)' : 'var(--accent-red)');
-                    return `<div class="cagr-cell">
-                        <span class="cagr-label">${y} ${y === '1' ? 'anno' : 'anni'}</span>
-                        <span class="cagr-value" style="color:${color}">${v != null ? formatPct(v * 100) : '—'}</span>
-                    </div>`;
-                }).join('');
+            if (priceEl && typeof m.last_price === 'number') {
+                priceEl.textContent = `${a.currencySymbol}${m.last_price.toLocaleString('it-IT')}`;
+            }
 
-                const cyclePhase = m.cycle_phase || 'sconosciuta';
-                const cycleLabel = CYCLE_PHASE_LABEL[cyclePhase] || cyclePhase;
-                const drivers = (latest.key_drivers || []).map(d => `<span class="driver-chip">${d}</span>`).join('');
+            if (dirEl) {
+                const badgeClass = TREND_DIRECTION_BADGE_CLASS[latest.trend_direction] || 'badge-FLAT';
+                dirEl.innerHTML = `<span class="badge ${badgeClass}">${latest.trend_direction || '—'}</span>`;
+            }
 
-                // Episodi storici "molto estesa" + esiti (correzione/recupero) e
-                // distanza da ATH/52w high: numeri calcolati da trend_analysis.py
-                // sui prezzi storici (mai dall'AI) — vedi trend_run.py.
-                const ep = m.extended_episodes || {};
-                const episodesText = ep.num_episodes
-                    ? `Su ${ep.num_episodes} episod${ep.num_episodes === 1 ? 'io' : 'i'} storic${ep.num_episodes === 1 ? 'o' : 'i'} simile/i (fase molto estesa come ora), la correzione media dal picco è stata ${formatPct(ep.avg_correction_pct)}` +
-                      (ep.avg_recovery_months != null ? `, con recupero medio in ${ep.avg_recovery_months} mesi` : '') +
-                      (ep.num_not_recovered ? `. ${ep.num_not_recovered}/${ep.num_episodes} non ha ancora recuperato il livello del picco.` : '.')
-                    : 'Nessun episodio storico simile risolto nello storico disponibile (dato insufficiente, non zero episodi accertati).';
+            const cagr = (m.cagr_by_years) || {};
+            const cagrCells = ['1', '3', '5', '10'].map(y => {
+                const v = cagr[y];
+                const color = v == null ? 'var(--text-dim)' : (v >= 0 ? 'var(--accent-green)' : 'var(--accent-red)');
+                return `<div class="cagr-cell">
+                    <span class="cagr-label">${y} ${y === '1' ? 'anno' : 'anni'}</span>
+                    <span class="cagr-value" style="color:${color}">${v != null ? formatPct(v * 100) : '—'}</span>
+                </div>`;
+            }).join('');
 
-                const ath = m.ath_distance || {};
+            const cyclePhase = m.cycle_phase || 'sconosciuta';
+            const cycleLabel = CYCLE_PHASE_LABEL[cyclePhase] || cyclePhase;
+            const drivers = (latest.key_drivers || []).map(d => `<span class="driver-chip">${d}</span>`).join('');
 
-                // Storico: TUTTE le letture in data (non solo l'ultima),
-                // più recenti prima — rende il sistema verificabile nel
-                // tempo ("a settimana X dicevamo Y"), stesso principio
-                // dell'accuratezza già mostrata sulla pagina Tech.
-                const history = [...data].sort((x, y) => (y.generated_at || '').localeCompare(x.generated_at || ''));
-                const historyRows = history.map(r => {
-                    const rp = (r.metrics && r.metrics.cycle_phase) || 'sconosciuta';
-                    const rBadge = TREND_DIRECTION_BADGE_CLASS[r.trend_direction] || 'badge-FLAT';
-                    const rDate = r.generated_at ? new Date(r.generated_at).toLocaleDateString('it-IT') : '—';
-                    return `<tr>
-                        <td>${rDate}</td>
-                        <td><span class="badge ${rBadge}">${r.trend_direction || '—'}</span></td>
-                        <td><span class="cycle-badge cycle-${rp}" style="font-size:0.68rem; padding:3px 8px;">${CYCLE_PHASE_LABEL[rp] || rp}</span></td>
-                        <td>${r.confidence != null ? r.confidence + '%' : '—'}</td>
-                    </tr>`;
-                }).join('');
+            // Episodi storici "molto estesa" + esiti (correzione/recupero) e
+            // distanza da ATH/52w high: numeri calcolati da trend_analysis.py
+            // sui prezzi storici (mai dall'AI) — vedi trend_run.py.
+            const ep = m.extended_episodes || {};
+            const episodesText = ep.num_episodes
+                ? `Su ${ep.num_episodes} episod${ep.num_episodes === 1 ? 'io' : 'i'} storic${ep.num_episodes === 1 ? 'o' : 'i'} simile/i (fase molto estesa come ora), la correzione media dal picco è stata ${formatPct(ep.avg_correction_pct)}` +
+                  (ep.avg_recovery_months != null ? `, con recupero medio in ${ep.avg_recovery_months} mesi` : '') +
+                  (ep.num_not_recovered ? `. ${ep.num_not_recovered}/${ep.num_episodes} non ha ancora recuperato il livello del picco.` : '.')
+                : 'Nessun episodio storico simile risolto nello storico disponibile (dato insufficiente, non zero episodi accertati).';
 
-                bodyEl.innerHTML = `
-                    <div style="margin-bottom: 4px;">
-                        <span class="cycle-badge cycle-${cyclePhase}">Fase ciclo: ${cycleLabel}</span>
-                        <span style="font-size:0.76rem; color: var(--text-dim); margin-left: 8px;">
-                            ${m.price_vs_ma_pct != null ? `${formatPct(m.price_vs_ma_pct)} vs media ${m.ma_weeks || 200} sett.` : ''}
-                        </span>
+            const ath = m.ath_distance || {};
+
+            // Storico: TUTTE le letture in data (non solo l'ultima),
+            // più recenti prima — rende il sistema verificabile nel
+            // tempo ("a settimana X dicevamo Y"), stesso principio
+            // dell'accuratezza già mostrata sulla pagina Tech.
+            const history = [...data].sort((x, y) => (y.generated_at || '').localeCompare(x.generated_at || ''));
+            const historyRows = history.map(r => {
+                const rp = (r.metrics && r.metrics.cycle_phase) || 'sconosciuta';
+                const rBadge = TREND_DIRECTION_BADGE_CLASS[r.trend_direction] || 'badge-FLAT';
+                const rDate = r.generated_at ? new Date(r.generated_at).toLocaleDateString('it-IT') : '—';
+                return `<tr>
+                    <td>${rDate}</td>
+                    <td><span class="badge ${rBadge}">${r.trend_direction || '—'}</span></td>
+                    <td><span class="cycle-badge cycle-${rp}" style="font-size:0.68rem; padding:3px 8px;">${CYCLE_PHASE_LABEL[rp] || rp}</span></td>
+                    <td>${r.confidence != null ? r.confidence + '%' : '—'}</td>
+                </tr>`;
+            }).join('');
+
+            bodyEl.innerHTML = `
+                <div style="margin-bottom: 4px;">
+                    <span class="cycle-badge cycle-${cyclePhase}">Fase ciclo: ${cycleLabel}</span>
+                    <span style="font-size:0.76rem; color: var(--text-dim); margin-left: 8px;">
+                        ${m.price_vs_ma_pct != null ? `${formatPct(m.price_vs_ma_pct)} vs media ${m.ma_weeks || 200} sett.` : ''}
+                    </span>
+                </div>
+                <div style="font-size:0.72rem; color: var(--text-dim); margin-bottom: 10px;">
+                    Lettura strutturale sull'insieme degli orizzonti 1-10 anni sotto (non un singolo periodo) · aggiornata al massimo 1 volta/mese
+                </div>
+                <div class="section-title">Prezzo vs media mobile (fase del ciclo)</div>
+                <div class="chart-container" id="robotics-chart-wrap-${a.key}">
+                    <canvas id="robotics-chart-${a.key}"></canvas>
+                </div>
+                <div class="section-title">CAGR per orizzonte (1-10 anni)</div>
+                <div class="cagr-grid">${cagrCells}</div>
+
+                <div class="section-title">Storico correzioni dopo fasi simili</div>
+                <p style="font-size:0.82rem; line-height:1.5; color: var(--text-main); margin-bottom: 6px;">
+                    ${episodesText}
+                </p>
+                <div style="font-size:0.76rem; color: var(--text-muted); margin-bottom: 10px;">
+                    Distanza da ATH: ${ath.pct_from_ath != null ? formatPct(ath.pct_from_ath) : '—'}${ath.ath_date ? ` (${ath.ath_date})` : ''} ·
+                    Distanza da massimo 52 sett.: ${ath.pct_from_52w_high != null ? formatPct(ath.pct_from_52w_high) : '—'}
+                </div>
+
+                <div class="section-title">Valutazione ciclo</div>
+                <p style="font-size:0.85rem; line-height:1.5; color: var(--text-main); margin-bottom: 10px;">
+                    ${latest.cycle_assessment || 'Non disponibile.'}
+                </p>
+                ${drivers ? `<div class="driver-chip-list">${drivers}</div>` : ''}
+                ${latest.risk_notes ? `<div class="risk-note">${latest.risk_notes}</div>` : ''}
+                <div style="font-size:0.76rem; color: var(--text-muted); margin-top:10px;">
+                    Drawdown storico max: ${m.max_drawdown != null ? formatPct(m.max_drawdown * 100) : '—'} ·
+                    Volatilità ann.: ${m.annualized_volatility != null ? formatPct(m.annualized_volatility * 100, 0) : '—'} ·
+                    Confidence: ${latest.confidence != null ? latest.confidence + '%' : '—'}
+                </div>
+                <div class="trend-generated-at">Aggiornato: ${latest.generated_at ? new Date(latest.generated_at).toLocaleDateString('it-IT') : '—'}</div>
+
+                <div class="collapsible-header" onclick="toggleCollapsible(this)" style="margin-top: 16px;">
+                    <span class="collapsible-title">
+                        <span>Storico Letture</span>
+                        <span style="font-size: 0.8rem; font-weight: 400; color: var(--text-muted);">(${history.length})</span>
+                    </span>
+                    <span class="chevron-icon" style="transform: rotate(-90deg);">▼</span>
+                </div>
+                <div class="collapsible-content collapsed">
+                    <div style="font-size:0.72rem; color: var(--text-dim); margin-bottom: 8px;">
+                        Ogni riga è una lettura mensile del trend strutturale 1-10 anni, non una previsione a un orizzonte specifico.
                     </div>
-                    <div style="font-size:0.72rem; color: var(--text-dim); margin-bottom: 10px;">
-                        Lettura strutturale sull'insieme degli orizzonti 1-10 anni sotto (non un singolo periodo) · aggiornata al massimo 1 volta/mese
+                    <div class="table-wrapper">
+                        <table>
+                            <thead><tr><th>Data</th><th>Direzione (1-10y)</th><th>Fase Ciclo</th><th>Conf.</th></tr></thead>
+                            <tbody>${historyRows}</tbody>
+                        </table>
                     </div>
-                    <div class="section-title">Prezzo vs media mobile (fase del ciclo)</div>
-                    <div class="chart-container" id="robotics-chart-wrap-${a.key}">
-                        <canvas id="robotics-chart-${a.key}"></canvas>
-                    </div>
-                    <div class="section-title">CAGR per orizzonte (1-10 anni)</div>
-                    <div class="cagr-grid">${cagrCells}</div>
+                </div>
+            `;
 
-                    <div class="section-title">Storico correzioni dopo fasi simili</div>
-                    <p style="font-size:0.82rem; line-height:1.5; color: var(--text-main); margin-bottom: 6px;">
-                        ${episodesText}
-                    </p>
-                    <div style="font-size:0.76rem; color: var(--text-muted); margin-bottom: 10px;">
-                        Distanza da ATH: ${ath.pct_from_ath != null ? formatPct(ath.pct_from_ath) : '—'}${ath.ath_date ? ` (${ath.ath_date})` : ''} ·
-                        Distanza da massimo 52 sett.: ${ath.pct_from_52w_high != null ? formatPct(ath.pct_from_52w_high) : '—'}
-                    </div>
-
-                    <div class="section-title">Valutazione ciclo</div>
-                    <p style="font-size:0.85rem; line-height:1.5; color: var(--text-main); margin-bottom: 10px;">
-                        ${latest.cycle_assessment || 'Non disponibile.'}
-                    </p>
-                    ${drivers ? `<div class="driver-chip-list">${drivers}</div>` : ''}
-                    ${latest.risk_notes ? `<div class="risk-note">${latest.risk_notes}</div>` : ''}
-                    <div style="font-size:0.76rem; color: var(--text-muted); margin-top:10px;">
-                        Drawdown storico max: ${m.max_drawdown != null ? formatPct(m.max_drawdown * 100) : '—'} ·
-                        Volatilità ann.: ${m.annualized_volatility != null ? formatPct(m.annualized_volatility * 100, 0) : '—'} ·
-                        Confidence: ${latest.confidence != null ? latest.confidence + '%' : '—'}
-                    </div>
-                    <div class="trend-generated-at">Aggiornato: ${latest.generated_at ? new Date(latest.generated_at).toLocaleDateString('it-IT') : '—'}</div>
-
-                    <div class="collapsible-header" onclick="toggleCollapsible(this)" style="margin-top: 16px;">
-                        <span class="collapsible-title">
-                            <span>Storico Letture</span>
-                            <span style="font-size: 0.8rem; font-weight: 400; color: var(--text-muted);">(${history.length})</span>
-                        </span>
-                        <span class="chevron-icon" style="transform: rotate(-90deg);">▼</span>
-                    </div>
-                    <div class="collapsible-content collapsed">
-                        <div style="font-size:0.72rem; color: var(--text-dim); margin-bottom: 8px;">
-                            Ogni riga è una lettura mensile del trend strutturale 1-10 anni, non una previsione a un orizzonte specifico.
-                        </div>
-                        <div class="table-wrapper">
-                            <table>
-                                <thead><tr><th>Data</th><th>Direzione (1-10y)</th><th>Fase Ciclo</th><th>Conf.</th></tr></thead>
-                                <tbody>${historyRows}</tbody>
-                            </table>
-                        </div>
-                    </div>
-                `;
-
-                const seriesData = await fetchPriceSeries(a.key);
+            const seriesData = await fetchPriceSeries(a.key);
+            try {
                 renderRoboticsCycleChart(a.key, seriesData, cyclePhase);
+            } catch (err) {
+                // Il resto della card (fase del ciclo, CAGR, episodi storici,
+                // valutazione) è già disegnato sopra e resta valido: qui manca
+                // solo il grafico — tipicamente perché Chart.js non è arrivato
+                // dal CDN. Meglio dirlo nel riquadro del grafico che lasciare un
+                // canvas vuoto senza spiegazione.
+                console.error(`Grafico trend non disegnato per ${a.key}:`, err);
+                showEmptyChart(`robotics-chart-${a.key}`, 'Grafico non disponibile in questo momento.');
             }
         }
 
