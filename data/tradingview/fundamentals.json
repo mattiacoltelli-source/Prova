@@ -177,7 +177,8 @@
           1528000000,
           4491000000,
           29254000000
-        ]
+        ],
+        "nota_riconciliazione": "La somma dei quattro trimestri etichettati 2025 (293,7 mld) NON coincide con il ricavo annuale 2025 (240,4 mld): le due serie usano convenzioni di esercizio diverse. Per questo l'app NON calcola un TTM sommando i trimestri — mostra l'ultimo esercizio chiuso, etichettato come tale."
       },
       "analyst_rating": {
         "recommendation": "Strong Buy",
@@ -190,7 +191,14 @@
         "sell": 0
       },
       "price_target": null,
-      "price_target_escluso_perche": "TradingView stesso segnala target_mismatch: il price target è incoerente con il prezzo quotato (probabile disallineamento di valuta/unità nel feed). L'endpoint financials restituiva 8642 (+44%), l'endpoint forecasts lo rifiuta. Non propagato."
+      "price_target_escluso_perche": "TradingView stesso segnala target_mismatch: il price target è incoerente con il prezzo quotato (probabile disallineamento di valuta/unità nel feed). L'endpoint financials restituiva 8642 (+44%), l'endpoint forecasts lo rifiuta. Non propagato.",
+      "estimates": {
+        "eps_next_quarter": 0.638149763814,
+        "eps_next_year": 2.8016922699,
+        "revenue_next_quarter": 535574785.7152,
+        "revenue_next_year": 2034656032.3155,
+        "nota_unita": "Stime in unità non allineate alle serie di bilancio dello stesso ticker (ricavi annui stimati 2,03 mld contro 240 mld dell'ultimo esercizio). È lo stesso disallineamento di valuta/unità che fa scartare il price target: non usare senza riconciliare l'unità."
+      }
     },
     "HARMONIC_DRIVE": {
       "tv_symbol": "TSE:6324",
@@ -339,7 +347,14 @@
         "sell": 1
       },
       "price_target": null,
-      "price_target_escluso_perche": "Stesso target_mismatch segnalato da TradingView per TSE:6481."
+      "price_target_escluso_perche": "Stesso target_mismatch segnalato da TradingView per TSE:6481.",
+      "estimates": {
+        "eps_next_quarter": 0.08124189999999999,
+        "eps_next_year": 0.4368237629519999,
+        "revenue_next_quarter": 125701050,
+        "revenue_next_year": 474666702.76775,
+        "nota_unita": "Stesso disallineamento di unità segnalato per TSE:6481."
+      }
     },
     "TER": {
       "tv_symbol": "NASDAQ:TER",
@@ -369,7 +384,29 @@
       "sector": "Electronic Technology",
       "industry": "Electronic Production Equipment",
       "price_target_1y": 455.923,
-      "price_target_1y_delta_pct": 27.0547
+      "price_target_1y_delta_pct": 27.0547,
+      "analyst_rating": {
+        "recommendation": "Strong Buy",
+        "score": 1.35,
+        "total_analysts": 20,
+        "buy": 12,
+        "overweight": 2,
+        "hold": 6,
+        "underweight": 0,
+        "sell": 0
+      },
+      "price_targets": {
+        "average": 455.923077,
+        "high": 550,
+        "low": 390,
+        "upside_pct": 27.5
+      },
+      "estimates": {
+        "eps_next_quarter": 2.076829,
+        "eps_next_year": 9.218135,
+        "revenue_next_quarter": 1259579400,
+        "revenue_next_year": 5147678843
+      }
     },
     "VRT": {
       "tv_symbol": "NYSE:VRT",
@@ -399,7 +436,29 @@
       "sector": "Electronic Technology",
       "industry": "Electronic Production Equipment",
       "price_target_1y": 339.178,
-      "price_target_1y_delta_pct": 39.5879
+      "price_target_1y_delta_pct": 39.5879,
+      "analyst_rating": {
+        "recommendation": "Strong Buy",
+        "score": 1.2,
+        "total_analysts": 33,
+        "buy": 25,
+        "overweight": 3,
+        "hold": 5,
+        "underweight": 0,
+        "sell": 0
+      },
+      "price_targets": {
+        "average": 339.177778,
+        "high": 427,
+        "low": 245,
+        "upside_pct": 39.6
+      },
+      "estimates": {
+        "eps_next_quarter": 1.822894,
+        "eps_next_year": 6.724003,
+        "revenue_next_quarter": 3758729033,
+        "revenue_next_year": 14022863257
+      }
     }
   }
 }

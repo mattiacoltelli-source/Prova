@@ -37,7 +37,13 @@ i loro fondamentali erano inseriti a mano in `index.html` (fonte
 stockanalysis.com) con scadenza automatica a 6 mesi.
 
 `fundamentals.json` contiene gli stessi dati da fonte strutturata, più 16
-anni di storico che l'inserimento manuale non aveva.
+anni di storico, crescita anno su anno, margini, rating analisti e range dei
+target che l'inserimento manuale non aveva.
+
+**`index.html` lo legge direttamente** (dal 2026-09-17): la costante
+`ROBOTICS_FUNDAMENTALS` scritta a mano non esiste più. Le card costruiscono
+un contenitore vuoto e una singola `fetch` lo riempie, così il resto della
+catena di rendering resta sincrono.
 
 ## Verifiche fatte prima di committare
 

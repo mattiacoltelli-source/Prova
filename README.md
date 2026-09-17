@@ -232,9 +232,25 @@ inaffidabili e non propagati, calendario earnings che non copre Tokyo, TTM
 vuoti per THK) sono in `data/tradingview/README.md`.
 
 La pipeline di previsione **non dipende da questi file**: continua a girare
-esclusivamente sulle fonti gratuite. Sono materiale di consultazione e una
-base per sostituire, quando si vorrà, i fondamentali inseriti a mano in
-`index.html`.
+esclusivamente sulle fonti gratuite.
+
+`index.html` legge `fundamentals.json` al posto della costante
+`ROBOTICS_FUNDAMENTALS` che prima conteneva i numeri copiati a mano da
+stockanalysis.com. Le card mostrano quindi anche crescita anno su anno,
+margini, rating analisti e range dei target — dati che l'inserimento manuale
+non aveva. La scadenza automatica a 6 mesi resta: lo snapshot non si aggiorna
+da solo, quindi il blocco continua a nascondersi quando invecchia.
+
+Due cose che il codice del frontend fa apposta, e che conviene non
+"semplificare" in futuro:
+
+- **Per THK mostra l'ultimo esercizio chiuso, non un TTM.** La fonte non
+  espone i campi TTM per quel ticker, e ricostruirli sommando i quattro
+  trimestri darebbe 293,7 mld contro i 240,4 mld dell'annuale: le due serie
+  usano convenzioni di esercizio diverse. Il blocco è etichettato come
+  esercizio chiuso e avvisa che non è confrontabile con i TTM degli altri.
+- **Per i due ticker Tokyo non mostra alcun target di prezzo**, e spiega in
+  pagina il perché (TradingView segnala `target_mismatch`).
 
 ## Fonti dati (tutte gratuite, nessun abbonamento)
 
