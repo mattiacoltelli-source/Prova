@@ -845,9 +845,14 @@
                 <strong>Driver macro:</strong> correlazione empirica con l'indice Philadelphia
                 Semiconductor (^SOX), non con la produzione industriale generica — è risultato il
                 driver dominante nell'analisi storica.<br><br>
-                <strong>Cadenza:</strong> analisi rigenerata al massimo una volta al mese (non ha
-                senso più spesso su orizzonti pluriennali). Puoi farla partire a mano da
-                <a href="https://github.com/mattiacoltelli-source/Prova/actions/workflows/trend.yml" target="_blank" rel="noopener">GitHub Actions ↗</a>.
+                <strong>Cadenza:</strong> analisi rigenerata al massimo una volta al mese, il giorno
+                1 (non ha senso più spesso su orizzonti pluriennali).<br><br>
+                <strong>Analisi non partita in automatico?</strong> Può capitare che GitHub Actions
+                non faccia scattare il cron mensile in tempo. Puoi farla partire a mano da
+                <a href="https://github.com/mattiacoltelli-source/Prova/actions/workflows/trend.yml" target="_blank" rel="noopener">GitHub Actions ↗</a>
+                (richiede il login al tuo account GitHub, non è esposto qui sul sito) — se lo fai, il
+                sistema se ne accorge da solo e non ne rigenera una seconda per lo stesso asset nello
+                stesso mese, anche se poi il cron automatico del giorno 1 scatta comunque più tardi.
             </div>
         </details>
 
