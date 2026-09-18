@@ -1985,11 +1985,21 @@
                 + `(±${pct}% da $${price.toFixed(2)}) — sopra è UP, sotto è DOWN`;
         }
 
+        function probabilityLine(pred) {
+            const { probability_up, probability_down, probability_flat } = pred;
+            if (probability_up === undefined || probability_up === null) return null;
+            const pct = p => Math.round(p * 100);
+            return `Probabilità: UP <strong>${pct(probability_up)}%</strong> · `
+                + `DOWN <strong>${pct(probability_down)}%</strong> · `
+                + `FLAT <strong>${pct(probability_flat)}%</strong>`;
+        }
+
         function predictionDetailHtml(pred) {
             if (!pred) return '<em>Previsione originale non trovata.</em>';
             const s = pred.inputs_summary || {};
             const lines = [
                 `<strong>Motivazione del modello:</strong> ${escapeHtml(pred.reasoning_short || '-')}`,
+                probabilityLine(pred),
                 flatRangeLine(pred),
                 `News analizzate: <strong>${s.news_count ?? 0}</strong>`,
                 ...(s.news_sentiment_avg !== undefined && s.news_sentiment_avg !== null
