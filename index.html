@@ -1405,10 +1405,25 @@
                         return `${label} (${d})`;
                     })
                     .join(', ');
+                // sector_narratives (per-settore) sostituisce sector_narrative (unico
+                // paragrafo misto) dal 2026-09-18: fallback sul campo vecchio per le
+                // sintesi generate prima, invece di mostrare un buco vuoto.
+                const sectorHtml = latest.sector_narratives
+                    ? Object.entries(latest.sector_narratives).map(([sector, text]) => `
+                        <div style="margin-top: 12px;">
+                            <div style="font-weight: 600; font-size: 13px; opacity: 0.85;">${escapeHtml(sector)}</div>
+                            <p style="margin: 4px 0 0;">${escapeHtml(text)}</p>
+                        </div>
+                    `).join('')
+                    : `<p style="margin: 10px 0 0;">${escapeHtml(latest.sector_narrative || '')}</p>`;
+                const crossSectorHtml = latest.cross_sector_note
+                    ? `<p style="margin: 12px 0 0; opacity: 0.85; font-style: italic;">${escapeHtml(latest.cross_sector_note)}</p>`
+                    : '';
                 bodyEl.innerHTML = `
                     <span class="badge ${badgeClass}">${latest.overall_direction || '—'}</span>
                     <span style="opacity:0.6; font-size: 12px; margin-left: 8px;">${dateStr}</span>
-                    <p style="margin: 10px 0 0;">${latest.sector_narrative}</p>
+                    ${sectorHtml}
+                    ${crossSectorHtml}
                     <div style="font-size: 11px; opacity: 0.6; margin-top: 8px;">
                         Basato sulle ultime letture disponibili di: ${assetsList || '—'}
                     </div>
