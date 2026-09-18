@@ -1,11 +1,18 @@
 """Orchestratore chiamato da .github/workflows/trend.yml.
 
 Genera un'analisi di trend di lungo periodo per ogni asset in
-config.ROBOTICS_ASSETS, con cadenza per-asset (config.ASSET_CADENCE_MONTHS:
-1 mese per THK/Harmonic Drive/TER, 3 mesi/trimestrale per VRT — il segnale
-che conta per VRT, la crescita di backlog/ordini, esce solo con le
-trimestrali) — analogo di predict_run.py, ma su orizzonti pluriennali
-invece che orario/giornaliero.
+config.ROBOTICS_ASSETS + config.INDEX_ASSETS, con cadenza per-asset
+(config.ASSET_CADENCE_MONTHS: 1 mese per quasi tutti, 3 mesi/trimestrale
+per VRT — il segnale che conta per VRT, la crescita di backlog/ordini,
+esce solo con le trimestrali) — analogo di predict_run.py, ma su orizzonti
+pluriennali invece che orario/giornaliero.
+
+ROBOTICS_ASSETS (THK/Harmonic Drive/TER/VRT) sono candidati d'acquisto con
+una tesi specifica; INDEX_ASSETS (SPY/QQQ, aggiunti il 2026-09-18) sono
+indici di mercato ampi seguiti per contesto nella pagina "Report" — stesso
+motore (_process_asset sotto), stessa cadenza/stato, ma prompt AI diverso
+(config.TREND_PROMPT_CONTEXT) e nessun fondamentale/company-info nel
+frontend, che per un indice non avrebbe senso.
 
 Stato in data/_state/trend_done.json: {"ASSET": "ultimo periodo fatto"},
 dove il periodo è "AAAA-MM" per cadenza mensile o "AAAA-MM" del primo mese
@@ -61,10 +68,123 @@ def _mark_asset_done(asset: str, today: dt.date) -> None:
         json.dump(done, fh)
 
 
+def _all_trend_assets() -> list[tuple[str, str, str]]:
+    """(asset, ticker, news_query) per ogni asset gestito da questo motore:
+    ROBOTICS_ASSETS (tesi d'investimento) + INDEX_ASSETS (indici di mercato
+    per la pagina Report) — stesso motore/cadenza/stato, letti dalla mappa
+    ticker/news_query giusta per gruppo."""
+    items = [(a, config.ROBOTICS_TICKER[a], config.ROBOTICS_NEWS_QUERY[a]) for a in config.ROBOTICS_ASSETS]
+    items += [(a, config.INDEX_TICKER[a], config.INDEX_NEWS_QUERY[a]) for a in config.INDEX_ASSETS]
+    return items
+
+
+def _process_asset(
+    asset: str,
+    ticker: str,
+    news_query: str,
+    benchmark_bars: list | None,
+    now_utc: dt.datetime,
+    today: dt.date,
+    done: dict[str, str],
+    dry_run: bool,
+    force: bool,
+) -> None:
+    if not force and not _is_due(asset, today, done):
+        print(f"[{asset}] già analizzato per questo periodo, salto.")
+        return
+
+    try:
+        bars = prices.fetch_daily_history(ticker, range_="10y")
+    except Exception as exc:  # noqa: BLE001
+        print(f"[{asset}] skipped_no_data: {exc}")
+        return
+
+    metrics = trend_analysis.build_trend_metrics(bars, config.TREND_HORIZONS_YEARS, config.TREND_MA_WEEKS)
+
+    # Storico episodi "molto estesa" + esito reale di ognuno (correzione,
+    # recupero) e distanza da ATH/52w high: puro calcolo sui prezzi già
+    # scaricati, nessuna chiamata AI per questi numeri — passati al
+    # modello solo come contesto da commentare, mai da "calcolare" lui
+    # stesso (vedi trend_analysis.find_extended_episodes).
+    weekly_series = trend_analysis.build_weekly_series(bars, config.TREND_MA_WEEKS)
+    episodes = trend_analysis.find_extended_episodes(weekly_series)
+    episode_summary = trend_analysis.summarize_extended_episodes(episodes)
+    ath_info = trend_analysis.compute_ath_distance(bars)
+    range_52w = technicals.compute_52w_range_position(bars)
+    ath_info["pct_from_52w_high"] = range_52w["pct_from_high"] if range_52w else None
+    metrics["extended_episodes"] = episode_summary
+    metrics["ath_distance"] = ath_info
+
+    sox_correlation = None
+    beta_vs_sox = None
+    if benchmark_bars:
+        sox_correlation = trend_analysis.compute_annual_return_correlation(bars, benchmark_bars)
+        # lookback=252 (~1 anno di barre) invece del default 60 di
+        # technicals.compute_beta: qui serve una stima di beta stabile
+        # su orizzonte lungo, non reattiva al breve termine come per
+        # predict_run.py.
+        beta_vs_sox = technicals.compute_beta(bars, benchmark_bars, lookback=252)
+
+    news_items = news.fetch_recent_news(news_query, lookback_days=14, limit=6)
+
+    if not dry_run and not budget.reserve_trend_call():
+        print(f"[{asset}] skipped_budget_cap: tetto mensile raggiunto")
+        return
+
+    try:
+        analysis = trend_predictor.generate_trend_analysis(
+            asset, ticker, metrics, news_items, sox_correlation, beta_vs_sox,
+            config.TREND_PROMPT_CONTEXT[asset],
+        )
+    except Exception as exc:  # noqa: BLE001
+        print(f"[{asset}] skipped_model_error: {exc}")
+        return
+
+    record = {
+        "id": str(uuid.uuid4()),
+        "asset": asset,
+        "ticker": ticker,
+        "generated_at": now_utc.isoformat(),
+        "model": config.ANTHROPIC_MODEL,
+        "metrics": metrics,
+        "sox_correlation": sox_correlation,
+        "beta_vs_sox": beta_vs_sox,
+        "news_count": len(news_items),
+        "trend_direction": analysis["trend_direction"],
+        "confidence": analysis["confidence"],
+        "cycle_assessment": analysis["cycle_assessment"],
+        "key_drivers": analysis["key_drivers"],
+        "risk_notes": analysis["risk_notes"],
+    }
+
+    if dry_run:
+        print(f"[DRY-RUN] {asset}: {json.dumps(record, indent=2, ensure_ascii=False)}")
+        return
+
+    saved = storage.append_record(config.trend_file(asset), record)
+
+    # Non hash-chained come predictions.jsonl/trend.jsonl (qui non c'è
+    # nulla da verificare, è solo il dato per il grafico prezzo+MA sulla
+    # pagina Robotica/Report): sovrascritto ad ogni run, stesso pattern di
+    # snapshot_file() per gli asset Tech.
+    series_path = config.price_series_file(asset)
+    os.makedirs(os.path.dirname(series_path), exist_ok=True)
+    with open(series_path, "w", encoding="utf-8") as fh:
+        json.dump({"asset": asset, "ticker": ticker, "ma_weeks": config.TREND_MA_WEEKS, "weekly": weekly_series}, fh)
+
+    print(
+        f"[{asset}] analisi trend salvata: {saved['trend_direction']} "
+        f"(confidence {saved['confidence']}%, fase ciclo {metrics['cycle_phase']})"
+    )
+    _mark_asset_done(asset, today)
+
+
 def run(dry_run: bool, force: bool) -> None:
     now_utc = dt.datetime.now(dt.timezone.utc)
     today = now_utc.date()
     done = _load_done()
+
+    all_assets = _all_trend_assets()
 
     # La sintesi mensile (config.SECTOR_SUMMARY_KEY) ha una propria cadenza,
     # indipendente da quella dei singoli asset: senza includerla qui, un mese
@@ -74,7 +194,7 @@ def run(dry_run: bool, force: bool) -> None:
     # stessa era dovuta — bug reale trovato il 2026-09-18 al primo run
     # manuale dopo l'aggiunta della sintesi: "Genera analisi trend" durava
     # 1 secondo invece di arrivare fino alla chiamata AI.
-    anything_due = any(_is_due(a, today, done) for a in config.ROBOTICS_ASSETS) or _is_due(
+    anything_due = any(_is_due(a, today, done) for a, _, _ in all_assets) or _is_due(
         config.SECTOR_SUMMARY_KEY, today, done
     )
     if not force and not anything_due:
@@ -87,96 +207,8 @@ def run(dry_run: bool, force: bool) -> None:
         print(f"[benchmark {config.ROBOTICS_BENCHMARK_TICKER}] skipped_no_data: {exc}")
         benchmark_bars = None
 
-    for asset in config.ROBOTICS_ASSETS:
-        if not force and not _is_due(asset, today, done):
-            print(f"[{asset}] già analizzato per questo periodo, salto.")
-            continue
-
-        ticker = config.ROBOTICS_TICKER[asset]
-        try:
-            bars = prices.fetch_daily_history(ticker, range_="10y")
-        except Exception as exc:  # noqa: BLE001
-            print(f"[{asset}] skipped_no_data: {exc}")
-            continue
-
-        metrics = trend_analysis.build_trend_metrics(bars, config.TREND_HORIZONS_YEARS, config.TREND_MA_WEEKS)
-
-        # Storico episodi "molto estesa" + esito reale di ognuno (correzione,
-        # recupero) e distanza da ATH/52w high: puro calcolo sui prezzi già
-        # scaricati, nessuna chiamata AI per questi numeri — passati al
-        # modello solo come contesto da commentare, mai da "calcolare" lui
-        # stesso (vedi trend_analysis.find_extended_episodes).
-        weekly_series = trend_analysis.build_weekly_series(bars, config.TREND_MA_WEEKS)
-        episodes = trend_analysis.find_extended_episodes(weekly_series)
-        episode_summary = trend_analysis.summarize_extended_episodes(episodes)
-        ath_info = trend_analysis.compute_ath_distance(bars)
-        range_52w = technicals.compute_52w_range_position(bars)
-        ath_info["pct_from_52w_high"] = range_52w["pct_from_high"] if range_52w else None
-        metrics["extended_episodes"] = episode_summary
-        metrics["ath_distance"] = ath_info
-
-        sox_correlation = None
-        beta_vs_sox = None
-        if benchmark_bars:
-            sox_correlation = trend_analysis.compute_annual_return_correlation(bars, benchmark_bars)
-            # lookback=252 (~1 anno di barre) invece del default 60 di
-            # technicals.compute_beta: qui serve una stima di beta stabile
-            # su orizzonte lungo, non reattiva al breve termine come per
-            # predict_run.py.
-            beta_vs_sox = technicals.compute_beta(bars, benchmark_bars, lookback=252)
-
-        news_items = news.fetch_recent_news(config.ROBOTICS_NEWS_QUERY[asset], lookback_days=14, limit=6)
-
-        if not dry_run and not budget.reserve_trend_call():
-            print(f"[{asset}] skipped_budget_cap: tetto mensile raggiunto")
-            continue
-
-        try:
-            analysis = trend_predictor.generate_trend_analysis(
-                asset, ticker, metrics, news_items, sox_correlation, beta_vs_sox,
-                config.TREND_PROMPT_CONTEXT[asset],
-            )
-        except Exception as exc:  # noqa: BLE001
-            print(f"[{asset}] skipped_model_error: {exc}")
-            continue
-
-        record = {
-            "id": str(uuid.uuid4()),
-            "asset": asset,
-            "ticker": ticker,
-            "generated_at": now_utc.isoformat(),
-            "model": config.ANTHROPIC_MODEL,
-            "metrics": metrics,
-            "sox_correlation": sox_correlation,
-            "beta_vs_sox": beta_vs_sox,
-            "news_count": len(news_items),
-            "trend_direction": analysis["trend_direction"],
-            "confidence": analysis["confidence"],
-            "cycle_assessment": analysis["cycle_assessment"],
-            "key_drivers": analysis["key_drivers"],
-            "risk_notes": analysis["risk_notes"],
-        }
-
-        if dry_run:
-            print(f"[DRY-RUN] {asset}: {json.dumps(record, indent=2, ensure_ascii=False)}")
-            continue
-
-        saved = storage.append_record(config.trend_file(asset), record)
-
-        # Non hash-chained come predictions.jsonl/trend.jsonl (qui non c'è
-        # nulla da verificare, è solo il dato per il grafico prezzo+MA sulla
-        # pagina Robotica): sovrascritto ad ogni run, stesso pattern di
-        # snapshot_file() per gli asset Tech.
-        series_path = config.price_series_file(asset)
-        os.makedirs(os.path.dirname(series_path), exist_ok=True)
-        with open(series_path, "w", encoding="utf-8") as fh:
-            json.dump({"asset": asset, "ticker": ticker, "ma_weeks": config.TREND_MA_WEEKS, "weekly": weekly_series}, fh)
-
-        print(
-            f"[{asset}] analisi trend salvata: {saved['trend_direction']} "
-            f"(confidence {saved['confidence']}%, fase ciclo {metrics['cycle_phase']})"
-        )
-        _mark_asset_done(asset, today)
+    for asset, ticker, news_query in all_assets:
+        _process_asset(asset, ticker, news_query, benchmark_bars, now_utc, today, done, dry_run, force)
 
     _run_sector_summary(now_utc, today, dry_run, force)
 

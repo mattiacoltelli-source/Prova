@@ -60,13 +60,51 @@ def test_is_due_e_mark_asset_done_ciclo_completo(tmp_path, monkeypatch):
 
 def test_asset_cadence_months_copre_tutti_gli_asset():
     from src import config
-    for asset in config.ROBOTICS_ASSETS:
+    for asset in config.ROBOTICS_ASSETS + config.INDEX_ASSETS:
         assert asset in config.ASSET_CADENCE_MONTHS
         assert asset in config.TREND_PROMPT_CONTEXT
         ctx = config.TREND_PROMPT_CONTEXT[asset]
         assert ctx["sector_label"]
         assert ctx["benchmark_intro"]
         assert ctx["cyclicality_note"]
+
+
+def test_all_trend_assets_include_robotica_e_indici():
+    from src import config
+    items = trend_run._all_trend_assets()
+    assets = {a for a, _, _ in items}
+    assert assets == set(config.ROBOTICS_ASSETS) | set(config.INDEX_ASSETS)
+    by_asset = {a: (t, q) for a, t, q in items}
+    assert by_asset["SPY"] == (config.INDEX_TICKER["SPY"], config.INDEX_NEWS_QUERY["SPY"])
+    assert by_asset["QQQ"] == (config.INDEX_TICKER["QQQ"], config.INDEX_NEWS_QUERY["QQQ"])
+    assert by_asset["THK"] == (config.ROBOTICS_TICKER["THK"], config.ROBOTICS_NEWS_QUERY["THK"])
+
+
+def test_run_processa_spy_qqq_quando_dovuti(tmp_path, monkeypatch):
+    """SPY/QQQ devono passare per lo stesso motore (_process_asset) degli
+    asset robotica: stessa cadenza, stesso file trend.jsonl, stesso prompt
+    context per asset."""
+    monkeypatch.setattr(trend_run.config, "STATE_DIR", str(tmp_path / "state"))
+    monkeypatch.setattr(trend_run.config, "DATA_DIR", str(tmp_path / "data"))
+
+    fake_bars = [{"date": f"2020-01-{d:02d}", "close": 100.0 + d} for d in range(1, 29)]
+    fake_analysis = {
+        "trend_direction": "RIALZISTA", "confidence": 60,
+        "cycle_assessment": "test", "key_drivers": ["driver"], "risk_notes": "test",
+    }
+    with patch("src.trend_run.prices.fetch_daily_history", return_value=fake_bars), \
+         patch("src.trend_run.news.fetch_recent_news", return_value=[]), \
+         patch("src.trend_run.budget.reserve_trend_call", return_value=True), \
+         patch("src.trend_run.trend_predictor.generate_trend_analysis", return_value=fake_analysis), \
+         patch("src.trend_run.sector_report.generate_sector_report", return_value={"sector_narrative": "x", "overall_direction": "RIALZISTA"}):
+        trend_run.run(dry_run=False, force=True)
+
+    saved_spy = storage.read_all(trend_run.config.trend_file("SPY"))
+    saved_qqq = storage.read_all(trend_run.config.trend_file("QQQ"))
+    assert len(saved_spy) == 1 and saved_spy[0]["trend_direction"] == "RIALZISTA"
+    assert len(saved_qqq) == 1
+    done = trend_run._load_done()
+    assert "SPY" in done and "QQQ" in done
 
 
 def _fake_trend_record(asset: str, direction: str = "RIALZISTA") -> dict:

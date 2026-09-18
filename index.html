@@ -727,6 +727,7 @@
     <div class="page-tabs">
         <button class="page-tab active" id="tab-btn-tech" onclick="switchPage('tech')">Tech (breve termine)</button>
         <button class="page-tab" id="tab-btn-robotics" onclick="switchPage('robotics')">Trend strutturali</button>
+        <button class="page-tab" id="tab-btn-report" onclick="switchPage('report')">Report</button>
     </div>
 
     <div id="page-tech">
@@ -869,11 +870,6 @@
             </div>
         </details>
 
-        <details class="info-panel" id="sector-summary-panel" style="margin-bottom: 12px;">
-            <summary><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><polyline points="3 17 9 11 13 15 21 6"/><polyline points="15 6 21 6 21 12"/></svg>Lettura del mese sul paniere</summary>
-            <div class="info-panel-body" id="sector-summary-body">Caricamento...</div>
-        </details>
-
         <div class="horizon-filter" id="robotics-asset-filter">
             <span class="horizon-filter-label">Asset:</span>
         </div>
@@ -881,6 +877,67 @@
         <div class="grid-two-assets" id="robotics-grid"></div>
 
     </div><!-- /page-robotics -->
+
+    <div id="page-report" style="display:none">
+
+        <details class="info-panel">
+            <summary><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-2px;margin-right:5px"><circle cx="12" cy="12" r="9"/><line x1="12" y1="11" x2="12" y2="16"/><circle cx="12" cy="7.4" r="0.6" fill="currentColor" stroke="none"/></svg>Come funziona questa pagina?</summary>
+            <div class="info-panel-body">
+                Letture periodiche pensate per il contesto generale, non per un titolo specifico da
+                comprare (quelli sono nelle altre due pagine).<br><br>
+                <strong>Paniere:</strong> sintesi mensile che confronta tra loro le ultime letture dei
+                4 titoli di "Trend strutturali" (THK, Harmonic Drive, Teradyne, Vertiv) — cosa hanno
+                in comune, dove divergono, se il paniere nel suo insieme è in un momento di cautela o
+                di opportunità sull'ingresso.<br><br>
+                <strong>S&amp;P 500 / Nasdaq:</strong> la stessa lettura di regime di ciclo (fase,
+                CAGR, episodi storici, distanza da ATH) usata per THK/Harmonic Drive/Teradyne/Vertiv,
+                applicata a due indici di mercato ampi (ETF SPY/QQQ) invece che a singoli titoli — per
+                capire se il mercato in generale è esteso o compresso, indipendentemente dai titoli
+                specifici che segui. Nessun fondamentale/company info qui: un indice non è
+                un'azienda.<br><br>
+                <strong>Cadenza:</strong> mensile per tutti i report di questa pagina, generati dallo
+                stesso motore e nello stesso run di Trend strutturali.<br><br>
+                <strong>Report non aggiornato?</strong> Stesso link manuale di Trend strutturali:
+                <a href="https://github.com/mattiacoltelli-source/Prova/actions/workflows/trend.yml" target="_blank" rel="noopener">GitHub Actions ↗</a>
+                (richiede il login al tuo account GitHub) — idempotente allo stesso modo, non genera
+                un doppione se poi il cron automatico scatta comunque più tardi.
+            </div>
+        </details>
+
+        <div class="horizon-filter" id="report-type-filter">
+            <span class="horizon-filter-label">Report:</span>
+        </div>
+
+        <div id="report-paniere" class="report-section" data-report="PANIERE">
+            <div class="asset-card">
+                <div class="asset-header">
+                    <span class="asset-title">Paniere Trend strutturali</span>
+                </div>
+                <div class="info-panel-body" id="sector-summary-body">Caricamento...</div>
+            </div>
+        </div>
+
+        <div id="report-spy" class="report-section" data-report="SPY" style="display:none">
+            <div class="asset-card">
+                <div class="asset-header">
+                    <span class="asset-title">S&amp;P 500<span class="asset-price" id="robotics-price-SPY"></span></span>
+                    <span id="robotics-direction-SPY"></span>
+                </div>
+                <div id="robotics-body-SPY" style="font-size:0.85rem; color: var(--text-muted);">Caricamento…</div>
+            </div>
+        </div>
+
+        <div id="report-qqq" class="report-section" data-report="QQQ" style="display:none">
+            <div class="asset-card">
+                <div class="asset-header">
+                    <span class="asset-title">Nasdaq<span class="asset-price" id="robotics-price-QQQ"></span></span>
+                    <span id="robotics-direction-QQQ"></span>
+                </div>
+                <div id="robotics-body-QQQ" style="font-size:0.85rem; color: var(--text-muted);">Caricamento…</div>
+            </div>
+        </div>
+
+    </div><!-- /page-report -->
 
     <script>
         // Unico punto da modificare quando cambia il paniere di asset seguiti.
@@ -1209,8 +1266,10 @@
         function switchPage(page) {
             document.getElementById('page-tech').style.display = page === 'tech' ? '' : 'none';
             document.getElementById('page-robotics').style.display = page === 'robotics' ? '' : 'none';
+            document.getElementById('page-report').style.display = page === 'report' ? '' : 'none';
             document.getElementById('tab-btn-tech').classList.toggle('active', page === 'tech');
             document.getElementById('tab-btn-robotics').classList.toggle('active', page === 'robotics');
+            document.getElementById('tab-btn-report').classList.toggle('active', page === 'report');
         }
 
         function formatPct(value, digits = 1) {
@@ -1287,12 +1346,15 @@
             }
         }
 
-        // Sintesi mensile "a livello di paniere" (pannello collassato sopra il
-        // toggle asset, vedi #sector-summary-panel): un solo blocco a livello
-        // pagina, non per-asset come renderRoboticsAssetCard — non va richiamato
-        // al cambio di setRoboticsAssetFilter(). data/robotics/sector_summary.jsonl
-        // può non esistere ancora (prima del primo run mensile che lo genera):
-        // gestito come lista vuota, stesso pattern di loadRoboticsData().
+        // Sintesi mensile "a livello di paniere" (pagina Report, toggle
+        // "Paniere" — spostata qui da Trend strutturali il 2026-09-18: un
+        // pannello collassato sulla pagina degli asset comprabili restava
+        // comunque "in mezzo" anche chiuso; il toggle di Report la tiene del
+        // tutto fuori vista finché non è quello selezionato). Un solo blocco
+        // a livello pagina, non per-asset come renderRoboticsAssetCard.
+        // data/robotics/sector_summary.jsonl può non esistere ancora (prima
+        // del primo run mensile che lo genera): gestito come lista vuota,
+        // stesso pattern di loadRoboticsData().
         async function loadSectorSummary() {
             const bodyEl = document.getElementById('sector-summary-body');
             if (!bodyEl) return;
@@ -1324,6 +1386,61 @@
             } catch (err) {
                 console.error('Errore nel render della sintesi mensile:', err);
                 bodyEl.textContent = 'Sintesi non disponibile al momento.';
+            }
+        }
+
+        // Toggle tra i report della pagina Report: stesso pattern di
+        // setRoboticsAssetFilter/applyRoboticsAssetFilter, ma sulle sezioni
+        // .report-section (un blocco a livello pagina ciascuna, non card
+        // per-asset) invece che su .asset-card[data-asset].
+        const REPORT_TYPES = [
+            { key: 'PANIERE', label: 'Paniere' },
+            { key: 'SPY', label: 'S&P 500' },
+            { key: 'QQQ', label: 'Nasdaq' },
+        ];
+        let currentReportFilter = REPORT_TYPES[0].key;
+
+        function renderReportFilter() {
+            const container = document.getElementById('report-type-filter');
+            container.innerHTML = '<span class="horizon-filter-label">Report:</span>' + REPORT_TYPES.map(r => `
+                <button class="horizon-filter-btn${r.key === currentReportFilter ? ' active' : ''}" data-report="${r.key}" onclick="setReportFilter('${r.key}')">${r.label}</button>
+            `).join('');
+        }
+
+        function setReportFilter(key) {
+            currentReportFilter = key;
+            document.querySelectorAll('#report-type-filter .horizon-filter-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.report === key);
+            });
+            applyReportFilter();
+        }
+
+        function applyReportFilter() {
+            document.querySelectorAll('.report-section').forEach(section => {
+                section.style.display = section.dataset.report === currentReportFilter ? '' : 'none';
+            });
+            // Stesso motivo di applyRoboticsAssetFilter(): un canvas creato
+            // mentre la sezione è nascosta nasce a larghezza 0.
+            Object.entries(chartInstances).forEach(([key, chart]) => {
+                if (key.includes(currentReportFilter)) chart.resize();
+            });
+        }
+
+        // S&P 500/Nasdaq riusano renderRoboticsAssetCard() così com'è (stesso
+        // motore Python dietro, stesso schema trend.jsonl/price_series.json
+        // sotto data/robotics/<key>/): l'unica differenza è il contenitore
+        // HTML, più semplice (niente pannello fondamentali/company info, che
+        // per un indice non ha senso) — vedi il template in #page-report.
+        async function loadReportData() {
+            await loadSectorSummary();
+            for (const idx of [{ key: 'SPY', label: 'S&P 500', ticker: 'SPY', currencySymbol: '$' },
+                                { key: 'QQQ', label: 'Nasdaq', ticker: 'QQQ', currencySymbol: '$' }]) {
+                try {
+                    await renderRoboticsAssetCard(idx);
+                } catch (err) {
+                    console.error(`Errore nel render del report ${idx.key}:`, err);
+                    showRoboticsCardError(idx);
+                }
             }
         }
 
@@ -2353,7 +2470,10 @@
         renderRoboticsAssetFilter();
         applyRoboticsAssetFilter();
         loadRoboticsData();
-        loadSectorSummary();
+
+        renderReportFilter();
+        applyReportFilter();
+        loadReportData();
 
         // Dopo che entrambe le griglie (Tech e Trend) hanno creato i loro
         // contenitori vuoti: una sola fetch riempie tutti gli slot.

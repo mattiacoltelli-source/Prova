@@ -96,7 +96,7 @@ ROBOTICS_BENCHMARK_TICKER = "^SOX"
 # segnale che conta davvero per la tesi (crescita backlog/ordini) esce
 # solo con le trimestrali, quindi rigenerare la lettura ogni mese
 # sprecherebbe budget AI senza nuovo segnale reale nel mezzo.
-ASSET_CADENCE_MONTHS = {"THK": 1, "HARMONIC_DRIVE": 1, "TER": 1, "VRT": 3}
+ASSET_CADENCE_MONTHS = {"THK": 1, "HARMONIC_DRIVE": 1, "TER": 1, "VRT": 3, "SPY": 1, "QQQ": 1}
 
 # Chiave pseudo-asset per lo stato/cadenza della sintesi mensile "a livello
 # di paniere" (sector_report.py): riusa la stessa logica di
@@ -153,7 +153,52 @@ TREND_PROMPT_CONTEXT = {
             "di fondo resta positivo, ma l'ampiezza storica dei drawdown non è verificata per questo titolo"
         ),
     },
+    "SPY": {
+        "sector_label": "indice ampio di mercato USA (S&P 500, ETF SPY: 500 maggiori società quotate)",
+        "benchmark_intro": (
+            "Correlazione con l'indice Philadelphia Semiconductor (^SOX), mostrata per contesto: i "
+            "semiconduttori pesano molto sull'S&P 500 mediato dalla tecnologia, ma non sono l'unico "
+            "driver di un indice così diversificato — non trattarla come IL driver dominante"
+        ),
+        "cyclicality_note": (
+            "un indice ampio come questo attraversa cicli di mercato (bull/bear) di ampiezza variabile, "
+            "storicamente meno estremi dei singoli titoli ciclici del paniere robotica, ma comunque "
+            "soggetto a correzioni significative in fasi di eccesso — valuta sui numeri sopra, non su "
+            "un pattern predefinito"
+        ),
+    },
+    "QQQ": {
+        "sector_label": "indice Nasdaq 100 (ETF QQQ: 100 maggiori società non finanziarie del Nasdaq, concentrato in tecnologia)",
+        "benchmark_intro": (
+            "Correlazione con l'indice Philadelphia Semiconductor (^SOX), mostrata per contesto: il "
+            "Nasdaq 100 è concentrato in tech/semiconduttori, quindi una correlazione alta qui è attesa "
+            "per composizione dell'indice, non una scoperta empirica come per il paniere robotica"
+        ),
+        "cyclicality_note": (
+            "un indice concentrato in tecnologia come questo può muoversi in modo più ampio di un indice "
+            "generalista in entrambe le direzioni — valuta la ciclicità sui numeri sopra (drawdown "
+            "massimo, volatilità, fase rispetto alla media mobile), non su un pattern predefinito"
+        ),
+    },
 }
+
+# --- Asset "indice" (letture di regime per S&P 500/Nasdaq, pagina Report) --
+# Stesso motore di ROBOTICS_ASSETS (trend_analysis.py è già agnostico
+# rispetto al settore), ma NON è la stessa tesi di investimento: sono
+# benchmark di mercato ampi seguiti per contesto/lettura di regime
+# generale, non candidati d'acquisto specifici con fondamentali propri.
+# Per questo restano fuori da ROBOTICS_ASSETS e dalla pagina "Trend
+# strutturali" (dove finirebbero mescolati a card con fondamentali/company
+# info che per un indice non hanno senso) — vivono nella pagina "Report" a
+# parte, aggiunta il 2026-09-18. Stessi file trend.jsonl/price_series.json
+# sotto data/robotics/<asset>/ degli altri asset (vedi trend_file()/
+# price_series_file() sotto): nessuna nuova convenzione di path, il
+# frontend riusa la stessa renderRoboticsAssetCard() già scritta per le
+# card di THK/Harmonic Drive/TER/VRT, solo dentro un contenitore più
+# semplice senza il pannello fondamentali/company info.
+INDEX_ASSETS = ["SPY", "QQQ"]
+INDEX_TICKER = {"SPY": "SPY", "QQQ": "QQQ"}
+INDEX_NEWS_QUERY = {"SPY": "S&P 500 stock market", "QQQ": "Nasdaq 100 stock market"}
 
 # Orizzonti di analisi trend, in anni (non giorni/orizzonti brevi come
 # HORIZONS sopra).
