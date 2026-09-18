@@ -869,6 +869,11 @@
             </div>
         </details>
 
+        <details class="info-panel" id="sector-summary-panel" style="margin-bottom: 12px;">
+            <summary><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><polyline points="3 17 9 11 13 15 21 6"/><polyline points="15 6 21 6 21 12"/></svg>Lettura del mese sul paniere</summary>
+            <div class="info-panel-body" id="sector-summary-body">Caricamento...</div>
+        </details>
+
         <div class="horizon-filter" id="robotics-asset-filter">
             <span class="horizon-filter-label">Asset:</span>
         </div>
@@ -1279,6 +1284,46 @@
                     console.error(`Errore nel render trend di ${a.key}:`, err);
                     showRoboticsCardError(a);
                 }
+            }
+        }
+
+        // Sintesi mensile "a livello di paniere" (pannello collassato sopra il
+        // toggle asset, vedi #sector-summary-panel): un solo blocco a livello
+        // pagina, non per-asset come renderRoboticsAssetCard — non va richiamato
+        // al cambio di setRoboticsAssetFilter(). data/robotics/sector_summary.jsonl
+        // può non esistere ancora (prima del primo run mensile che lo genera):
+        // gestito come lista vuota, stesso pattern di loadRoboticsData().
+        async function loadSectorSummary() {
+            const bodyEl = document.getElementById('sector-summary-body');
+            if (!bodyEl) return;
+            try {
+                const { ok, data } = await parseJsonl('data/robotics/sector_summary.jsonl');
+                if (!ok || data.length === 0) {
+                    bodyEl.textContent = 'Sintesi non ancora generata (arriva con la prossima analisi mensile).';
+                    return;
+                }
+                const latest = data[data.length - 1];
+                const badgeClass = TREND_DIRECTION_BADGE_CLASS[latest.overall_direction] || 'badge-FLAT';
+                const dateStr = new Date(latest.generated_at).toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' });
+                const assetsList = Object.entries(latest.assets_snapshot || {})
+                    .map(([key, snap]) => {
+                        const found = ROBOTICS_ASSETS.find(a => a.key === key);
+                        const label = found ? found.label : key;
+                        const d = snap.generated_at ? new Date(snap.generated_at).toLocaleDateString('it-IT', { day: 'numeric', month: 'short' }) : '—';
+                        return `${label} (${d})`;
+                    })
+                    .join(', ');
+                bodyEl.innerHTML = `
+                    <span class="badge ${badgeClass}">${latest.overall_direction || '—'}</span>
+                    <span style="opacity:0.6; font-size: 12px; margin-left: 8px;">${dateStr}</span>
+                    <p style="margin: 10px 0 0;">${latest.sector_narrative}</p>
+                    <div style="font-size: 11px; opacity: 0.6; margin-top: 8px;">
+                        Basato sulle ultime letture disponibili di: ${assetsList || '—'}
+                    </div>
+                `;
+            } catch (err) {
+                console.error('Errore nel render della sintesi mensile:', err);
+                bodyEl.textContent = 'Sintesi non disponibile al momento.';
             }
         }
 
@@ -2308,6 +2353,7 @@
         renderRoboticsAssetFilter();
         applyRoboticsAssetFilter();
         loadRoboticsData();
+        loadSectorSummary();
 
         // Dopo che entrambe le griglie (Tech e Trend) hanno creato i loro
         // contenitori vuoti: una sola fetch riempie tutti gli slot.
