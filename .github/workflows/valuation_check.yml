@@ -1,0 +1,33 @@
+name: Controllo valutazione ad-hoc
+
+# Solo manuale: lookup una tantum di P/E, crescita e margine per titoli non
+# ancora tracciati da Prova (via Alpha Vantage OVERVIEW), quando si valuta
+# se aggiungere un nuovo asset. Nessuna scrittura su data/, nessuno
+# schedule: gira solo su richiesta.
+on:
+  workflow_dispatch:
+    inputs:
+      tickers:
+        description: "Ticker separati da virgola, es. PWR,NVT,ETN"
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    env:
+      ALPHA_VANTAGE_KEY: ${{ secrets.ALPHA_VANTAGE_KEY }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - run: pip install -r requirements.txt
+
+      - name: Controlla valutazione
+        run: python -m src.valuation_check_run --tickers "${{ inputs.tickers }}"
