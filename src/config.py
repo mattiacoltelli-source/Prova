@@ -98,6 +98,17 @@ ROBOTICS_BENCHMARK_TICKER = "^SOX"
 # sprecherebbe budget AI senza nuovo segnale reale nel mezzo.
 ASSET_CADENCE_MONTHS = {"THK": 1, "HARMONIC_DRIVE": 1, "TER": 1, "VRT": 3}
 
+# Chiave pseudo-asset per lo stato/cadenza della sintesi mensile "a livello
+# di paniere" (sector_report.py): riusa la stessa logica di
+# trend_run._is_due/_mark_asset_done di ASSET_CADENCE_MONTHS sopra, ma non
+# è un ticker reale — non va MAI aggiunta a ROBOTICS_ASSETS (romperebbe il
+# fetch prezzi/news per-asset). Mensile: anche se Vertiv è trimestrale, la
+# sintesi si aggiorna comunque ogni mese confrontando l'ultima lettura
+# disponibile di ciascun asset (alcune più fresche di altre, il prompt lo
+# segnala esplicitamente invece di far finta che siano tutte dello stesso
+# giorno).
+SECTOR_SUMMARY_KEY = "SECTOR_SUMMARY"
+
 # Testo del prompt che varia per asset (trend_predictor.build_trend_prompt):
 # la robotica ha un'analisi storica specifica alle spalle (correlazione
 # SOX verificata, range di drawdown 45-80% osservato sui 10 anni di dati),
@@ -370,3 +381,7 @@ def trend_file(asset: str) -> str:
 
 def price_series_file(asset: str) -> str:
     return f"{robotics_asset_dir(asset)}/price_series.json"
+
+
+def sector_summary_file() -> str:
+    return f"{DATA_DIR}/robotics/sector_summary.jsonl"

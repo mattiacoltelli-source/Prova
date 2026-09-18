@@ -24,7 +24,7 @@ import os
 import sys
 import uuid
 
-from . import budget, config, storage, technicals, trend_analysis, trend_predictor
+from . import budget, config, sector_report, storage, technicals, trend_analysis, trend_predictor
 from .data_sources import news, prices
 
 
@@ -166,6 +166,68 @@ def run(dry_run: bool, force: bool) -> None:
             f"(confidence {saved['confidence']}%, fase ciclo {metrics['cycle_phase']})"
         )
         _mark_asset_done(asset, today)
+
+    _run_sector_summary(now_utc, today, dry_run, force)
+
+
+def _run_sector_summary(now_utc: dt.datetime, today: dt.date, dry_run: bool, force: bool) -> None:
+    """Sintesi mensile "a livello di paniere": confronta le ultime letture
+    disponibili di tutti gli asset (non rifà il fetch prezzi/news, riusa i
+    trend.jsonl già scritti sopra in questo stesso run o in run precedenti).
+    Stessa cadenza/stato di _is_due/_mark_asset_done sopra, con la chiave
+    pseudo-asset config.SECTOR_SUMMARY_KEY."""
+    done = _load_done()
+    if not force and not _is_due(config.SECTOR_SUMMARY_KEY, today, done):
+        print("[sector_summary] già fatta per questo periodo, salto.")
+        return
+
+    asset_records: dict[str, dict] = {}
+    for asset in config.ROBOTICS_ASSETS:
+        records = storage.read_all(config.trend_file(asset))
+        if records:
+            asset_records[asset] = records[-1]
+
+    if len(asset_records) < 2:
+        print(f"[sector_summary] skipped_no_data: solo {len(asset_records)} asset con almeno una lettura, servono almeno 2.")
+        return
+
+    aggregates = trend_analysis.compute_sector_aggregates(asset_records)
+
+    if not dry_run and not budget.reserve_trend_call():
+        print("[sector_summary] skipped_budget_cap: tetto mensile raggiunto")
+        return
+
+    try:
+        analysis = sector_report.generate_sector_report(asset_records, aggregates)
+    except Exception as exc:  # noqa: BLE001
+        print(f"[sector_summary] skipped_model_error: {exc}")
+        return
+
+    record = {
+        "id": str(uuid.uuid4()),
+        "generated_at": now_utc.isoformat(),
+        "model": config.ANTHROPIC_MODEL,
+        "assets_snapshot": {
+            asset: {
+                "generated_at": r.get("generated_at"),
+                "trend_direction": r.get("trend_direction"),
+                "cycle_phase": r.get("metrics", {}).get("cycle_phase"),
+                "confidence": r.get("confidence"),
+            }
+            for asset, r in asset_records.items()
+        },
+        "aggregates": aggregates,
+        "sector_narrative": analysis["sector_narrative"],
+        "overall_direction": analysis["overall_direction"],
+    }
+
+    if dry_run:
+        print(f"[DRY-RUN] sector_summary: {json.dumps(record, indent=2, ensure_ascii=False)}")
+        return
+
+    saved = storage.append_record(config.sector_summary_file(), record)
+    print(f"[sector_summary] sintesi salvata: {saved['overall_direction']} su {len(asset_records)} asset")
+    _mark_asset_done(config.SECTOR_SUMMARY_KEY, today)
 
 
 if __name__ == "__main__":

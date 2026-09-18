@@ -338,3 +338,60 @@ def build_trend_metrics(
         "cycle_phase": classify_cycle_phase(price_vs_ma),
         "annual_returns": compute_annual_returns(bars),
     }
+
+
+def compute_sector_aggregates(asset_records: dict[str, dict]) -> dict:
+    """Statistiche cross-asset già calcolate sulle ultime letture disponibili
+    per ciascun asset (un record per asset, quello più recente in
+    trend.jsonl) — passate al prompt della sintesi mensile come "GIÀ
+    CALCOLATE, non ricalcolare", stesso principio di find_extended_episodes/
+    compute_ath_distance: il modello confronta e commenta, non deriva da
+    solo i conteggi/range perché sbaglierebbe più facilmente lui a contare
+    su 4 oggetti JSON che una riga di codice.
+
+    asset_records: {asset: ultimo record trend.jsonl (dict completo)}."""
+    phase_counts: dict[str, int] = {}
+    direction_counts: dict[str, int] = {}
+    price_vs_ma_values: list[tuple[str, float]] = []
+    sox_corr_values: list[tuple[str, float]] = []
+    avg_correction_values: list[tuple[str, float]] = []
+
+    for asset, record in asset_records.items():
+        metrics = record.get("metrics", {})
+        phase = metrics.get("cycle_phase")
+        if phase:
+            phase_counts[phase] = phase_counts.get(phase, 0) + 1
+        direction = record.get("trend_direction")
+        if direction:
+            direction_counts[direction] = direction_counts.get(direction, 0) + 1
+        price_vs_ma = metrics.get("price_vs_ma_pct")
+        if price_vs_ma is not None:
+            price_vs_ma_values.append((asset, price_vs_ma))
+        sox_corr = record.get("sox_correlation")
+        if sox_corr is not None:
+            sox_corr_values.append((asset, sox_corr))
+        avg_correction = (metrics.get("extended_episodes") or {}).get("avg_correction_pct")
+        if avg_correction is not None:
+            avg_correction_values.append((asset, avg_correction))
+
+    def _min_max(values: list[tuple[str, float]]) -> dict | None:
+        if not values:
+            return None
+        lo = min(values, key=lambda pair: pair[1])
+        hi = max(values, key=lambda pair: pair[1])
+        return {"min_asset": lo[0], "min_value": lo[1], "max_asset": hi[0], "max_value": hi[1]}
+
+    compressed_phases = {"compressa", "molto_compressa"}
+    any_compressed = any(
+        (r.get("metrics", {}).get("cycle_phase") in compressed_phases) for r in asset_records.values()
+    )
+
+    return {
+        "num_assets": len(asset_records),
+        "phase_counts": phase_counts,
+        "direction_counts": direction_counts,
+        "price_vs_ma_range": _min_max(price_vs_ma_values),
+        "sox_correlation_range": _min_max(sox_corr_values),
+        "avg_correction_range": _min_max(avg_correction_values),
+        "any_asset_compressed": any_compressed,
+    }
