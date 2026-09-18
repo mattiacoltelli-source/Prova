@@ -1139,6 +1139,26 @@
             ].join('');
         }
 
+        // Notizie reali (Reuters/Quartr via TradingView) per THK/Harmonic
+        // Drive: l'unico ticker con contenuto qui, dato che è l'unico buco
+        // che il sistema automatico (news.py, Finnhub/Alpha Vantage/GDELT)
+        // non riesce a coprire per questi due titoli Tokyo — vedi
+        // recent_news.nota nel JSON. Snapshot statico, non un feed: stessa
+        // scadenza a 6 mesi dei fondamentali (stesso fetched_at).
+        function renderRecentNews(newsBlock) {
+            if (!newsBlock || !Array.isArray(newsBlock.headlines) || newsBlock.headlines.length === 0) return '';
+            const items = newsBlock.headlines.map(h => `
+                <li style="margin-bottom: 6px;">
+                    <a href="${h.link}" target="_blank" rel="noopener" style="color: inherit;">${h.title}</a>
+                    <span style="opacity:0.6; font-size: 11px;"> — ${h.provider}, ${h.published}</span>
+                </li>
+            `).join('');
+            return `
+                <br><strong>Notizie recenti (snapshot)</strong><br>
+                <ul style="margin: 6px 0 0; padding-left: 18px; font-size: 0.82rem; line-height: 1.5;">${items}</ul>
+            `;
+        }
+
         function fundamentalsHtml(ticker) {
             if (!TV_FUNDAMENTALS) {
                 return `
@@ -1175,6 +1195,7 @@
                 Dividend yield: ${fmtPct(a.dividends_yield)}<br><br>
                 ${renderPeriodFigures(a, cur)}
                 ${renderAnalystRating(a.analyst_rating, cur, a.price_targets, a.price_target_escluso_perche)}
+                ${renderRecentNews(a.recent_news)}
                 <div style="font-size: 11px; opacity: 0.6; margin-top: 6px;">
                     Fonte: ${TV_FUNDAMENTALS.source}, snapshot del ${asOf}. Non si aggiorna in
                     automatico: è una fotografia datata, non un feed.

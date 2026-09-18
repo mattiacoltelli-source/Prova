@@ -198,6 +198,15 @@
         "revenue_next_quarter": 535574785.7152,
         "revenue_next_year": 2034656032.3155,
         "nota_unita": "Stime in unità non allineate alle serie di bilancio dello stesso ticker (ricavi annui stimati 2,03 mld contro 240 mld dell'ultimo esercizio). È lo stesso disallineamento di valuta/unità che fa scartare il price target: non usare senza riconciliare l'unità."
+      },
+      "recent_news": {
+        "nota": "Titoli reali (Reuters/Quartr via TradingView), non generati dall'AI. Il sistema automatico (Finnhub/Alpha Vantage/GDELT) non trova quasi mai notizie per questo ticker Tokyo: questo snapshot colma il buco, ma non si aggiorna da solo.",
+        "headlines": [
+          {"title": "THK: Revenue and profit surged on semiconductor demand and reforms, with FY 2026 outlook raised", "published": "2026-08-05", "provider": "Quartr", "link": "https://www.tradingview.com/news/urn:summary_document_transcript:quartr.com:4130458:0-thk-revenue-and-profit-surged-on-semiconductor-demand-and-reforms-with-fy-2026-outlook-raised/"},
+          {"title": "THK: Profit soared on strong machinery demand and a major business divestiture gain", "published": "2026-08-05", "provider": "Quartr", "link": "https://www.tradingview.com/news/urn:summary_document_report:quartr.com:3688014:0-thk-profit-soared-on-strong-machinery-demand-and-a-major-business-divestiture-gain/"},
+          {"title": "TABLE-THK 6-MTH group results (IFRS)", "published": "2026-08-05", "provider": "Reuters", "link": "https://www.tradingview.com/news/reuters.com,2026-08-05:newsml_XB1BMF4TT:0-table-thk-6-mth-group-results-ifrs/"},
+          {"title": "THK: Stable financials post-automotive transfer, with improved margins and global focus", "published": "2026-05-11", "provider": "Quartr", "link": "https://www.tradingview.com/news/urn:summary_document_slides:quartr.com:3320258:0-thk-stable-financials-post-automotive-transfer-with-improved-margins-and-global-focus/"}
+        ]
       }
     },
     "HARMONIC_DRIVE": {
@@ -354,6 +363,15 @@
         "revenue_next_quarter": 125701050,
         "revenue_next_year": 474666702.76775,
         "nota_unita": "Stesso disallineamento di unità segnalato per TSE:6481."
+      },
+      "recent_news": {
+        "nota": "Titoli reali (Reuters/Quartr via TradingView), non generati dall'AI. Il sistema automatico (Finnhub/Alpha Vantage/GDELT) non trova quasi mai notizie per questo ticker Tokyo: questo snapshot colma il buco, ma non si aggiorna da solo.",
+        "headlines": [
+          {"title": "Harmonic Drive Systems: Q1 FY2026 delivered strong sales and profit growth, with robust full-year outlook maintained", "published": "2026-08-07", "provider": "Quartr", "link": "https://www.tradingview.com/news/urn:summary_document_report:quartr.com:3688281:0-harmonic-drive-systems-q1-fy2026-delivered-strong-sales-and-profit-growth-with-robust-full-year-outlook-maintained/"},
+          {"title": "TABLE-Harmonic Drive Systems -Q1 group results", "published": "2026-08-07", "provider": "Reuters", "link": "https://www.tradingview.com/news/reuters.com,2026-08-07:newsml_XB0VSL8HH:0-table-harmonic-drive-systems-q1-group-results/"},
+          {"title": "TABLE-Harmonic Drive Systems -2026/27 parent forecast", "published": "2026-08-07", "provider": "Reuters", "link": "https://www.tradingview.com/news/reuters.com,2026-08-07:newsml_XB1X8054R:0-table-harmonic-drive-systems-2026-27-parent-forecast/"},
+          {"title": "Harmonic Drive Systems: Upward forecast revisions reflect strong demand and improved profitability in key sectors", "published": "2026-08-07", "provider": "Quartr", "link": "https://www.tradingview.com/news/urn:summary_document_slides:quartr.com:4032990:0-harmonic-drive-systems-upward-forecast-revisions-reflect-strong-demand-and-improved-profitability-in-key-sectors/"}
+        ]
       }
     },
     "TER": {
