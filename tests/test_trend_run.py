@@ -116,6 +116,35 @@ def test_run_sector_summary_salta_se_meno_di_2_asset_hanno_dati(tmp_path, monkey
     assert not __import__("os").path.exists(trend_run.config.sector_summary_file())
 
 
+def test_run_raggiunge_sector_summary_anche_se_nessun_asset_reale_e_dovuto(tmp_path, monkeypatch):
+    """Bug reale trovato il 2026-09-18: run() usciva subito quando nessun
+    asset in config.ROBOTICS_ASSETS era dovuto, anche se la sintesi mensile
+    (config.SECTOR_SUMMARY_KEY, cadenza indipendente) lo era — il primo run
+    manuale dopo l'aggiunta della sintesi non ha mai raggiunto la chiamata AI
+    (job GitHub Actions durato 1 secondo, nessun record salvato)."""
+    from src import config as cfg
+    monkeypatch.setattr(trend_run.config, "STATE_DIR", str(tmp_path / "state"))
+    monkeypatch.setattr(trend_run.config, "DATA_DIR", str(tmp_path / "data"))
+    for asset in cfg.ROBOTICS_ASSETS:
+        storage.append_record(trend_run.config.trend_file(asset), _fake_trend_record(asset))
+
+    today = dt.date(2026, 9, 18)
+    for asset in cfg.ROBOTICS_ASSETS:
+        # Tutti gli asset reali già fatti per il loro periodo corrente (mensile
+        # o trimestrale): nessuno di loro è "dovuto" oggi.
+        trend_run._mark_asset_done(asset, today)
+
+    fake_analysis = {"sector_narrative": "test", "overall_direction": "RIALZISTA"}
+    with patch("src.trend_run.prices.fetch_daily_history") as mock_prices, \
+         patch("src.trend_run.sector_report.generate_sector_report", return_value=fake_analysis) as mock_sector:
+        mock_prices.side_effect = AssertionError("non deve essere chiamato: nessun asset reale è dovuto")
+        trend_run.run(dry_run=False, force=False)
+
+    mock_sector.assert_called_once()
+    saved = storage.read_all(trend_run.config.sector_summary_file())
+    assert len(saved) == 1
+
+
 def test_run_sector_summary_dry_run_non_scrive_nulla(tmp_path, monkeypatch):
     monkeypatch.setattr(trend_run.config, "STATE_DIR", str(tmp_path / "state"))
     monkeypatch.setattr(trend_run.config, "DATA_DIR", str(tmp_path / "data"))

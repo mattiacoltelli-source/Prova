@@ -66,7 +66,18 @@ def run(dry_run: bool, force: bool) -> None:
     today = now_utc.date()
     done = _load_done()
 
-    if not force and not any(_is_due(a, today, done) for a in config.ROBOTICS_ASSETS):
+    # La sintesi mensile (config.SECTOR_SUMMARY_KEY) ha una propria cadenza,
+    # indipendente da quella dei singoli asset: senza includerla qui, un mese
+    # in cui nessun asset reale è dovuto (es. THK/Harmonic Drive/TER già
+    # fatti, VRT non ancora al suo trimestre) usciva prima di raggiungere
+    # _run_sector_summary() in fondo alla funzione, anche se la sintesi
+    # stessa era dovuta — bug reale trovato il 2026-09-18 al primo run
+    # manuale dopo l'aggiunta della sintesi: "Genera analisi trend" durava
+    # 1 secondo invece di arrivare fino alla chiamata AI.
+    anything_due = any(_is_due(a, today, done) for a in config.ROBOTICS_ASSETS) or _is_due(
+        config.SECTOR_SUMMARY_KEY, today, done
+    )
+    if not force and not anything_due:
         print("Nessun asset in scadenza per questo periodo, esco senza consumare budget.")
         return
 
