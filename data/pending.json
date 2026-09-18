@@ -1,12 +1,6 @@
 [
   {
     "asset": "AAPL",
-    "horizon": "1d",
-    "id": "4b63657c-b16a-41a8-8b8e-cbe67ddeef14",
-    "target_at": "2026-09-18T00:00:00+00:00"
-  },
-  {
-    "asset": "AAPL",
     "horizon": "1m",
     "id": "2beb1ffa-4a7f-4601-b0d3-4abb99cc3509",
     "target_at": "2026-10-14T00:00:00+00:00"
@@ -86,20 +80,8 @@
   {
     "asset": "AAPL",
     "horizon": "7d",
-    "id": "32122159-556c-457c-8a30-20045e85dfb8",
-    "target_at": "2026-09-18T00:00:00+00:00"
-  },
-  {
-    "asset": "AAPL",
-    "horizon": "7d",
     "id": "35908557-3817-4968-afd0-129cc670331b",
     "target_at": "2026-09-21T00:00:00+00:00"
-  },
-  {
-    "asset": "AAPL",
-    "horizon": "7d",
-    "id": "46c6e8c3-da96-4404-b074-78cd52b835c4",
-    "target_at": "2026-09-18T00:00:00+00:00"
   },
   {
     "asset": "AAPL",
@@ -206,26 +188,8 @@
   {
     "asset": "MSFT",
     "horizon": "7d",
-    "id": "6ca2df93-397b-4b39-adb0-f84e9cc42441",
-    "target_at": "2026-09-18T00:00:00+00:00"
-  },
-  {
-    "asset": "MSFT",
-    "horizon": "7d",
     "id": "dc6388a9-3bb6-4197-ac75-6143887f7ca2",
     "target_at": "2026-09-22T00:00:00+00:00"
-  },
-  {
-    "asset": "MSFT",
-    "horizon": "7d",
-    "id": "f56e9786-6969-4ee1-ac09-90884df9c15c",
-    "target_at": "2026-09-18T00:00:00+00:00"
-  },
-  {
-    "asset": "NVDA",
-    "horizon": "1d",
-    "id": "db8f71d8-ddc9-45cc-97e4-b104544f49f2",
-    "target_at": "2026-09-18T00:00:00+00:00"
   },
   {
     "asset": "NVDA",
@@ -302,12 +266,6 @@
   {
     "asset": "NVDA",
     "horizon": "7d",
-    "id": "117ccab9-becf-4091-a44d-a3abefd4e65a",
-    "target_at": "2026-09-18T00:00:00+00:00"
-  },
-  {
-    "asset": "NVDA",
-    "horizon": "7d",
     "id": "24ecce21-08d6-4d05-9552-b40030ce7e5e",
     "target_at": "2026-09-23T00:00:00+00:00"
   },
@@ -322,12 +280,6 @@
     "horizon": "7d",
     "id": "dda3a38d-caa0-468f-ae94-e2bc17ef2ab7",
     "target_at": "2026-09-21T00:00:00+00:00"
-  },
-  {
-    "asset": "NVDA",
-    "horizon": "7d",
-    "id": "f8d4e4f6-ffd9-435d-bd7b-3a2202565e12",
-    "target_at": "2026-09-18T00:00:00+00:00"
   },
   {
     "asset": "NVDA",
