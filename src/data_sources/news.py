@@ -112,8 +112,16 @@ def _alphavantage_news(ticker: str, lookback_days: int, limit: int) -> list[News
 
 
 def _gdelt_news(ticker: str, lookback_days: int, limit: int) -> list[NewsItem]:
+    # retry_on_rate_limit: GDELT è l'ULTIMO anello della catena (vedi
+    # fetch_recent_news sotto) e per i ticker di Tokyo è di fatto l'unica
+    # fonte che risponde — se molla per un 429, quel run resta senza news.
+    # Limita per IP, e gli IP dei runner GitHub sono condivisi: il 429 è
+    # tipicamente momentaneo, quindi vale l'attesa. Le fonti sopra restano
+    # senza retry: lì un 429 è quota giornaliera finita, e aspettare
+    # ritarderebbe solo il passaggio alla fonte successiva.
     resp = http.get(
         "https://api.gdeltproject.org/api/v2/doc/doc",
+        retry_on_rate_limit=True,
         params={
             "query": ticker,
             "mode": "artlist",
