@@ -212,17 +212,17 @@ TREND_MA_WEEKS = 200
 
 # Tetto di spesa AI separato da MAX_AI_CALLS_PER_DAY: cadenza per-asset (non
 # settimanale — un ciclo pluriennale non ha senso ricalcolarlo più spesso,
-# feedback utente 2026-09-17). Un mese normale usa solo THK/Harmonic
-# Drive/TER (mensili) = 3 chiamate attese; nei mesi di inizio trimestre
-# (gennaio/aprile/luglio/ottobre) si aggiunge VRT = 4. 9 -> 12 il
-# 2026-09-17 (aggiunta VRT): il tetto precedente si è esaurito lo stesso
-# giorno per via dei tanti dispatch manuali di test fatti durante lo
-# sviluppo (force=true rigenera TUTTI gli asset, non solo quello dovuto),
-# lasciando VRT senza budget per la sua prima lettura reale — 12 mantiene
-# lo stesso margine "ampio per retry/test manuali" del tetto originale
-# (3x il fabbisogno di un mese normale) invece di limarlo esattamente sul
-# minimo necessario.
-MAX_TREND_AI_CALLS_PER_MONTH = 12
+# feedback utente 2026-09-17). Un mese normale usa THK/Harmonic Drive/TER +
+# SPY/QQQ (tutti mensili) + la sintesi paniere = 6 chiamate attese; nei mesi
+# di inizio trimestre (gennaio/aprile/luglio/ottobre) si aggiunge VRT = 7.
+# 12 -> 18 il 2026-09-18 (aggiunta SPY/QQQ): il tetto precedente si è
+# esaurito lo stesso giorno per via dei tanti dispatch manuali di test
+# fatti durante lo sviluppo (force=true rigenera TUTTI gli asset, non solo
+# quello dovuto), lasciando QQQ senza budget per la sua prima lettura reale
+# — stesso pattern già visto con VRT il giorno prima. 18 mantiene circa lo
+# stesso margine "ampio per retry/test manuali" (3x un mese normale) invece
+# di limarlo esattamente sul minimo necessario.
+MAX_TREND_AI_CALLS_PER_MONTH = 18
 
 # --- Profondità dello storico prezzi ---------------------------------------
 # Quanto storico daily chiedere a prices.fetch_daily_history() nella pipeline
