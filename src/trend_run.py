@@ -7,8 +7,8 @@ per VRT — il segnale che conta per VRT, la crescita di backlog/ordini,
 esce solo con le trimestrali) — analogo di predict_run.py, ma su orizzonti
 pluriennali invece che orario/giornaliero.
 
-ROBOTICS_ASSETS (THK/Harmonic Drive/TER/VRT) sono candidati d'acquisto con
-una tesi specifica; INDEX_ASSETS (SPY/QQQ, aggiunti il 2026-09-18) sono
+ROBOTICS_ASSETS (THK/Harmonic Drive/TER/VRT/NVT) sono candidati d'acquisto
+con una tesi specifica; INDEX_ASSETS (SPY/QQQ, aggiunti il 2026-09-18) sono
 indici di mercato ampi seguiti per contesto nella pagina "Report" — stesso
 motore (_process_asset sotto), stessa cadenza/stato, ma prompt AI diverso
 (config.TREND_PROMPT_CONTEXT) e nessun fondamentale/company-info nel

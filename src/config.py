@@ -56,26 +56,27 @@ SEC_EDGAR_CONTACT_EMAIL = "mattia.coltelli@gmail.com"
 # TREND_PROMPT_CONTEXT sotto) invece di assumere sempre "robotica".
 # Quotata NYSE: nessun problema di accesso al mercato, fondamentali reali
 # disponibili via SEC EDGAR.
-ROBOTICS_ASSETS = ["THK", "HARMONIC_DRIVE", "TER", "VRT"]
+ROBOTICS_ASSETS = ["THK", "HARMONIC_DRIVE", "TER", "VRT", "NVT"]
 
 # Ticker Yahoo Finance. THK/Harmonic Drive: Tokyo Stock Exchange (Harmonic
 # Drive Systems ha ticker 6324, non 6371 come inizialmente ipotizzato —
 # verificato per disponibilità dati storici prima di essere fissato qui).
-# TER/VRT: NASDAQ/NYSE, stesso ticker ovunque.
-ROBOTICS_TICKER = {"THK": "6481.T", "HARMONIC_DRIVE": "6324.T", "TER": "TER", "VRT": "VRT"}
+# TER/VRT/NVT: NASDAQ/NYSE, stesso ticker ovunque.
+ROBOTICS_TICKER = {"THK": "6481.T", "HARMONIC_DRIVE": "6324.T", "TER": "TER", "VRT": "VRT", "NVT": "NVT"}
 
 # Query passata a news.fetch_recent_news(): per THK/Harmonic Drive è testo
 # libero (non il ticker), perché Finnhub/Alpha Vantage in pratica non hanno
 # news per ticker Tokyo su piano gratuito — solo GDELT (fallback finale,
 # nessuna key) funziona lì, e gli serve una query sensata invece del
-# ticker crudo "6481.T". TER/VRT sono invece ticker USA con copertura reale
-# su Finnhub: qui la query è il ticker stesso, così la cascata funziona sul
-# serio dal primo livello invece di scendere sempre a GDELT.
+# ticker crudo "6481.T". TER/VRT/NVT sono invece ticker USA con copertura
+# reale su Finnhub: qui la query è il ticker stesso, così la cascata
+# funziona sul serio dal primo livello invece di scendere sempre a GDELT.
 ROBOTICS_NEWS_QUERY = {
     "THK": "THK Co Ltd linear motion robotics",
     "HARMONIC_DRIVE": "Harmonic Drive Systems robot reducer",
     "TER": "TER",
     "VRT": "VRT",
+    "NVT": "NVT",
 }
 
 # Benchmark macro per questo sistema: scoperto empiricamente per il
@@ -91,12 +92,13 @@ ROBOTICS_NEWS_QUERY = {
 # lo stesso "driver dominante scoperto empiricamente" della robotica.
 ROBOTICS_BENCHMARK_TICKER = "^SOX"
 
-# Cadenza di rigenerazione per asset, in mesi. THK/Harmonic Drive/TER
-# restano mensili (feedback utente 2026-09-17). VRT è trimestrale: il
-# segnale che conta davvero per la tesi (crescita backlog/ordini) esce
-# solo con le trimestrali, quindi rigenerare la lettura ogni mese
-# sprecherebbe budget AI senza nuovo segnale reale nel mezzo.
-ASSET_CADENCE_MONTHS = {"THK": 1, "HARMONIC_DRIVE": 1, "TER": 1, "VRT": 3, "SPY": 1, "QQQ": 1}
+# Cadenza di rigenerazione per asset, in mesi. THK/Harmonic Drive/TER/NVT
+# restano mensili (feedback utente 2026-09-17, NVT aggiunto 2026-09-18 con
+# la stessa cadenza). VRT è trimestrale: il segnale che conta davvero per
+# la tesi (crescita backlog/ordini) esce solo con le trimestrali, quindi
+# rigenerare la lettura ogni mese sprecherebbe budget AI senza nuovo
+# segnale reale nel mezzo.
+ASSET_CADENCE_MONTHS = {"THK": 1, "HARMONIC_DRIVE": 1, "TER": 1, "VRT": 3, "NVT": 1, "SPY": 1, "QQQ": 1}
 
 # Chiave pseudo-asset per lo stato/cadenza della sintesi mensile "a livello
 # di paniere" (sector_report.py): riusa la stessa logica di
@@ -145,6 +147,21 @@ TREND_PROMPT_CONTEXT = {
             "Indice preso come proxy del ciclo di spesa in semiconduttori/infrastrutture AI (stessa area "
             "di domanda del paniere robotica di questo sistema, ma correlazione non ancora validata in "
             "modo specifico su questo titolo)"
+        ),
+        "cyclicality_note": (
+            "valuta la ciclicità di questo titolo sui numeri sopra (drawdown massimo, volatilità, fase "
+            "rispetto alla media mobile) invece di assumere il pattern osservato sul paniere robotica: "
+            "una fase 'molto_estesa' tende comunque a essere seguita da correzioni anche quando il trend "
+            "di fondo resta positivo, ma l'ampiezza storica dei drawdown non è verificata per questo titolo"
+        ),
+    },
+    "NVT": {
+        "sector_label": "infrastruttura elettrica (connettori, protezioni, gestione reti elettriche per data center e industria)",
+        "benchmark_intro": (
+            "Indice preso come proxy del ciclo di spesa in semiconduttori/infrastrutture AI (stessa area "
+            "di domanda di Vertiv in questo paniere — elettrificazione della rete spinta dalla domanda di "
+            "potenza dei data center — ma correlazione non ancora validata in modo specifico su questo "
+            "titolo)"
         ),
         "cyclicality_note": (
             "valuta la ciclicità di questo titolo sui numeri sopra (drawdown massimo, volatilità, fase "
@@ -212,9 +229,11 @@ TREND_MA_WEEKS = 200
 
 # Tetto di spesa AI separato da MAX_AI_CALLS_PER_DAY: cadenza per-asset (non
 # settimanale — un ciclo pluriennale non ha senso ricalcolarlo più spesso,
-# feedback utente 2026-09-17). Un mese normale usa THK/Harmonic Drive/TER +
-# SPY/QQQ (tutti mensili) + la sintesi paniere = 6 chiamate attese; nei mesi
-# di inizio trimestre (gennaio/aprile/luglio/ottobre) si aggiunge VRT = 7.
+# feedback utente 2026-09-17). Un mese normale usa THK/Harmonic Drive/TER/
+# NVT + SPY/QQQ (tutti mensili) + la sintesi paniere = 7 chiamate attese;
+# nei mesi di inizio trimestre (gennaio/aprile/luglio/ottobre) si aggiunge
+# VRT = 8. NVT aggiunto il 2026-09-18 (era 6/7, non serve alzare il tetto:
+# resta oltre 2x il consumo mensile atteso).
 # 12 -> 18 il 2026-09-18 (aggiunta SPY/QQQ): il tetto precedente si è
 # esaurito lo stesso giorno per via dei tanti dispatch manuali di test
 # fatti durante lo sviluppo (force=true rigenera TUTTI gli asset, non solo

@@ -826,14 +826,16 @@
             <div class="info-panel-body">
                 Sistema separato dalla pagina Tech: qui l'obiettivo non è prevedere il prezzo di
                 domani, ma leggere il <strong>regime di trend di lungo periodo</strong> (1/3/5/10
-                anni) di quattro titoli con domanda pluriennale insolitamente visibile (capex già
+                anni) di cinque titoli con domanda pluriennale insolitamente visibile (capex già
                 annunciato/in backlog, non solo un'ipotesi) — tre legati a robotica/automazione,
                 <strong>THK</strong> (guide lineari/cuscinetti di precisione),
                 <strong>Harmonic Drive Systems</strong> (riduttori a gioco zero) e
                 <strong>Teradyne</strong> (possiede Universal Robots/MiR, core business test
                 equipment semiconduttori — quotata NASDAQ, a differenza delle altre due comprabile
-                da qualunque broker generalista), e uno legato all'infrastruttura per i data center
-                AI: <strong>Vertiv</strong> (power/raffreddamento, quotata NYSE).<br><br>
+                da qualunque broker generalista), e due legati all'infrastruttura elettrica per i
+                data center AI: <strong>Vertiv</strong> (power/raffreddamento, quotata NYSE) e
+                <strong>nVent Electric</strong> (connettori/protezioni per reti elettriche, quotata
+                NYSE).<br><br>
                 <strong>Perché non ABB?</strong> Ha ceduto la divisione Robotics a SoftBank
                 (chiusura prevista H2 2026): da qui in avanti non è più un puro player robotica.<br><br>
                 <strong>Perché fasi cicliche invece di UP/DOWN?</strong> Il paniere robotica si è
@@ -852,21 +854,21 @@
                 <strong>Driver macro:</strong> correlazione con l'indice Philadelphia Semiconductor
                 (^SOX). Per THK/Harmonic Drive/Teradyne è un driver dominante scoperto empiricamente
                 (correlazione 0.55-0.76 sui rendimenti annuali, non produzione industriale generica).
-                Per Vertiv è usato come proxy ragionevole dello stesso ciclo di spesa AI (data center
-                e semiconduttori condividono lo stesso capex degli hyperscaler), ma senza la stessa
-                verifica empirica specifica: da leggere con più cautela.<br><br>
-                <strong>Cadenza:</strong> THK/Harmonic Drive/Teradyne restano mensili (il giorno 1).
-                Vertiv è trimestrale (il giorno 2, solo nei mesi di inizio trimestre gennaio/aprile/
-                luglio/ottobre): il segnale che conta per la sua tesi, la crescita di backlog/ordini,
-                esce solo con le trimestrali, quindi un'analisi mensile sprecherebbe budget AI senza
-                nuovo segnale nel mezzo.<br><br>
+                Per Vertiv e nVent è usato come proxy ragionevole dello stesso ciclo di spesa AI (data
+                center e semiconduttori condividono lo stesso capex degli hyperscaler), ma senza la
+                stessa verifica empirica specifica: da leggere con più cautela.<br><br>
+                <strong>Cadenza:</strong> THK/Harmonic Drive/Teradyne/nVent restano mensili (il
+                giorno 1). Vertiv è trimestrale (il giorno 2, solo nei mesi di inizio trimestre
+                gennaio/aprile/luglio/ottobre): il segnale che conta per la sua tesi, la crescita di
+                backlog/ordini, esce solo con le trimestrali, quindi un'analisi mensile sprecherebbe
+                budget AI senza nuovo segnale nel mezzo.<br><br>
                 <strong>Analisi non partita in automatico?</strong> Può capitare che GitHub Actions
                 non faccia scattare il cron in tempo. Puoi farla partire a mano da
                 <a href="https://github.com/mattiacoltelli-source/Prova/actions/workflows/trend.yml" target="_blank" rel="noopener">GitHub Actions ↗</a>
                 (richiede il login al tuo account GitHub, non è esposto qui sul sito) — se lo fai, il
                 sistema se ne accorge da solo e non ne rigenera una seconda per lo stesso asset nello
-                stesso periodo (mese per THK/Harmonic Drive/Teradyne, trimestre per Vertiv), anche se
-                poi il cron automatico scatta comunque più tardi.
+                stesso periodo (mese per THK/Harmonic Drive/Teradyne/nVent, trimestre per Vertiv),
+                anche se poi il cron automatico scatta comunque più tardi.
             </div>
         </details>
 
@@ -886,12 +888,13 @@
                 Letture periodiche pensate per il contesto generale, non per un titolo specifico da
                 comprare (quelli sono nelle altre due pagine).<br><br>
                 <strong>Paniere:</strong> sintesi mensile che confronta tra loro le ultime letture dei
-                4 titoli di "Trend strutturali" (THK, Harmonic Drive, Teradyne, Vertiv) — cosa hanno
-                in comune, dove divergono, se il paniere nel suo insieme è in un momento di cautela o
-                di opportunità sull'ingresso.<br><br>
+                5 titoli di "Trend strutturali" (THK, Harmonic Drive, Teradyne, Vertiv, nVent
+                Electric) — cosa hanno in comune, dove divergono, se il paniere nel suo insieme è in
+                un momento di cautela o di opportunità sull'ingresso.<br><br>
                 <strong>S&amp;P 500 / Nasdaq:</strong> la stessa lettura di regime di ciclo (fase,
-                CAGR, episodi storici, distanza da ATH) usata per THK/Harmonic Drive/Teradyne/Vertiv,
-                applicata a due indici di mercato ampi (ETF SPY/QQQ) invece che a singoli titoli — per
+                CAGR, episodi storici, distanza da ATH) usata per THK/Harmonic Drive/Teradyne/Vertiv/
+                nVent, applicata a due indici di mercato ampi (ETF SPY/QQQ) invece che a singoli
+                titoli — per
                 capire se il mercato in generale è esteso o compresso, indipendentemente dai titoli
                 specifici che segui. Nessun fondamentale/company info qui: un indice non è
                 un'azienda.<br><br>
@@ -952,6 +955,7 @@
             { key: 'HARMONIC_DRIVE', label: 'Harmonic Drive Systems', ticker: '6324.T', currencySymbol: '¥' },
             { key: 'TER', label: 'Teradyne', ticker: 'TER', currencySymbol: '$' },
             { key: 'VRT', label: 'Vertiv', ticker: 'VRT', currencySymbol: '$' },
+            { key: 'NVT', label: 'nVent Electric', ticker: 'NVT', currencySymbol: '$' },
         ];
         const CYCLE_PHASE_LABEL = {
             molto_estesa: 'Molto estesa',
@@ -1007,6 +1011,11 @@
                 name: 'Vertiv Holdings Co', hq: 'Westerville, Ohio, USA', founded: 1946,
                 sector: 'Infrastruttura elettrica / Raffreddamento data center', exchange: 'NYSE',
                 description: 'Power management e sistemi di raffreddamento per data center, reti di telecomunicazioni e ambienti industriali. Fornitore chiave per il buildout dei data center AI: backlog ordini raddoppiato a oltre $15 mld nel 2026.',
+            },
+            NVT: {
+                name: 'nVent Electric plc', hq: 'Londra, Regno Unito (sede operativa a Minneapolis, Minnesota, USA)', founded: 2018,
+                sector: 'Infrastruttura elettrica', exchange: 'NYSE',
+                description: 'Connettori, protezioni e sistemi di gestione per reti elettriche in ambito commerciale, industriale, residenziale e data center. Nata nel 2018 dallo scorporo della divisione elettrica di Pentair.',
             },
         };
 
