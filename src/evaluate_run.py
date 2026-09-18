@@ -99,6 +99,15 @@ def run(dry_run: bool, now_utc: dt.datetime | None = None) -> None:
                 "actual_class": actual_class,
                 "predicted_class": prediction["predicted_class"],
                 "confidence": prediction["confidence"],
+                # Copiate dalla previsione come predicted_class/confidence:
+                # servono a REPORT.md per Brier Score/Log Loss senza dover
+                # rileggere predictions.jsonl. None per le previsioni
+                # generate prima dell'introduzione delle probabilità
+                # (2026-09-18) — report.py le esclude dalle metriche
+                # probabilistiche invece di fingere che esistessero.
+                "probability_up": prediction.get("probability_up"),
+                "probability_down": prediction.get("probability_down"),
+                "probability_flat": prediction.get("probability_flat"),
                 # Copiata dalla previsione come predicted_class/confidence:
                 # serve a REPORT.md per separare l'accuratezza per versione
                 # di prompt. Le previsioni generate prima che il campo

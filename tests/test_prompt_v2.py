@@ -92,7 +92,7 @@ def test_il_prompt_funziona_anche_senza_frequenze_di_base():
     valido e limitarsi a non mostrare la sezione."""
     p = _prompt(base_rates=None)
     assert "Non disponibili per questa coppia asset/orizzonte." in p
-    assert "predicted_class" in p, "il resto del prompt deve restare intatto"
+    assert "probability_up" in p, "il resto del prompt deve restare intatto"
 
 
 def test_generate_prediction_passa_le_frequenze_al_prompt(monkeypatch):
@@ -103,7 +103,7 @@ def test_generate_prediction_passa_le_frequenze_al_prompt(monkeypatch):
 
     def fake_call_model(prompt):
         captured["prompt"] = prompt
-        return '{"predicted_class": "FLAT", "confidence": 40, "reasoning_short": "test"}'
+        return '{"probability_up": 0.3, "probability_down": 0.3, "probability_flat": 0.4, "reasoning_short": "test"}'
 
     monkeypatch.setattr(predictor, "call_model", fake_call_model)
     result = predictor.generate_prediction(

@@ -1,12 +1,18 @@
 """Rigenera REPORT.md a partire dallo storico outcomes.jsonl: accuratezza
-complessiva, per asset/orizzonte, matrice di confusione, calibrazione e
-confronto con baseline naive (random, persistenza e frequenza storica)."""
+complessiva, per asset/orizzonte, matrice di confusione, calibrazione,
+Brier Score/Log Loss sulle probabilità e confronto con baseline naive
+(random, persistenza e frequenza storica)."""
 from __future__ import annotations
 
 import datetime as dt
+import math
 from collections import defaultdict
 
 from . import baseline, config, storage
+
+# Mappa classe -> campo probabilità nel record di outcome. Usata sia da
+# _brier_score sia da _log_loss per non duplicare la stessa associazione.
+_PROB_KEY_BY_CLASS = {"UP": "probability_up", "DOWN": "probability_down", "FLAT": "probability_flat"}
 
 CLASSES = ["UP", "DOWN", "FLAT"]
 CONFIDENCE_BUCKETS = [(0, 50, "bassa (0-49)"), (50, 75, "media (50-74)"), (75, 101, "alta (75-100)")]
@@ -40,6 +46,47 @@ def _calibration(rows: list[dict]) -> list[tuple[str, int, float]]:
         _, total, pct = _accuracy(bucket_rows)
         out.append((label, total, pct))
     return out
+
+
+def _with_probabilities(rows: list[dict]) -> list[dict]:
+    """Righe con le tre probabilità salvate (introdotte il 2026-09-18).
+    Le previsioni precedenti non le hanno: escluse dalle metriche
+    probabilistiche invece di fingere che esistessero (es. probabilità
+    finte a 0, che falserebbero sia Brier Score sia Log Loss)."""
+    return [r for r in rows if r.get("probability_up") is not None]
+
+
+def _brier_score(rows: list[dict]) -> tuple[int, float] | None:
+    """Brier Score multiclasse: media di sum_c (p_c - o_c)^2, dove o_c vale
+    1 per la classe realmente accaduta e 0 per le altre due. Range [0, 2]:
+    0 = probabilità perfette, 2 = massimo errore possibile (100% sulla
+    classe sbagliata, esito nella terza). Più basso è meglio. None se non
+    ci sono righe con probabilità salvate."""
+    usable = _with_probabilities(rows)
+    if not usable:
+        return None
+    total = 0.0
+    for r in usable:
+        for cls, key in _PROB_KEY_BY_CLASS.items():
+            outcome = 1.0 if r["actual_class"] == cls else 0.0
+            total += (r[key] - outcome) ** 2
+    return len(usable), round(total / len(usable), 4)
+
+
+def _log_loss(rows: list[dict]) -> tuple[int, float] | None:
+    """Log Loss: media di -log(probabilità assegnata alla classe reale).
+    Clip a [1e-6, 1-1e-6] per evitare log(0) se una probabilità dichiarata
+    è esattamente 0 o 1. Stessa esclusione di _brier_score. None se non ci
+    sono righe con probabilità salvate."""
+    usable = _with_probabilities(rows)
+    if not usable:
+        return None
+    total = 0.0
+    for r in usable:
+        p = r[_PROB_KEY_BY_CLASS[r["actual_class"]]]
+        p = min(max(p, 1e-6), 1 - 1e-6)
+        total -= math.log(p)
+    return len(usable), round(total / len(usable), 4)
 
 
 def _persistence_baseline(rows: list[dict]) -> tuple[int, int, float]:
@@ -119,6 +166,27 @@ def render_markdown(rows: list[dict]) -> str:
     lines += ["## Calibrazione (confidence dichiarata vs accuratezza reale)", "", "| Fascia confidence | N | Accuratezza |", "|---|---|---|"]
     for label, n, cal_pct in _calibration(rows):
         lines.append(f"| {label} | {n} | {cal_pct}% |")
+    lines.append("")
+
+    lines += ["## Probabilità (Brier Score, Log Loss)", ""]
+    with_probs = _with_probabilities(rows)
+    if with_probs:
+        n_brier, brier_score = _brier_score(rows)
+        n_loss, log_loss_score = _log_loss(rows)
+        uniform_brier = round(3 * (1 / 3) ** 2 - 2 * (1 / 3) + 1, 3)  # = 2/3, calcolo esplicito per non tenere un "0.667" magico
+        lines.append(f"- Brier Score: **{brier_score}** (n={n_brier}; range 0-2, più basso è meglio)")
+        lines.append(f"- Log Loss: **{log_loss_score}** (n={n_loss}; più basso è meglio)")
+        lines.append(
+            f"- Riferimento \"non informativo\" (probabilità sempre 33.3%/33.3%/33.3%): "
+            f"Brier {uniform_brier}, Log Loss {round(math.log(3), 3)} — l'agente deve fare meglio di questo per aggiungere valore."
+        )
+        if len(with_probs) < len(rows):
+            lines.append(
+                f"- {len(rows) - len(with_probs)} previsioni valutate sono precedenti all'introduzione delle "
+                "probabilità (2026-09-18) ed escluse da queste due metriche."
+            )
+    else:
+        lines.append("- Non ancora calcolabili: nessuna previsione valutata ha le probabilità salvate (introdotte il 2026-09-18).")
     lines.append("")
 
     by_version: dict[int, list[dict]] = defaultdict(list)

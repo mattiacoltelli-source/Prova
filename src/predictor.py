@@ -11,8 +11,6 @@ import anthropic
 from . import config
 from .data_sources import news as news_source
 
-VALID_CLASSES = {"UP", "DOWN", "FLAT"}
-
 
 class PredictionParseError(RuntimeError):
     pass
@@ -142,6 +140,14 @@ def build_prompt(
     # spesso ciascuna classe si verifichi davvero. Il risultato misurato su
     # 45 previsioni valutate è stato UP previsto nel 62% dei casi contro un
     # 28-38% di occorrenza reale, e DOWN mai previsto contro un 45%.
+    brier_note = """Le tue probabilità verranno punteggiate con il Brier Score quando l'esito sarà noto:
+errore = (probability_up - esito_up)^2 + (probability_down - esito_down)^2 + (probability_flat - esito_flat)^2,
+dove esito_X vale 1 per la classe realmente accaduta e 0 per le altre due. Conviene SEMPRE dichiarare
+le probabilità che ritieni vere, non spostarle verso una singola classe per "sembrare sicuro": un 90%
+sbagliato costa molto più di un 40%/35%/25% onesto che poi risulta sbagliato. Se non hai un vantaggio
+informativo specifico, una distribuzione vicina alle FREQUENZE STORICHE sotto è la scelta onesta, non
+un fallimento."""
+
     if base_rates:
         pct = base_rates["pct"]
         base_rates_block = f"""Su {base_rates['observations']} osservazioni storiche di questo stesso asset e
@@ -159,10 +165,10 @@ allinearti a queste percentuali."""
             "Non disponibili per questa coppia asset/orizzonte."
         )
 
-    return f"""Devi classificare quale dei tre esiti possibili è il più probabile per {asset}
+    return f"""Devi stimare la probabilità di ciascuno dei tre esiti possibili per {asset}
 nell'orizzonte {horizon_code} a partire da adesso. Non è una valutazione del titolo né
-una raccomandazione: è una singola classificazione, verificabile con il prezzo reale
-alla scadenza dell'orizzonte.
+una raccomandazione: è una distribuzione di probabilità su tre classi, verificabile con
+il prezzo reale alla scadenza dell'orizzonte.
 
 Prezzo attuale: {price} (rilevato: {price_asof})
 Banda neutra (FLAT) calcolata sulla volatilità storica recente: +/- {threshold_pct}%
@@ -186,10 +192,7 @@ Tutte e tre le classi sono risposte legittime. In particolare DOWN: se gli indic
 sono quasi sempre rialzisti su questi titoli, non ne segue che DOWN non si verifichi —
 la frequenza storica sopra dice quanto si verifica per davvero.
 
-Usa `confidence` con sincerità: alta solo se hai una ragione specifica e verificabile
-per aspettarti quell'esito in questo orizzonte, bassa se stai scegliendo la classe più
-plausibile senza un vero vantaggio informativo. Una confidence alta sistematicamente
-smentita dagli esiti è un difetto che il report misura.
+{brier_note}
 
 In `reasoning_short`, se ti discosti dalla frequenza storica, scrivi quale informazione
 specifica di oggi lo giustifica.
@@ -213,7 +216,8 @@ Indicatori tecnici aggiuntivi:
 {technicals_block}
 
 Rispondi ESCLUSIVAMENTE con un oggetto JSON valido, nessun altro testo, con questa forma esatta:
-{{"predicted_class": "UP|DOWN|FLAT", "confidence": <intero 0-100>, "reasoning_short": "<massimo 3 frasi>"}}
+{{"probability_up": <0-1>, "probability_down": <0-1>, "probability_flat": <0-1>, "reasoning_short": "<massimo 3 frasi>"}}
+Le tre probabilità devono sommare a 1 (tolleranza +/- 0.02).
 """
 
 
@@ -235,20 +239,58 @@ def call_model(prompt: str) -> str:
     return "".join(block.text for block in resp.content if block.type == "text")
 
 
+CLASS_TO_PROB_KEY = {"UP": "probability_up", "DOWN": "probability_down", "FLAT": "probability_flat"}
+
+# Tolleranza sulla somma delle tre probabilità: il modello arrotonda a mano,
+# 1.02 (es. 0.34+0.34+0.34) è normale rumore di arrotondamento, non un
+# errore di formato. Oltre questa soglia il record viene scartato invece di
+# normalizzato in silenzio: una somma molto lontana da 1 (es. 1.4) indica
+# che il modello ha frainteso il formato, non un arrotondamento — meglio
+# uno skipped_model_error esplicito che una probabilità silenziosamente
+# sbagliata scritta per sempre nella hash-chain.
+SUM_TOLERANCE = 0.05
+
+
 def parse_prediction(raw_text: str) -> dict:
     data = _extract_json(raw_text)
-    predicted_class = str(data.get("predicted_class", "")).upper()
-    confidence = data.get("confidence")
     reasoning = str(data.get("reasoning_short", "")).strip()
 
-    if predicted_class not in VALID_CLASSES:
-        raise PredictionParseError(f"predicted_class non valido: {predicted_class!r}")
-    if not isinstance(confidence, (int, float)) or not (0 <= confidence <= 100):
-        raise PredictionParseError(f"confidence non valida: {confidence!r}")
+    probs: dict[str, float] = {}
+    for cls, key in CLASS_TO_PROB_KEY.items():
+        value = data.get(key)
+        if not isinstance(value, (int, float)) or not (0 <= value <= 1):
+            raise PredictionParseError(f"{key} non valida: {value!r}")
+        probs[cls] = float(value)
+
+    total = sum(probs.values())
+    if abs(total - 1.0) > SUM_TOLERANCE:
+        raise PredictionParseError(f"le probabilità non sommano a 1 (somma={total!r}): {probs!r}")
+    # Normalizzazione esatta a somma 1 dopo la validazione: l'arrotondamento
+    # del modello (es. somma 0.99 o 1.01) non deve propagarsi al Brier
+    # Score, che assume una distribuzione di probabilità valida.
+    probs = {cls: v / total for cls, v in probs.items()}
+
     if not reasoning:
         raise PredictionParseError("reasoning_short mancante")
 
-    return {"predicted_class": predicted_class, "confidence": int(confidence), "reasoning_short": reasoning}
+    # predicted_class/confidence restano nel record, DERIVATI dalle
+    # probabilità invece che auto-dichiarati dal modello: predicted_class è
+    # la classe più probabile, confidence è la sua probabilità in punti
+    # percentuali. Mantiene compatibile tutto ciò che già usa questi due
+    # campi (matrice di confusione, bucket di calibrazione, badge nel
+    # frontend) senza che il modello debba più "inventarsi" una confidence
+    # separata dalle probabilità che ha appena dichiarato.
+    predicted_class = max(probs, key=probs.get)
+    confidence = round(probs[predicted_class] * 100)
+
+    return {
+        "predicted_class": predicted_class,
+        "confidence": confidence,
+        "probability_up": round(probs["UP"], 4),
+        "probability_down": round(probs["DOWN"], 4),
+        "probability_flat": round(probs["FLAT"], 4),
+        "reasoning_short": reasoning,
+    }
 
 
 def generate_prediction(

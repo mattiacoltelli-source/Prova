@@ -354,8 +354,15 @@ def run(dry_run: bool, force: bool) -> None:
                 "target_at": _target_at(session_date, horizon.days).isoformat(),
                 "price_at_generation": price,
                 "price_source": price_source,
+                # predicted_class/confidence sono DERIVATI dalle tre
+                # probabilità sotto (classe più probabile, sua probabilità
+                # in punti percentuali) — non più auto-dichiarati dal
+                # modello separatamente, vedi predictor.parse_prediction.
                 "predicted_class": pred["predicted_class"],
                 "confidence": pred["confidence"],
+                "probability_up": pred["probability_up"],
+                "probability_down": pred["probability_down"],
+                "probability_flat": pred["probability_flat"],
                 "volatility_threshold_pct": threshold_pct,
                 "model": config.ANTHROPIC_MODEL,
                 "prompt_version": config.PROMPT_VERSION,

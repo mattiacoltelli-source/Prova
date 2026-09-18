@@ -25,24 +25,64 @@ def test_budget_management(tmp_path, monkeypatch):
     assert budget.get_call_count() == 2
 
 
-def test_predictor_parse_prediction():
-    valid_text = '{"predicted_class": "UP", "confidence": 85, "reasoning_short": "Strong earnings."}'
+def test_predictor_parse_prediction_probabilita_valide():
+    valid_text = (
+        '{"probability_up": 0.7, "probability_down": 0.1, "probability_flat": 0.2, '
+        '"reasoning_short": "Strong earnings."}'
+    )
     parsed = predictor.parse_prediction(valid_text)
+    # predicted_class/confidence sono DERIVATI dalle probabilità (classe più
+    # probabile, sua probabilità in punti percentuali), non più campi
+    # separati auto-dichiarati dal modello.
     assert parsed["predicted_class"] == "UP"
-    assert parsed["confidence"] == 85
+    assert parsed["confidence"] == 70
+    assert parsed["probability_up"] == 0.7
+    assert parsed["probability_down"] == 0.1
+    assert parsed["probability_flat"] == 0.2
     assert parsed["reasoning_short"] == "Strong earnings."
 
-    # Invalid JSON
+
+def test_predictor_parse_prediction_normalizza_arrotondamento():
+    # Somma 0.99 (arrotondamento tipico del modello): entro tolleranza,
+    # normalizzata a somma esatta 1 invece di rifiutata.
+    text = '{"probability_up": 0.33, "probability_down": 0.33, "probability_flat": 0.33, "reasoning_short": "x"}'
+    parsed = predictor.parse_prediction(text)
+    total = parsed["probability_up"] + parsed["probability_down"] + parsed["probability_flat"]
+    # Tolleranza legata all'arrotondamento a 4 decimali dei valori salvati
+    # (parse_prediction arrotonda DOPO la normalizzazione), non alla
+    # normalizzazione stessa, che è esatta prima dell'arrotondamento.
+    assert abs(total - 1.0) < 1e-3
+
+
+def test_predictor_parse_prediction_json_non_valido():
     with pytest.raises(predictor.PredictionParseError):
         predictor.parse_prediction("Not a json")
 
-    # Invalid class
-    with pytest.raises(predictor.PredictionParseError):
-        predictor.parse_prediction('{"predicted_class": "INVALID", "confidence": 50, "reasoning_short": "x"}')
 
-    # Invalid confidence
+def test_predictor_parse_prediction_probabilita_fuori_range():
     with pytest.raises(predictor.PredictionParseError):
-        predictor.parse_prediction('{"predicted_class": "UP", "confidence": 150, "reasoning_short": "x"}')
+        predictor.parse_prediction(
+            '{"probability_up": 1.5, "probability_down": 0.1, "probability_flat": 0.2, "reasoning_short": "x"}'
+        )
+
+
+def test_predictor_parse_prediction_probabilita_mancante():
+    with pytest.raises(predictor.PredictionParseError):
+        predictor.parse_prediction('{"probability_up": 0.5, "probability_down": 0.5, "reasoning_short": "x"}')
+
+
+def test_predictor_parse_prediction_somma_troppo_lontana_da_1():
+    with pytest.raises(predictor.PredictionParseError):
+        predictor.parse_prediction(
+            '{"probability_up": 0.8, "probability_down": 0.8, "probability_flat": 0.8, "reasoning_short": "x"}'
+        )
+
+
+def test_predictor_parse_prediction_reasoning_mancante():
+    with pytest.raises(predictor.PredictionParseError):
+        predictor.parse_prediction(
+            '{"probability_up": 0.5, "probability_down": 0.3, "probability_flat": 0.2, "reasoning_short": ""}'
+        )
 
 
 def test_report_generation(tmp_path, monkeypatch):
