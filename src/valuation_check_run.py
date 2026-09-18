@@ -11,13 +11,23 @@ from __future__ import annotations
 
 import argparse
 import json
+import time
 
 from .data_sources import fundamentals
+
+# Alpha Vantage free tier: 5 chiamate/minuto. Senza pausa fra un ticker e
+# l'altro, la seconda/terza chiamata dello stesso run torna vuota (risposta
+# 200 con corpo "rate limit", non un 429 — _alphavantage_overview la legge
+# come "nessun dato utile"). Verificato dal vivo il 2026-09-18: PWR ok,
+# NVT/ETN vuoti nello stesso run senza pausa.
+PAUSE_SECONDS = 15
 
 
 def check(tickers: list[str]) -> dict:
     results = {}
-    for ticker in tickers:
+    for i, ticker in enumerate(tickers):
+        if i > 0:
+            time.sleep(PAUSE_SECONDS)
         try:
             results[ticker] = fundamentals._alphavantage_overview(ticker)["metrics"]
         except Exception as exc:  # noqa: BLE001 - un ticker fallito non blocca gli altri
