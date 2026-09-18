@@ -236,12 +236,27 @@ def _run_sector_summary(now_utc: dt.datetime, today: dt.date, dry_run: bool, for
 
     aggregates = trend_analysis.compute_sector_aggregates(asset_records)
 
+    # Aggregati ripartiti per settore (config.ROBOTICS_SECTOR): stessa
+    # funzione di sopra, applicata al sottoinsieme di asset di ciascun
+    # settore, così il modello riceve statistiche "già calcolate" separate
+    # per non mescolare robotica e infrastruttura elettrica nello stesso
+    # confronto (vedi sector_report.py).
+    by_sector: dict[str, dict[str, dict]] = {}
+    for asset, record in asset_records.items():
+        sector = config.ROBOTICS_SECTOR.get(asset, "Altro")
+        by_sector.setdefault(sector, {})[asset] = record
+    sector_aggregates = {
+        sector: trend_analysis.compute_sector_aggregates(records) for sector, records in by_sector.items()
+    }
+
     if not dry_run and not budget.reserve_trend_call():
         print("[sector_summary] skipped_budget_cap: tetto mensile raggiunto")
         return
 
     try:
-        analysis = sector_report.generate_sector_report(asset_records, aggregates)
+        analysis = sector_report.generate_sector_report(
+            asset_records, aggregates, config.ROBOTICS_SECTOR, sector_aggregates
+        )
     except Exception as exc:  # noqa: BLE001
         print(f"[sector_summary] skipped_model_error: {exc}")
         return
@@ -256,11 +271,14 @@ def _run_sector_summary(now_utc: dt.datetime, today: dt.date, dry_run: bool, for
                 "trend_direction": r.get("trend_direction"),
                 "cycle_phase": r.get("metrics", {}).get("cycle_phase"),
                 "confidence": r.get("confidence"),
+                "sector": config.ROBOTICS_SECTOR.get(asset, "Altro"),
             }
             for asset, r in asset_records.items()
         },
         "aggregates": aggregates,
-        "sector_narrative": analysis["sector_narrative"],
+        "sector_aggregates": sector_aggregates,
+        "sector_narratives": analysis["sector_narratives"],
+        "cross_sector_note": analysis["cross_sector_note"],
         "overall_direction": analysis["overall_direction"],
     }
 

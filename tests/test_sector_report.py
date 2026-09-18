@@ -1,6 +1,7 @@
 """Test unitari per src/sector_report.py e trend_analysis.compute_sector_aggregates:
 la sintesi mensile "a livello di paniere" che confronta le ultime letture
-disponibili dei 4 asset invece di leggerli uno per volta."""
+disponibili degli asset, raggruppati per settore, invece di leggerli uno
+per volta o mescolarli in un unico paragrafo."""
 from __future__ import annotations
 
 import pytest
@@ -83,36 +84,76 @@ def test_compute_sector_aggregates_campi_mancanti_non_esplodono():
     assert agg["avg_correction_range"]["min_asset"] == "THK"  # solo THK ha extended_episodes
 
 
+SECTOR_OF = {"THK": "Robotica", "TER": "Robotica", "VRT": "Infrastruttura"}
+
+
 def test_build_sector_prompt_include_dati_reali_non_inventa_numeri():
-    agg = trend_analysis.compute_sector_aggregates({"THK": THK_RECORD, "TER": TER_RECORD, "VRT": VRT_RECORD})
-    prompt = sector_report.build_sector_prompt({"THK": THK_RECORD, "TER": TER_RECORD, "VRT": VRT_RECORD}, agg)
+    records = {"THK": THK_RECORD, "TER": TER_RECORD, "VRT": VRT_RECORD}
+    agg = trend_analysis.compute_sector_aggregates(records)
+    sector_agg = {
+        "Robotica": trend_analysis.compute_sector_aggregates({"THK": THK_RECORD, "TER": TER_RECORD}),
+        "Infrastruttura": trend_analysis.compute_sector_aggregates({"VRT": VRT_RECORD}),
+    }
+    prompt = sector_report.build_sector_prompt(records, agg, SECTOR_OF, sector_agg)
     assert "THK" in prompt and "TER" in prompt and "VRT" in prompt
     assert "molto_estesa" in prompt
     assert "0.852" in prompt  # correlazione SOX di TER, letta dal dato reale
-    assert "GIÀ CALCOLATE" in prompt
+    assert "Robotica" in prompt and "Infrastruttura" in prompt
+    assert "GIÀ CALCOLATE" in prompt or "già calcolate" in prompt
     assert "NON ricalcolarle" in prompt
     assert "date di lettura diverse" in prompt
+    assert "NON mescolare titoli di settori diversi" in prompt
+
+
+def test_build_sector_prompt_non_mescola_asset_di_settori_diversi():
+    """Ogni titolo deve comparire nel blocco del proprio settore, non in entrambi."""
+    records = {"THK": THK_RECORD, "VRT": VRT_RECORD}
+    agg = trend_analysis.compute_sector_aggregates(records)
+    sector_agg = {
+        "Robotica": trend_analysis.compute_sector_aggregates({"THK": THK_RECORD}),
+        "Infrastruttura": trend_analysis.compute_sector_aggregates({"VRT": VRT_RECORD}),
+    }
+    prompt = sector_report.build_sector_prompt(records, agg, SECTOR_OF, sector_agg)
+    robotica_block = prompt[prompt.index("## Robotica") : prompt.index("## Infrastruttura")]
+    assert "THK" in robotica_block and "VRT" not in robotica_block
 
 
 def test_parse_sector_report_ok():
-    raw = '{"sector_narrative": "Tutti e 3 in fase estesa.", "overall_direction": "RIALZISTA"}'
-    result = sector_report.parse_sector_report(raw)
-    assert result["sector_narrative"] == "Tutti e 3 in fase estesa."
+    raw = (
+        '{"sector_narratives": {"Robotica": "Tutti e 2 in fase estesa.", "Infrastruttura": "Compressa."}, '
+        '"cross_sector_note": "La robotica è più esposta.", "overall_direction": "RIALZISTA"}'
+    )
+    result = sector_report.parse_sector_report(raw, ["Robotica", "Infrastruttura"])
+    assert result["sector_narratives"]["Robotica"] == "Tutti e 2 in fase estesa."
+    assert result["sector_narratives"]["Infrastruttura"] == "Compressa."
+    assert result["cross_sector_note"] == "La robotica è più esposta."
     assert result["overall_direction"] == "RIALZISTA"
 
 
 def test_parse_sector_report_direzione_invalida():
-    raw = '{"sector_narrative": "testo", "overall_direction": "BOH"}'
+    raw = '{"sector_narratives": {"Robotica": "testo"}, "cross_sector_note": "nota", "overall_direction": "BOH"}'
     with pytest.raises(sector_report.SectorReportParseError):
-        sector_report.parse_sector_report(raw)
+        sector_report.parse_sector_report(raw, ["Robotica"])
 
 
-def test_parse_sector_report_narrativa_mancante():
-    raw = '{"sector_narrative": "", "overall_direction": "RIALZISTA"}'
+def test_parse_sector_report_settore_mancante():
+    raw = '{"sector_narratives": {"Robotica": "testo"}, "cross_sector_note": "nota", "overall_direction": "RIALZISTA"}'
     with pytest.raises(sector_report.SectorReportParseError):
-        sector_report.parse_sector_report(raw)
+        sector_report.parse_sector_report(raw, ["Robotica", "Infrastruttura"])
+
+
+def test_parse_sector_report_narrativa_vuota():
+    raw = '{"sector_narratives": {"Robotica": ""}, "cross_sector_note": "nota", "overall_direction": "RIALZISTA"}'
+    with pytest.raises(sector_report.SectorReportParseError):
+        sector_report.parse_sector_report(raw, ["Robotica"])
+
+
+def test_parse_sector_report_cross_sector_note_mancante():
+    raw = '{"sector_narratives": {"Robotica": "testo"}, "cross_sector_note": "", "overall_direction": "RIALZISTA"}'
+    with pytest.raises(sector_report.SectorReportParseError):
+        sector_report.parse_sector_report(raw, ["Robotica"])
 
 
 def test_parse_sector_report_nessun_json():
     with pytest.raises(sector_report.SectorReportParseError):
-        sector_report.parse_sector_report("non è json")
+        sector_report.parse_sector_report("non è json", ["Robotica"])

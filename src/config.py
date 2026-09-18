@@ -111,6 +111,21 @@ ASSET_CADENCE_MONTHS = {"THK": 1, "HARMONIC_DRIVE": 1, "TER": 1, "VRT": 3, "NVT"
 # giorno).
 SECTOR_SUMMARY_KEY = "SECTOR_SUMMARY"
 
+# Raggruppamento per settore usato dalla sintesi mensile (sector_report.py)
+# per non mescolare in un unico paragrafo titoli con tesi diverse — con
+# l'aggiunta di NVT (2026-09-18) il paniere è arrivato a 5 asset su 2 temi
+# distinti e un solo blob di testo confondeva più che chiarire (feedback
+# utente). Le chiavi sono le etichette stesse (non un codice a parte):
+# usate sia per raggruppare gli asset nel prompt sia come chiavi
+# dell'oggetto JSON sector_narratives atteso dal modello.
+ROBOTICS_SECTOR = {
+    "THK": "Robotica / meccanica di precisione",
+    "HARMONIC_DRIVE": "Robotica / meccanica di precisione",
+    "TER": "Robotica / meccanica di precisione",
+    "VRT": "Infrastruttura elettrica per data center AI",
+    "NVT": "Infrastruttura elettrica per data center AI",
+}
+
 # Testo del prompt che varia per asset (trend_predictor.build_trend_prompt):
 # la robotica ha un'analisi storica specifica alle spalle (correlazione
 # SOX verificata, range di drawdown 45-80% osservato sui 10 anni di dati),

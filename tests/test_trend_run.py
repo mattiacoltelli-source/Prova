@@ -9,6 +9,19 @@ from unittest.mock import patch
 
 from src import storage, trend_run
 
+# sector_report.generate_sector_report ora richiede sector_narratives (per
+# settore) + cross_sector_note invece del vecchio sector_narrative unico
+# (2026-09-18, aggiunta di NVT come secondo asset del settore
+# "Infrastruttura elettrica per data center AI").
+_FAKE_SECTOR_ANALYSIS = {
+    "sector_narratives": {
+        "Robotica / meccanica di precisione": "Robotica in fase estesa.",
+        "Infrastruttura elettrica per data center AI": "Infrastruttura in fase estesa.",
+    },
+    "cross_sector_note": "I due settori si muovono insieme.",
+    "overall_direction": "RIALZISTA",
+}
+
 
 def test_period_key_mensile_e_sempre_il_mese_corrente():
     assert trend_run._period_key("THK", dt.date(2026, 9, 5)) == "2026-09"
@@ -96,7 +109,7 @@ def test_run_processa_spy_qqq_quando_dovuti(tmp_path, monkeypatch):
          patch("src.trend_run.news.fetch_recent_news", return_value=[]), \
          patch("src.trend_run.budget.reserve_trend_call", return_value=True), \
          patch("src.trend_run.trend_predictor.generate_trend_analysis", return_value=fake_analysis), \
-         patch("src.trend_run.sector_report.generate_sector_report", return_value={"sector_narrative": "x", "overall_direction": "RIALZISTA"}):
+         patch("src.trend_run.sector_report.generate_sector_report", return_value=_FAKE_SECTOR_ANALYSIS):
         trend_run.run(dry_run=False, force=True)
 
     saved_spy = storage.read_all(trend_run.config.trend_file("SPY"))
@@ -123,14 +136,15 @@ def test_run_sector_summary_scrive_record_e_segna_fatto(tmp_path, monkeypatch):
     storage.append_record(trend_run.config.trend_file("THK"), _fake_trend_record("THK"))
     storage.append_record(trend_run.config.trend_file("TER"), _fake_trend_record("TER"))
 
-    fake_analysis = {"sector_narrative": "Entrambi in fase estesa.", "overall_direction": "RIALZISTA"}
+    fake_analysis = _FAKE_SECTOR_ANALYSIS
     with patch("src.trend_run.sector_report.generate_sector_report", return_value=fake_analysis) as mock_gen:
         trend_run._run_sector_summary(dt.datetime(2026, 9, 17, tzinfo=dt.timezone.utc), dt.date(2026, 9, 17), dry_run=False, force=False)
 
     mock_gen.assert_called_once()
     saved = storage.read_all(trend_run.config.sector_summary_file())
     assert len(saved) == 1
-    assert saved[0]["sector_narrative"] == "Entrambi in fase estesa."
+    assert saved[0]["sector_narratives"] == _FAKE_SECTOR_ANALYSIS["sector_narratives"]
+    assert saved[0]["cross_sector_note"] == _FAKE_SECTOR_ANALYSIS["cross_sector_note"]
     assert saved[0]["overall_direction"] == "RIALZISTA"
     assert set(saved[0]["assets_snapshot"].keys()) == {"THK", "TER"}
 
@@ -172,7 +186,7 @@ def test_run_raggiunge_sector_summary_anche_se_nessun_asset_reale_e_dovuto(tmp_p
         # o trimestrale): nessuno di loro è "dovuto" oggi.
         trend_run._mark_asset_done(asset, today)
 
-    fake_analysis = {"sector_narrative": "test", "overall_direction": "RIALZISTA"}
+    fake_analysis = _FAKE_SECTOR_ANALYSIS
     with patch("src.trend_run.prices.fetch_daily_history") as mock_prices, \
          patch("src.trend_run.sector_report.generate_sector_report", return_value=fake_analysis) as mock_sector:
         mock_prices.side_effect = AssertionError("non deve essere chiamato: nessun asset reale è dovuto")
@@ -189,7 +203,7 @@ def test_run_sector_summary_dry_run_non_scrive_nulla(tmp_path, monkeypatch):
     storage.append_record(trend_run.config.trend_file("THK"), _fake_trend_record("THK"))
     storage.append_record(trend_run.config.trend_file("TER"), _fake_trend_record("TER"))
 
-    fake_analysis = {"sector_narrative": "test", "overall_direction": "RIALZISTA"}
+    fake_analysis = _FAKE_SECTOR_ANALYSIS
     with patch("src.trend_run.sector_report.generate_sector_report", return_value=fake_analysis):
         trend_run._run_sector_summary(dt.datetime(2026, 9, 17, tzinfo=dt.timezone.utc), dt.date(2026, 9, 17), dry_run=True, force=False)
 
