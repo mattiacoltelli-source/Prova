@@ -1,40 +1,55 @@
-# Report accuratezza — aggiornato al 2026-09-18T08:27:42.424006+00:00
+# Report accuratezza — aggiornato al 2026-09-18T23:27:56.432117+00:00
 
-**Previsioni valutate: 51 — accuratezza complessiva: 35.3%**
+**Previsioni valutate: 59 — accuratezza complessiva: 35.6%**
 
 ## Per asset / orizzonte
 
 | Asset | Orizzonte | N | Accuratezza |
 |---|---|---|---|
-| AAPL | 1d | 11 | 45.5% |
-| AAPL | 7d | 6 | 83.3% |
+| AAPL | 1d | 12 | 41.7% |
+| AAPL | 7d | 8 | 62.5% |
 | MSFT | 1d | 11 | 18.2% |
-| MSFT | 7d | 6 | 16.7% |
-| NVDA | 1d | 11 | 36.4% |
-| NVDA | 7d | 6 | 16.7% |
+| MSFT | 7d | 8 | 25.0% |
+| NVDA | 1d | 12 | 33.3% |
+| NVDA | 7d | 8 | 37.5% |
 
 ## Matrice di confusione (predetto vs reale, tutti gli asset/orizzonti)
 
 | Predetto \ Reale | UP | DOWN | FLAT |
 |---|---|---|---|
-| UP | 8 | 13 | 10 |
+| UP | 8 | 13 | 14 |
 | DOWN | 0 | 0 | 0 |
-| FLAT | 4 | 6 | 10 |
+| FLAT | 5 | 6 | 13 |
 
 ## Calibrazione (confidence dichiarata vs accuratezza reale)
 
 | Fascia confidence | N | Accuratezza |
 |---|---|---|
-| bassa (0-49) | 0 | 0.0% |
-| media (50-74) | 45 | 33.3% |
-| alta (75-100) | 6 | 50.0% |
+| bassa (0-49) | 1 | 0.0% |
+| media (50-74) | 49 | 36.7% |
+| alta (75-100) | 9 | 33.3% |
+
+## Probabilità (Brier Score, Log Loss)
+
+- Non ancora calcolabili: nessuna previsione valutata ha le probabilità salvate (introdotte il 2026-09-18).
+
+## Accuratezza per versione del prompt
+
+Cambiare il prompt cambia l'esperimento: un unico numero di accuratezza
+sopra versioni diverse nasconderebbe l'effetto del cambio. Le versioni sono
+descritte in `src/config.py` (`PROMPT_VERSION`).
+
+| Versione | N | Accuratezza |
+|---|---|---|
+| v1 | 57 | 36.8% |
+| v2 | 2 | 0.0% |
 
 ## Confronto con baseline naive
 
 - Random (3 classi equiprobabili): 33.3%
-- Persistenza (ripete l'ultimo esito reale osservato): 60.0% (n=45)
-- Classe più frequente (frequenza storica su decenni di prezzi, pesata sullo stesso mix asset/orizzonte): 46.0% (n=51)
-- **Agente AI: 35.3%**
+- Persistenza (ripete l'ultimo esito reale osservato): 62.3% (n=53)
+- Classe più frequente (frequenza storica su decenni di prezzi, pesata sullo stesso mix asset/orizzonte): 45.9% (n=59)
+- **Agente AI: 35.6%**
 
 > La baseline "classe più frequente" è la più dura delle tre: è
 > l'accuratezza di chi prevede sempre la stessa classe senza
