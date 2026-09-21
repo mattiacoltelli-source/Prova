@@ -1,4 +1,4 @@
-# Report accuratezza — aggiornato al 2026-09-20T22:25:50.012024+00:00
+# Report accuratezza — aggiornato al 2026-09-21T09:15:41.909447+00:00
 
 **Previsioni valutate: 59 — accuratezza complessiva: 35.6%**
 
