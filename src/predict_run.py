@@ -285,10 +285,20 @@ def run(dry_run: bool, force: bool) -> None:
             print(f"[{asset}] skipped_no_data: {exc}")
             continue
 
+        # Stime analisti PRIMA di news/fondamentali (non dopo, come prima del
+        # 2026-09-23): entrambe hanno un fallback su Alpha Vantage che
+        # condivide lo stesso tetto di 25 chiamate/giorno con questa
+        # funzione — chiamarle prima rischiava di bruciare la quota sullo
+        # stesso asset ancora prima che le stime avessero un turno
+        # (osservato in produzione: "nessuna stima, corpo grezzo: quota
+        # esaurita" ogni giorno per settimane). Le stime, essendo il
+        # segnale più scarso e già ottimizzato per costare 1 sola chiamata
+        # nei giorni di fallimento (vedi fetch_analyst_outlook), vanno per
+        # prime.
+        analyst_outlook = _get_analyst_outlook(asset, now_et.date(), dry_run)
         news_items = news.fetch_recent_news(asset)
         fundamentals_data = fundamentals.fetch_fundamentals(asset)
         macro_data = macro.fetch_macro_snapshot() if _macro_key_present() else {}
-        analyst_outlook = _get_analyst_outlook(asset, now_et.date(), dry_run)
         insider_summary = insider.fetch_insider_summary(asset)
 
         sector_ticker = config.SECTOR_BENCHMARK.get(asset)

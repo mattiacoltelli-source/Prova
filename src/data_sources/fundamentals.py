@@ -173,22 +173,29 @@ def select_next_quarter_estimate(estimates: list[dict], today: dt.date) -> dict 
 
 
 def fetch_analyst_outlook(ticker: str, today: dt.date | None = None) -> dict | None:
-    """Prossima data di bilancio + consenso analisti (stima EPS media, numero
-    di analisti, revisioni al rialzo/ribasso negli ultimi 30gg) per il
-    trimestre fiscale più vicino. None se Alpha Vantage non ha nulla di
-    utile (fonte opzionale, mai bloccante). 2 chiamate Alpha Vantage per
-    ticker: va richiamata al più una volta al giorno per asset (vedi la
+    """Consenso analisti (stima EPS media, numero di analisti, revisioni al
+    rialzo/ribasso negli ultimi 30gg) per il trimestre fiscale più vicino,
+    più la prossima data di bilancio. None se Alpha Vantage non ha nulla di
+    utile (fonte opzionale, mai bloccante). Fino a 2 chiamate Alpha Vantage
+    per ticker: va richiamata al più una volta al giorno per asset (vedi la
     cache in predict_run.py), non ad ogni previsione — il tetto gratuito è
     di 25 chiamate/giorno in totale, condiviso con fondamentali/news di
-    riserva."""
+    riserva.
+
+    Le stime (quello che conta davvero, vedi feedback utente 2026-09-19:
+    "stime analisti non le ha mai") vengono chieste PER PRIME: se falliscono
+    (quota esaurita, caso osservato quasi ogni giorno in produzione), la
+    data di bilancio non viene nemmeno richiesta — un giorno "no" costa 1
+    chiamata sprecata invece di 2, lasciando più margine di quota ai
+    tentativi degli asset successivi nello stesso run."""
     today = today or dt.date.today()
-    next_report_date = _alphavantage_earnings_calendar(ticker)
     estimates = _alphavantage_earnings_estimates(ticker)
     if estimates is None:
         return None
     picked = select_next_quarter_estimate(estimates, today)
     if picked is None:
         return None
+    next_report_date = _alphavantage_earnings_calendar(ticker)
     return {
         "next_report_date": next_report_date,
         "fiscal_quarter_ending": picked["date"],
