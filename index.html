@@ -1979,6 +1979,31 @@
             return lines;
         }
 
+        function marketRegimeLines(inputsSummary) {
+            const r = (inputsSummary && inputsSummary.market_regime) || null;
+            if (!r) return [];
+            const lines = [];
+            if (r.spy_return_1d_pct !== undefined && r.spy_return_1d_pct !== null) {
+                lines.push(
+                    `S&P 500 (SPY): <strong>${r.spy_return_1d_pct}%</strong> (1g), `
+                    + `<strong>${r.spy_return_5d_pct}%</strong> (5g), <strong>${r.spy_return_20d_pct}%</strong> (20g)`
+                );
+            }
+            if (r.qqq_return_1d_pct !== undefined && r.qqq_return_1d_pct !== null) {
+                lines.push(
+                    `Nasdaq 100 (QQQ): <strong>${r.qqq_return_1d_pct}%</strong> (1g), `
+                    + `<strong>${r.qqq_return_5d_pct}%</strong> (5g), <strong>${r.qqq_return_20d_pct}%</strong> (20g)`
+                );
+            }
+            if (r.vix) {
+                lines.push(`VIX: <strong>${r.vix.value}</strong> (percentile <strong>${r.vix.percentile}%</strong> sull'ultimo anno)`);
+            }
+            if (r.risk_mode) {
+                lines.push(`Modalità di mercato: <strong>${escapeHtml(r.risk_mode)}</strong>`);
+            }
+            return lines;
+        }
+
         function insiderSummaryLines(inputsSummary) {
             const i = (inputsSummary && inputsSummary.insider_summary) || null;
             if (!i) return [];
@@ -2049,7 +2074,8 @@
                 `Dati macro usati: <strong>${escapeHtml((s.macro_keys || []).join(', ') || 'nessuno')}</strong>`,
                 ...analystOutlookLines(s),
                 ...insiderSummaryLines(s),
-                ...technicalsLines(s)
+                ...technicalsLines(s),
+                ...marketRegimeLines(s)
             ];
             return lines.filter(line => line !== null).join('<br>');
         }
