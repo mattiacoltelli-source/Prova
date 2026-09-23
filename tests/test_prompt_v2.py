@@ -95,6 +95,30 @@ def test_il_prompt_funziona_anche_senza_frequenze_di_base():
     assert "probability_up" in p, "il resto del prompt deve restare intatto"
 
 
+def test_il_prompt_mostra_il_regime_di_mercato_quando_disponibile():
+    regime = {
+        "spy_return_1d_pct": -0.5,
+        "spy_return_5d_pct": 1.2,
+        "spy_return_20d_pct": 3.4,
+        "qqq_return_1d_pct": -0.8,
+        "qqq_return_5d_pct": 2.0,
+        "qqq_return_20d_pct": 5.1,
+        "vix": {"value": 24.5, "percentile": 82.0, "date": "2026-09-20"},
+        "risk_mode": "risk-off",
+    }
+    p = _prompt(market_regime=regime)
+    assert "S&P 500 (SPY): -0.50% (1g)" in p
+    assert "Nasdaq 100 (QQQ): -0.80% (1g)" in p
+    assert "VIX: 24.5 (percentile 82.0%" in p
+    assert "Modalità di mercato: risk-off" in p
+
+
+def test_il_prompt_senza_regime_di_mercato_non_esplode():
+    p = _prompt(market_regime=None)
+    assert "Regime di mercato generale" in p
+    assert "Non disponibile." in p
+
+
 def test_generate_prediction_passa_le_frequenze_al_prompt(monkeypatch):
     """Regressione: build_prompt ha molti parametri opzionali e
     generate_prediction li passava per posizione — inserire base_rates in
@@ -112,11 +136,15 @@ def test_generate_prediction_passa_le_frequenze_al_prompt(monkeypatch):
         {"sma_trend": "rialzista"},
         None,
         None,
+        {"risk_mode": "risk-on"},
     )
     assert result["predicted_class"] == "FLAT"
     assert "28.1%" in captured["prompt"], "le frequenze devono arrivare nel prompt"
     assert "Trend di fondo (SMA 50/200): rialzista" in captured["prompt"], (
         "technicals non deve essere finito nel parametro sbagliato"
+    )
+    assert "Modalità di mercato: risk-on" in captured["prompt"], (
+        "market_regime non deve essere finito nel parametro sbagliato"
     )
 
 

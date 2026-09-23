@@ -47,6 +47,35 @@ def _fetch_series_latest(series_id: str, api_key: str) -> dict | None:
     return {"value": float(obs[0]["value"]), "date": obs[0]["date"]}
 
 
+def fetch_series_history(series_id: str, api_key: str, limit: int = 300) -> list[dict]:
+    """Ultime `limit` osservazioni VALIDE (valore non nullo/mancante) di
+    una serie FRED, in ordine cronologico CRESCENTE — a differenza di
+    _fetch_series_latest() che ritorna solo l'ultimo punto, serve per
+    calcolare un percentile rispetto alla storia recente (vedi
+    market_regime.compute_vix_percentile). Lista vuota se la fonte
+    fallisce (segnale opzionale, mai bloccante, stesso principio di
+    fetch_macro_snapshot)."""
+    try:
+        resp = http.get(
+            "https://api.stlouisfed.org/fred/series/observations",
+            params={
+                "series_id": series_id,
+                "api_key": api_key,
+                "file_type": "json",
+                "sort_order": "desc",
+                "limit": limit,
+            },
+            timeout=TIMEOUT,
+        )
+        resp.raise_for_status()
+        obs = resp.json().get("observations", [])
+    except Exception:  # noqa: BLE001
+        return []
+    out = [{"value": float(o["value"]), "date": o["date"]} for o in obs if o.get("value") not in (None, ".")]
+    out.reverse()
+    return out
+
+
 def fetch_macro_snapshot() -> dict:
     """Ritorna gli indicatori macro disponibili; salta silenziosamente
     quelli che falliscono (segnale opzionale, non bloccante)."""

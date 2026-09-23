@@ -13,10 +13,23 @@ import os
 import sys
 import uuid
 
-from . import baseline, budget, config, predictor, storage, technicals, volatility
+from . import baseline, budget, config, market_regime, predictor, storage, technicals, volatility
 from .data_sources import fundamentals, insider, macro, news, prices
 
 BENCHMARK_TICKER = "SPY"
+
+# Secondo indice per il regime di mercato (config.INDEX_TICKER["QQQ"] è lo
+# stesso ticker già usato dal sistema Trend strutturali, riusato qui senza
+# introdurre una nuova convenzione): SPY da solo non basta a distinguere
+# "il mercato tech sta soffrendo più del mercato largo" da un calo
+# generalizzato — rilevante perché NVDA/MSFT/AAPL sono tutti tech.
+MARKET_REGIME_TICKER = "QQQ"
+
+# Storico VIX richiesto per il percentile (market_regime.
+# VIX_PERCENTILE_LOOKBACK_DAYS=252 barre di trading): FRED include anche
+# giorni senza osservazione valida nella paginazione, quindi si chiede un
+# margine oltre le 252 necessarie invece del minimo esatto.
+VIX_HISTORY_LIMIT = 300
 
 # fetch_analyst_outlook costa 2 chiamate Alpha Vantage per asset (6/giorno
 # per i 3 asset), sul tetto gratuito condiviso di 25/giorno con
@@ -265,6 +278,26 @@ def run(dry_run: bool, force: bool) -> None:
     except Exception:  # noqa: BLE001 - la forza relativa è un segnale opzionale
         benchmark_bars = None
 
+    # Regime di mercato: calcolato UNA VOLTA per l'intero run (non per
+    # asset) e passato identico a ogni previsione, come baseline_data sopra
+    # — è contesto condiviso da NVDA/MSFT/AAPL, non un segnale specifico di
+    # un singolo titolo. QQQ è un fetch a parte (SPY sopra è già usato per
+    # relative_strength/beta, un ticker diverso con uno scopo diverso).
+    try:
+        qqq_bars = _completed_bars(
+            prices.fetch_daily_history(MARKET_REGIME_TICKER, range_=config.PRICE_HISTORY_RANGE),
+            now_et,
+        )
+    except Exception:  # noqa: BLE001 - segnale opzionale, mai bloccante
+        qqq_bars = None
+
+    vix_history: list[dict] = []
+    fred_key = os.environ.get("FRED_API_KEY")
+    if fred_key:
+        vix_history = macro.fetch_series_history("VIXCLS", fred_key, limit=VIX_HISTORY_LIMIT)
+
+    regime = market_regime.compute_market_regime(benchmark_bars, qqq_bars, vix_history)
+
     sector_bars_by_ticker: dict[str, list] = {}
     for sector_ticker in set(config.SECTOR_BENCHMARK.values()):
         try:
@@ -350,7 +383,7 @@ def run(dry_run: bool, force: bool) -> None:
                     asset, horizon.code, price, price_asof, threshold_pct,
                     news_items, fundamentals_data, macro_data,
                     baseline.base_rates(asset, horizon.code, baseline_data),
-                    technical_signals, analyst_outlook, insider_summary,
+                    technical_signals, analyst_outlook, insider_summary, regime,
                 )
             except Exception as exc:  # noqa: BLE001
                 print(f"[{asset}/{horizon.code}] skipped_model_error: {exc}")
@@ -384,6 +417,11 @@ def run(dry_run: bool, force: bool) -> None:
                     "technicals": technical_signals,
                     "analyst_outlook": analyst_outlook,
                     "insider_summary": insider_summary,
+                    # Salvato nel record (non solo usato nel prompt) per poter
+                    # segmentare l'accuratezza per regime di mercato in
+                    # futuro, una volta accumulati abbastanza esiti — vedi
+                    # REPORT.md.
+                    "market_regime": regime,
                 },
                 "reasoning_short": pred["reasoning_short"],
             }

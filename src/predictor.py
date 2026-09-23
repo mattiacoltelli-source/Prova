@@ -29,6 +29,7 @@ def build_prompt(
     technicals: dict | None = None,
     analyst_outlook: dict | None = None,
     insider_summary: dict | None = None,
+    market_regime: dict | None = None,
 ) -> str:
     news_block = (
         "\n".join(f"- ({n['published_at']}) {n['headline']}" for n in news[:8])
@@ -134,6 +135,30 @@ def build_prompt(
         )
     technicals_block = "\n".join(technical_lines) or "Non disponibili."
 
+    market_regime = market_regime or {}
+    regime_lines = []
+    if market_regime.get("spy_return_1d_pct") is not None:
+        regime_lines.append(
+            f"- S&P 500 (SPY): {market_regime['spy_return_1d_pct']:+.2f}% (1g), "
+            f"{market_regime.get('spy_return_5d_pct'):+.2f}% (5g), "
+            f"{market_regime.get('spy_return_20d_pct'):+.2f}% (20g)"
+        )
+    if market_regime.get("qqq_return_1d_pct") is not None:
+        regime_lines.append(
+            f"- Nasdaq 100 (QQQ): {market_regime['qqq_return_1d_pct']:+.2f}% (1g), "
+            f"{market_regime.get('qqq_return_5d_pct'):+.2f}% (5g), "
+            f"{market_regime.get('qqq_return_20d_pct'):+.2f}% (20g)"
+        )
+    vix = market_regime.get("vix")
+    if vix is not None:
+        regime_lines.append(
+            f"- VIX: {vix['value']} (percentile {vix['percentile']}% rispetto all'ultimo anno di borsa — "
+            "sopra 70 storicamente elevato/paura, sotto 40 storicamente basso/complacency)"
+        )
+    if market_regime.get("risk_mode"):
+        regime_lines.append(f"- Modalità di mercato: {market_regime['risk_mode']} (derivata dal percentile VIX)")
+    regime_block = "\n".join(regime_lines) or "Non disponibile."
+
     # Frequenze storiche reali della coppia asset/orizzonte. Sono il pezzo
     # che mancava nella v1 del prompt: senza di esse il modello riceveva
     # una lunga lista di indicatori di trend e nessun riferimento su quanto
@@ -214,6 +239,13 @@ Contesto macro:
 
 Indicatori tecnici aggiuntivi:
 {technicals_block}
+
+Regime di mercato generale (SPY/QQQ, VIX — condiviso da tutti gli asset seguiti, NON specifico
+a {asset}): dice se il mercato nel suo complesso sta salendo/scendendo e se la paura di mercato
+(VIX) è oggi alta o bassa rispetto alla sua storia recente. È un contesto in più, non sostituisce
+la banda FLAT né il regime specifico di {asset} sopra: un titolo può muoversi in controtendenza al
+mercato generale.
+{regime_block}
 
 Rispondi ESCLUSIVAMENTE con un oggetto JSON valido, nessun altro testo, con questa forma esatta:
 {{"probability_up": <0-1>, "probability_down": <0-1>, "probability_flat": <0-1>, "reasoning_short": "<massimo 3 frasi>"}}
@@ -306,9 +338,10 @@ def generate_prediction(
     technicals: dict | None = None,
     analyst_outlook: dict | None = None,
     insider_summary: dict | None = None,
+    market_regime: dict | None = None,
 ) -> dict:
     # Argomenti per nome, non posizionali: la firma di build_prompt ha già
-    # dieci parametri opzionali e un inserimento in mezzo sposterebbe in
+    # undici parametri opzionali e un inserimento in mezzo sposterebbe in
     # silenzio tutto quello che segue.
     prompt = build_prompt(
         asset=asset,
@@ -323,6 +356,7 @@ def generate_prediction(
         technicals=technicals,
         analyst_outlook=analyst_outlook,
         insider_summary=insider_summary,
+        market_regime=market_regime,
     )
     raw = call_model(prompt)
     return parse_prediction(raw)
