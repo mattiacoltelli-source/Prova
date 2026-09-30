@@ -33,12 +33,13 @@ una fase 2 successiva.
    Claude per generare una previsione con confidence, e la registra in
    `data/<asset>/predictions.jsonl` come riga append-only con hash-chain.
    Un solo slot al giorno (7:00 ET, prima dell'apertura — `src/config.py:
-   PREDICTION_SLOTS_ET`)
-   genera tutti e 3 gli orizzonti (1g/7g/1m) per tutti gli asset:
-   rigenerarli più volte nello stesso giorno cambiava pochissimo il
-   risultato per 7g/1m (prezzo di partenza quasi identico a poche ore di
-   distanza) e triplicava senza motivo chiamate AI e quota sulle fonti
-   dati gratuite.
+   PREDICTION_SLOTS_ET`) genera l'orizzonte 1g ogni giorno feriale per
+   tutti gli asset; 7g e 1m hanno una cadenza più bassa (`src/config.py:
+   HORIZON_CADENCE_DAYS`, rispettivamente 1 e 2 volte a settimana):
+   rigenerarli ogni giorno cambiava pochissimo il risultato (prezzo di
+   partenza quasi identico da un giorno all'altro su quegli orizzonti) e
+   moltiplicava senza motivo chiamate AI e quota sulle fonti dati gratuite,
+   senza che nel mezzo arrivasse un solo esito valutato in più.
 2. **`evaluate.yml`** (scheduled, giornaliero) controlla `data/pending.json`
    per le previsioni il cui orizzonte è scaduto, recupera il prezzo reale,
    calcola l'esito (corretto/errato) usando **la stessa soglia di

@@ -304,6 +304,25 @@ HORIZONS = [
     Horizon(code="1m", days=30, trading_days=21),
 ]
 
+# Cadenza di rigenerazione per orizzonte, in giorni di calendario (None/assente
+# = ogni giorno feriale, come 1g). Introdotta il 2026-09-30 dopo aver
+# verificato sui dati reali che le previsioni 1m si accumulavano ogni giorno
+# (62 generate dal 31/8 senza ancora un solo esito valutato, perché
+# l'orizzonte stesso è 30 giorni) mentre il prezzo di partenza cambia troppo
+# poco da un giorno all'altro perché una nuova previsione porti segnale
+# nuovo — pura moltiplicazione di chiamate AI senza feedback nel mezzo.
+#
+# Analoga a ASSET_CADENCE_MONTHS sopra (stessa idea, granularità giorni invece
+# di mesi), ma senza un file di stato a parte: predict_run._horizon_due legge
+# la data dell'ultima previsione salvata direttamente da predictions.jsonl
+# (fonte di verità, niente da tenere sincronizzato). La cadenza in giorni
+# calcolata su predict.yml che gira solo lun-ven si auto-stabilizza da sola
+# sullo stesso giorno della settimana: 7 → una volta a settimana sempre sullo
+# stesso giorno; 3 → due volte a settimana (tipicamente lunedì/giovedì, il
+# fine settimana fa scattare il turno successivo al primo giorno feriale
+# utile, come già succede altrove in questo file per i giorni non di borsa).
+HORIZON_CADENCE_DAYS = {"7d": 7, "1m": 3}
+
 # --- Slot di previsione giornalieri (ora locale US/Eastern) ----------------
 # Un solo slot vicino alla chiusura: rigenerare più volte nello stesso
 # giorno cambiava pochissimo la previsione (prezzo di partenza quasi
@@ -408,7 +427,9 @@ ANTHROPIC_MAX_TOKENS = 500
 TREND_ANTHROPIC_MAX_TOKENS = 700
 
 # --- Tetto di spesa (enforcement lato codice) ------------------------------
-# 3 asset x 3 orizzonti x 1 slot/giorno = 9 chiamate attese al massimo.
+# 3 asset x 1 slot/giorno: 9 chiamate nei giorni in cui anche 7g/1m sono
+# dovute (HORIZON_CADENCE_DAYS sopra), 3 negli altri. 9 resta il massimo
+# atteso in un giorno qualsiasi.
 MAX_AI_CALLS_PER_DAY = 15
 
 # Istantanee prezzi (snapshot_run.py): 3 round/giorno, corrispondenti ai 3

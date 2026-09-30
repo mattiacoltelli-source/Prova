@@ -12,6 +12,7 @@ esaurita quel giorno) no — vedi _cached_analyst_outlook.
 from __future__ import annotations
 
 import datetime as dt
+import json
 import os
 from unittest.mock import patch
 
@@ -246,3 +247,64 @@ def test_completed_bars_include_la_barra_di_oggi_dopo_la_chiusura():
         {"date": "2026-09-04", "close": 230.10},  # ormai definitiva
     ]
     assert predict_run._completed_bars(bars, now_et) == bars
+
+
+# Cadenza per orizzonte (config.HORIZON_CADENCE_DAYS, 2026-09-30): 7g/1m non
+# vanno più generate ogni giorno, solo quando è passato abbastanza tempo
+# dall'ultima previsione salvata per quella stessa coppia asset/orizzonte —
+# letta da predictions.jsonl, non da uno stato a parte (vedi _last_prediction_date).
+def _write_prediction_line(path: str, horizon: str, generated_at: str) -> None:
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "a", encoding="utf-8") as fh:
+        fh.write(json.dumps({"horizon": horizon, "generated_at": generated_at}) + "\n")
+
+
+def test_horizon_1g_sempre_dovuto_anche_con_previsione_di_oggi(tmp_path, monkeypatch):
+    monkeypatch.setattr(predict_run.config, "DATA_DIR", str(tmp_path))
+    _write_prediction_line(
+        predict_run.config.predictions_file("AAPL"), "1d", "2026-09-30T12:00:00+00:00"
+    )
+    assert predict_run._horizon_due("AAPL", "1d", dt.date(2026, 9, 30)) is True
+
+
+def test_horizon_senza_previsioni_precedenti_e_sempre_dovuto(tmp_path, monkeypatch):
+    monkeypatch.setattr(predict_run.config, "DATA_DIR", str(tmp_path))
+    assert predict_run._horizon_due("AAPL", "7d", dt.date(2026, 9, 30)) is True
+    assert predict_run._horizon_due("AAPL", "1m", dt.date(2026, 9, 30)) is True
+
+
+def test_horizon_7g_non_dovuto_prima_che_passi_una_settimana(tmp_path, monkeypatch):
+    monkeypatch.setattr(predict_run.config, "DATA_DIR", str(tmp_path))
+    _write_prediction_line(
+        predict_run.config.predictions_file("AAPL"), "7d", "2026-09-24T12:00:00+00:00"
+    )
+    assert predict_run._horizon_due("AAPL", "7d", dt.date(2026, 9, 30)) is False
+    assert predict_run._horizon_due("AAPL", "7d", dt.date(2026, 10, 1)) is True
+
+
+def test_horizon_1m_dovuto_ogni_tre_giorni(tmp_path, monkeypatch):
+    monkeypatch.setattr(predict_run.config, "DATA_DIR", str(tmp_path))
+    _write_prediction_line(
+        predict_run.config.predictions_file("AAPL"), "1m", "2026-09-28T12:00:00+00:00"
+    )
+    assert predict_run._horizon_due("AAPL", "1m", dt.date(2026, 9, 30)) is False
+    assert predict_run._horizon_due("AAPL", "1m", dt.date(2026, 10, 1)) is True
+
+
+def test_horizon_due_usa_solo_l_ultima_previsione_di_quell_orizzonte(tmp_path, monkeypatch):
+    # Un 1g generato oggi non deve influenzare la cadenza di 7g/1m per lo
+    # stesso asset: sono conteggi indipendenti per (asset, horizon_code).
+    monkeypatch.setattr(predict_run.config, "DATA_DIR", str(tmp_path))
+    path = predict_run.config.predictions_file("AAPL")
+    _write_prediction_line(path, "1d", "2026-09-30T12:00:00+00:00")
+    _write_prediction_line(path, "7d", "2026-09-10T12:00:00+00:00")
+    assert predict_run._horizon_due("AAPL", "7d", dt.date(2026, 9, 30)) is True
+
+
+def test_horizon_due_e_indipendente_per_asset(tmp_path, monkeypatch):
+    monkeypatch.setattr(predict_run.config, "DATA_DIR", str(tmp_path))
+    _write_prediction_line(
+        predict_run.config.predictions_file("NVDA"), "7d", "2026-09-29T12:00:00+00:00"
+    )
+    assert predict_run._horizon_due("NVDA", "7d", dt.date(2026, 9, 30)) is False
+    assert predict_run._horizon_due("MSFT", "7d", dt.date(2026, 9, 30)) is True

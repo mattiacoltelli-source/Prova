@@ -2,7 +2,11 @@
 
 Genera previsioni per ogni asset x orizzonte, se siamo in uno degli slot
 orari configurati (o se --force è passato per un test manuale) e se il
-budget giornaliero di chiamate AI lo consente.
+budget giornaliero di chiamate AI lo consente. L'orizzonte 1g è generato
+ogni giorno feriale; 7g/1m hanno una cadenza più bassa (config.
+HORIZON_CADENCE_DAYS, vedi _horizon_due) perché il prezzo di partenza
+cambia troppo poco da un giorno all'altro su quegli orizzonti perché una
+nuova previsione porti segnale nuovo.
 """
 from __future__ import annotations
 
@@ -124,6 +128,42 @@ def _reference_price(asset: str, bars: list, now_et: dt.datetime) -> tuple[float
 
 def _target_at(session_date: dt.date, horizon_days: int) -> dt.datetime:
     return dt.datetime.combine(session_date, dt.time.min, tzinfo=dt.timezone.utc) + dt.timedelta(days=horizon_days)
+
+
+def _last_prediction_date(asset: str, horizon_code: str) -> dt.date | None:
+    """Data ET (calendario, non timestamp) dell'ultima previsione salvata
+    per questa coppia asset/orizzonte, o None se non ce n'è mai stata una.
+    Letta direttamente da predictions.jsonl invece che da un file di stato
+    a parte (vedi config.HORIZON_CADENCE_DAYS): un dry-run non scrive mai
+    su questo file, quindi non può falsare la cadenza."""
+    path = config.predictions_file(asset)
+    if not os.path.exists(path):
+        return None
+    last: dt.date | None = None
+    with open(path, "r", encoding="utf-8") as fh:
+        for line in fh:
+            line = line.strip()
+            if not line:
+                continue
+            record = json.loads(line)
+            if record.get("horizon") != horizon_code:
+                continue
+            generated_date = dt.datetime.fromisoformat(record["generated_at"]).astimezone(config.EASTERN).date()
+            if last is None or generated_date > last:
+                last = generated_date
+    return last
+
+
+def _horizon_due(asset: str, horizon_code: str, today_et: dt.date) -> bool:
+    """Se questa coppia asset/orizzonte è dovuta oggi secondo
+    config.HORIZON_CADENCE_DAYS (assente = ogni giorno feriale, come 1g)."""
+    cadence_days = config.HORIZON_CADENCE_DAYS.get(horizon_code)
+    if cadence_days is None:
+        return True
+    last = _last_prediction_date(asset, horizon_code)
+    if last is None:
+        return True
+    return (today_et - last).days >= cadence_days
 
 
 def _slot_label(hour: int, minute: int) -> str:
@@ -368,6 +408,10 @@ def run(dry_run: bool, force: bool) -> None:
         }
 
         for horizon in config.HORIZONS:
+            if not _horizon_due(asset, horizon.code, now_et.date()):
+                print(f"[{asset}/{horizon.code}] non dovuta oggi (cadenza {config.HORIZON_CADENCE_DAYS[horizon.code]}gg), salto.")
+                continue
+
             try:
                 threshold_pct = volatility.compute_threshold_pct(bars, horizon)
             except ValueError as exc:
