@@ -201,13 +201,24 @@ def fetch_recent_news(ticker: str, lookback_days: int = 7, limit: int = 8) -> li
     risultati della cascata quando esiste un feed per questo ticker, perché
     è un comunicato ufficiale diretto dalla fonte, non un sostituto delle
     news di mercato/sentiment che la cascata fornisce."""
+    # Log diagnostico su ogni fallimento (mai sul successo, troppo rumore):
+    # stesso principio di fetch_analyst_outlook (fundamentals.py) dopo il
+    # bug di quota Alpha Vantage del 2026-09-22 — quel bug è stato trovato
+    # SOLO perché il motivo del fallimento finiva nei log reali invece di
+    # sparire in un `except: continue` silenzioso. Qui la cascata è sempre
+    # stata silenziosa: non c'è modo di distinguere "nessuna news quel
+    # giorno" da "quota esaurita" da "endpoint che risponde male" finché
+    # non si legge un run reale con questo log attivo.
     cascade_items: list[NewsItem] = []
     for fn in (_finnhub_news, _alphavantage_news, _gdelt_news):
         try:
             cascade_items = fn(ticker, lookback_days, limit)
             break
-        except Exception:  # noqa: BLE001 - passa alla fonte successiva
+        except Exception as exc:  # noqa: BLE001 - passa alla fonte successiva
+            print(f"[info] {fn.__name__} {ticker}: {exc}")
             continue
+    else:
+        print(f"[info] fetch_recent_news {ticker}: tutte le fonti della cascata hanno fallito")
 
     feed_url = RSS_FEEDS.get(ticker)
     if not feed_url:
@@ -215,7 +226,8 @@ def fetch_recent_news(ticker: str, lookback_days: int = 7, limit: int = 8) -> li
 
     try:
         rss_items = _rss_news(feed_url, lookback_days, limit)
-    except Exception:  # noqa: BLE001 - RSS è un segnale opzionale, mai bloccante
+    except Exception as exc:  # noqa: BLE001 - RSS è un segnale opzionale, mai bloccante
+        print(f"[info] _rss_news {ticker}: {exc}")
         return cascade_items
 
     # RSS prima (fonte ufficiale/primaria), poi il resto della cascata;
