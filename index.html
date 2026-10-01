@@ -1785,6 +1785,18 @@
         // Ritorna { ok, data }: ok=false distingue un vero fallimento di rete/
         // fetch da una lista legittimamente vuota (0 previsioni per un asset
         // nuovo), casi che altrimenti la UI mostrerebbe in modo identico.
+        //
+        // Un 404 e' il secondo caso, non il primo: la pipeline crea
+        // outcomes.jsonl solo quando valuta il primo esito, quindi un asset
+        // appena aggiunto (AMD, 2026-10-01) non ha il file finche' nessun
+        // orizzonte e' scaduto. Trattarlo come ok:false faceva scrivere
+        // "Dati non raggiungibili al momento. Riprova piu' tardi." nella
+        // tabella degli esiti — un messaggio d'errore per un'assenza normale.
+        // Resta ok:false per tutto il resto (rete caduta, 5xx, 403...), che e'
+        // dove "non raggiungibili" e' vero. Chi chiama questa funzione per
+        // un file che puo' mancare (trend.jsonl, sector_summary.jsonl) gestiva
+        // gia' ok:false e lista vuota allo stesso modo, quindi per loro non
+        // cambia nulla.
         async function parseJsonl(url) {
             try {
                 // no-store: GitHub Pages serve questi file con Cache-Control:
@@ -1794,6 +1806,7 @@
                 // "tira per aggiornare" spesso non forza una richiesta fresca
                 // come farebbe Ctrl+Shift+R su desktop).
                 const res = await fetch(url, { cache: 'no-store' });
+                if (res.status === 404) return { ok: true, data: [] };
                 if (!res.ok) return { ok: false, data: [] };
                 const text = await res.text();
                 const data = text.trim().split('\n')
