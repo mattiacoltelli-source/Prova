@@ -8,15 +8,21 @@ EASTERN = ZoneInfo("America/New_York")
 
 # --- Asset ---------------------------------------------------------------
 
-ASSETS = ["NVDA", "MSFT", "AAPL"]
+# AMD aggiunto il 2026-10-01 (feedback utente: voleva un asset più
+# volatile degli altri tre, restando in ambito tech). ATR%(14gg) reale al
+# momento della scelta: NVDA/MSFT ~2.3%, AAPL ~2.0%, AMD ~4.2% — quasi il
+# doppio, e già benchmarkato contro lo stesso ETF settoriale di NVDA (SMH),
+# a differenza di un'alternativa come TSLA che avrebbe richiesto un nuovo
+# benchmark (Consumer Discretionary, non Tech).
+ASSETS = ["NVDA", "MSFT", "AAPL", "AMD"]
 
 # Tutte azioni (nessun ETF attivo al momento): fondamentali via SEC EDGAR.
-ASSET_TYPE = {"NVDA": "stock", "MSFT": "stock", "AAPL": "stock"}
+ASSET_TYPE = {"NVDA": "stock", "MSFT": "stock", "AAPL": "stock", "AMD": "stock"}
 
 # ETF di settore usato come secondo benchmark oltre a SPY (stessa fonte
 # Yahoo Finance già usata per i prezzi, nessuna API nuova): forza relativa
 # e beta vs il proprio settore, più specifici del solo mercato generale.
-SECTOR_BENCHMARK = {"NVDA": "SMH", "MSFT": "XLK", "AAPL": "XLK"}
+SECTOR_BENCHMARK = {"NVDA": "SMH", "MSFT": "XLK", "AAPL": "XLK", "AMD": "SMH"}
 
 # Email di contatto richiesta da SEC EDGAR nell'header User-Agent (non è una API key).
 SEC_EDGAR_CONTACT_EMAIL = "mattia.coltelli@gmail.com"
@@ -427,8 +433,8 @@ ANTHROPIC_MAX_TOKENS = 500
 TREND_ANTHROPIC_MAX_TOKENS = 700
 
 # --- Tetto di spesa (enforcement lato codice) ------------------------------
-# 3 asset x 1 slot/giorno: 9 chiamate nei giorni in cui anche 7g/1m sono
-# dovute (HORIZON_CADENCE_DAYS sopra), 3 negli altri. 9 resta il massimo
+# 4 asset x 1 slot/giorno: 12 chiamate nei giorni in cui anche 7g/1m sono
+# dovute (HORIZON_CADENCE_DAYS sopra), 4 negli altri. 12 resta il massimo
 # atteso in un giorno qualsiasi.
 MAX_AI_CALLS_PER_DAY = 15
 

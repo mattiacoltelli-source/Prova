@@ -1,4 +1,4 @@
-# Agente predittivo AI — NVDA, MSFT & AAPL
+# Agente predittivo AI — NVDA, MSFT, AAPL & AMD
 
 Esperimento reale (non un backtest) di previsione AI sui mercati finanziari.
 L'agente raccoglie dati reali, produce previsioni classificate su più
@@ -412,7 +412,7 @@ Due cose che il codice del frontend fa apposta, e che conviene non
 **Indicatori tecnici** (`src/technicals.py`, tutti derivati dall'OHLCV già
 scaricato, nessuna API in più): On-Balance Volume (trend
 accumulazione/distribuzione), Chaikin Money Flow, forza relativa e beta
-rispetto all'S&P 500 e al proprio settore (SMH per NVDA, XLK per
+rispetto all'S&P 500 e al proprio settore (SMH per NVDA/AMD, XLK per
 MSFT/AAPL), medie mobili SMA 50/200 ed EMA 9/21, RSI 14, MACD (12/26/9),
 ATR 14 (volatilità media giornaliera, usato anche come base della soglia
 FLAT), Bande di Bollinger (%B), distanza da massimo/minimo a 52 settimane,
