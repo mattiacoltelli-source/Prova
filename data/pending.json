@@ -1,6 +1,12 @@
 [
   {
     "asset": "AAPL",
+    "horizon": "1d",
+    "id": "61a3430a-3c4a-45a0-936f-16253d9fef23",
+    "target_at": "2026-10-03T00:00:00+00:00"
+  },
+  {
+    "asset": "AAPL",
     "horizon": "1m",
     "id": "1ae0f0ae-c358-4760-8bf2-5e164a2c5dbc",
     "target_at": "2026-10-23T00:00:00+00:00"
@@ -74,6 +80,12 @@
   {
     "asset": "AAPL",
     "horizon": "1m",
+    "id": "9a838d6c-9804-4e0a-8199-77b224852af8",
+    "target_at": "2026-11-01T00:00:00+00:00"
+  },
+  {
+    "asset": "AAPL",
+    "horizon": "1m",
     "id": "a7d2767c-7914-404d-a279-85b221e88527",
     "target_at": "2026-10-10T00:00:00+00:00"
   },
@@ -133,15 +145,33 @@
   },
   {
     "asset": "AMD",
+    "horizon": "1d",
+    "id": "8c89ea9a-05c1-42c5-88f6-a2f813a2cacb",
+    "target_at": "2026-10-03T00:00:00+00:00"
+  },
+  {
+    "asset": "AMD",
     "horizon": "1m",
     "id": "29e72b92-85f6-4cbe-b23a-ebe4481c69c1",
     "target_at": "2026-10-30T00:00:00+00:00"
   },
   {
     "asset": "AMD",
+    "horizon": "1m",
+    "id": "982559ab-0a28-4a30-ad85-cca4e076d266",
+    "target_at": "2026-11-01T00:00:00+00:00"
+  },
+  {
+    "asset": "AMD",
     "horizon": "7d",
     "id": "e832065e-6465-4e71-bddf-c6c525314b59",
     "target_at": "2026-10-07T00:00:00+00:00"
+  },
+  {
+    "asset": "MSFT",
+    "horizon": "1d",
+    "id": "ced85cf9-cf12-4855-8e80-5079f5130dc8",
+    "target_at": "2026-10-03T00:00:00+00:00"
   },
   {
     "asset": "MSFT",
@@ -230,6 +260,12 @@
   {
     "asset": "MSFT",
     "horizon": "1m",
+    "id": "a906a527-e7e1-4c05-b547-6dcef0cf36fd",
+    "target_at": "2026-11-01T00:00:00+00:00"
+  },
+  {
+    "asset": "MSFT",
+    "horizon": "1m",
     "id": "a9698502-e346-4b5d-8e51-8c504a22ba8e",
     "target_at": "2026-10-14T00:00:00+00:00"
   },
@@ -277,6 +313,12 @@
   },
   {
     "asset": "NVDA",
+    "horizon": "1d",
+    "id": "ce5f7825-9c66-4bed-a5de-9063e243098e",
+    "target_at": "2026-10-03T00:00:00+00:00"
+  },
+  {
+    "asset": "NVDA",
     "horizon": "1m",
     "id": "06820700-fb1c-47e2-bc8e-2a2eb9004766",
     "target_at": "2026-10-17T00:00:00+00:00"
@@ -292,6 +334,12 @@
     "horizon": "1m",
     "id": "0c23a80e-36ad-49bb-98d1-3f7f75788971",
     "target_at": "2026-10-18T00:00:00+00:00"
+  },
+  {
+    "asset": "NVDA",
+    "horizon": "1m",
+    "id": "0cbb43a7-f7c3-40af-b8cd-5b1b30155ec8",
+    "target_at": "2026-11-01T00:00:00+00:00"
   },
   {
     "asset": "NVDA",
