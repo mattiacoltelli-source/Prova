@@ -18,8 +18,9 @@ def test_index_route(client):
     text = response.get_data(as_text=True)
     assert "AI Predictor" in text
     assert "NVDA" in text
-    assert "MSFT" in text
     assert "AAPL" in text
+    assert "AMD" in text
+    assert "MU" in text
 
 
 def test_manifest_route(client):

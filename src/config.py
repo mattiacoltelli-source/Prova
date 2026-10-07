@@ -14,15 +14,27 @@ EASTERN = ZoneInfo("America/New_York")
 # doppio, e già benchmarkato contro lo stesso ETF settoriale di NVDA (SMH),
 # a differenza di un'alternativa come TSLA che avrebbe richiesto un nuovo
 # benchmark (Consumer Discretionary, non Tech).
-ASSETS = ["NVDA", "MSFT", "AAPL", "AMD"]
+#
+# MSFT rimosso e MU (Micron) aggiunto il 2026-10-07 (feedback utente: MSFT
+# era l'asset con l'accuratezza peggiore del paniere — 34.3% su tutti gli
+# esiti valutati, contro 50.0% NVDA e 55.6% AAPL — e voleva un sostituto
+# più simile ad AMD che a MSFT). ATR%(14gg) reale al momento della scelta:
+# MU 3.98% (quasi identico ad AMD 3.68%). Preferito a SMCI (bilanci
+# depositati in ritardo/problemi contabili recenti) e ARM (depositante
+# estero, 20-F invece di 10-Q — copertura SEC EDGAR meno regolare, stesso
+# tipo di buco già visto con i ticker di Tokyo in Robotica). Dati storici
+# di MSFT non cancellati (data/msft/*.jsonl resta su disco/git), solo non
+# più generati né mostrati: coerente col principio append-only del
+# progetto.
+ASSETS = ["NVDA", "AAPL", "AMD", "MU"]
 
 # Tutte azioni (nessun ETF attivo al momento): fondamentali via SEC EDGAR.
-ASSET_TYPE = {"NVDA": "stock", "MSFT": "stock", "AAPL": "stock", "AMD": "stock"}
+ASSET_TYPE = {"NVDA": "stock", "AAPL": "stock", "AMD": "stock", "MU": "stock"}
 
 # ETF di settore usato come secondo benchmark oltre a SPY (stessa fonte
 # Yahoo Finance già usata per i prezzi, nessuna API nuova): forza relativa
 # e beta vs il proprio settore, più specifici del solo mercato generale.
-SECTOR_BENCHMARK = {"NVDA": "SMH", "MSFT": "XLK", "AAPL": "XLK", "AMD": "SMH"}
+SECTOR_BENCHMARK = {"NVDA": "SMH", "AAPL": "XLK", "AMD": "SMH", "MU": "SMH"}
 
 # Email di contatto richiesta da SEC EDGAR nell'header User-Agent (non è una API key).
 SEC_EDGAR_CONTACT_EMAIL = "mattia.coltelli@gmail.com"

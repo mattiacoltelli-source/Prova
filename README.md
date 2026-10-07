@@ -1,4 +1,4 @@
-# Agente predittivo AI — NVDA, MSFT, AAPL & AMD
+# Agente predittivo AI — NVDA, AAPL, AMD & MU
 
 Esperimento reale (non un backtest) di previsione AI sui mercati finanziari.
 L'agente raccoglie dati reali, produce previsioni classificate su più
@@ -12,8 +12,9 @@ prevedere la direzione del prezzo, non generare segnali di trading.
 ## Asset
 
 - **NVDA** — NVIDIA Corporation
-- **MSFT** — Microsoft Corporation
 - **AAPL** — Apple Inc.
+- **AMD** — Advanced Micro Devices, Inc.
+- **MU** — Micron Technology, Inc.
 
 SPY (ETF, tracciato inizialmente) è stato rimosso dal paniere attivo su
 richiesta: il suo storico reale (`data/spy/`) resta nel repo per non
@@ -215,8 +216,8 @@ mostra quindi tre baseline, in ordine crescente di difficoltà:
    delle tre e viene da `data/baseline.json`.
 
 La terza è calcolata da `src/baseline_run.py` su **tutto** lo storico di
-prezzo disponibile (da 6.900 a 11.500 barre giornaliere per asset — AAPL
-parte dal 1980, MSFT dal 1986, NVDA dal 1999), con la stessa identica
+prezzo disponibile (da 6.900 a 11.700 barre giornaliere per asset — AMD
+parte dal 1980, AAPL dal 1980, MU dal 1984, NVDA dal 1999), con la stessa identica
 formula della soglia usata in produzione e con lo stesso vincolo anti
 look-ahead: la banda FLAT di ogni osservazione è calcolata solo sulle barre
 precedenti. Nel report viene pesata sullo **stesso mix** di asset e
@@ -412,8 +413,8 @@ Due cose che il codice del frontend fa apposta, e che conviene non
 **Indicatori tecnici** (`src/technicals.py`, tutti derivati dall'OHLCV già
 scaricato, nessuna API in più): On-Balance Volume (trend
 accumulazione/distribuzione), Chaikin Money Flow, forza relativa e beta
-rispetto all'S&P 500 e al proprio settore (SMH per NVDA/AMD, XLK per
-MSFT/AAPL), medie mobili SMA 50/200 ed EMA 9/21, RSI 14, MACD (12/26/9),
+rispetto all'S&P 500 e al proprio settore (SMH per NVDA/AMD/MU, XLK per
+AAPL), medie mobili SMA 50/200 ed EMA 9/21, RSI 14, MACD (12/26/9),
 ATR 14 (volatilità media giornaliera, usato anche come base della soglia
 FLAT), Bande di Bollinger (%B), distanza da massimo/minimo a 52 settimane,
 volume relativo rispetto alla propria media recente. Forza relativa e beta

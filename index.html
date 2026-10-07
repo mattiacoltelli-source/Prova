@@ -766,7 +766,7 @@
             Michigan).<br>
             <strong>Indicatori tecnici:</strong> On-Balance Volume (accumulazione/distribuzione),
             Chaikin Money Flow (pressione acquisto/vendita), forza relativa e beta rispetto
-            all'S&P 500 e al proprio settore (SMH per NVDA/AMD, XLK per MSFT/AAPL), medie mobili
+            all'S&P 500 e al proprio settore (SMH per NVDA/AMD/MU, XLK per AAPL), medie mobili
             SMA 50/200 ed EMA 9/21 (trend di fondo e di breve termine), RSI 14, MACD, ATR 14
             (volatilità media giornaliera), Bande di Bollinger (%B), distanza da massimo/minimo
             a 52 settimane, volume relativo rispetto alla media recente.<br>
@@ -963,7 +963,7 @@
 
     <script>
         // Unico punto da modificare quando cambia il paniere di asset seguiti.
-        const ASSETS = ['NVDA', 'MSFT', 'AAPL', 'AMD'];
+        const ASSETS = ['NVDA', 'AAPL', 'AMD', 'MU'];
         const chartInstances = {};
 
         // Paniere separato (src/config.py: ROBOTICS_ASSETS/ROBOTICS_TICKER),
@@ -1001,10 +1001,10 @@
                 sector: 'Tecnologia / Elettronica di consumo', exchange: 'NASDAQ',
                 description: 'Progetta e vende iPhone, Mac, iPad, Apple Watch e servizi digitali (App Store, iCloud, Apple Music, Apple TV+).',
             },
-            MSFT: {
-                name: 'Microsoft Corporation', hq: 'Redmond, Washington, USA', founded: 1975,
-                sector: 'Tecnologia / Software', exchange: 'NASDAQ',
-                description: 'Sistema operativo Windows, suite Office, cloud Azure, console Xbox, LinkedIn.',
+            MU: {
+                name: 'Micron Technology, Inc.', hq: 'Boise, Idaho, USA', founded: 1978,
+                sector: 'Semiconduttori', exchange: 'NASDAQ',
+                description: 'Produce memorie DRAM e NAND flash, inclusa la memoria HBM ad alta banda usata nei server AI insieme alle GPU di NVIDIA/AMD.',
             },
             NVDA: {
                 name: 'NVIDIA Corporation', hq: 'Santa Clara, California, USA', founded: 1993,

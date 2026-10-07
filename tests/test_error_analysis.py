@@ -65,8 +65,8 @@ def test_classe_mai_prevista_ma_osservata_viene_segnalata(tmp_path, monkeypatch)
     _isolate(tmp_path, monkeypatch)
     for i in range(4):
         storage.append_record(
-            config.outcomes_file("MSFT"),
-            _outcome(prediction_id=f"p{i}", asset="MSFT", predicted_class="UP", actual_class="DOWN", correct=False),
+            config.outcomes_file("MU"),
+            _outcome(prediction_id=f"p{i}", asset="MU", predicted_class="UP", actual_class="DOWN", correct=False),
         )
 
     content = _generate(tmp_path)

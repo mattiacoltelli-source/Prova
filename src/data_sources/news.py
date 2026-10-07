@@ -7,18 +7,10 @@ In più (non un fallback della cascata sopra, ma unita ai suoi risultati):
 RSS ufficiale del feed newsroom aziendale, dove esiste (RSS_FEEDS) — cattura
 comunicati diretti dalla fonte, spesso prima che gli aggregatori di mercato
 li indicizzino. Verificato manualmente il 2026-09-17 quali aziende
-espongono davvero un feed pubblico raggiungibile (AAPL/MSFT/NVDA); THK e
+espongono davvero un feed pubblico raggiungibile (AAPL/MSFT/NVDA, MSFT
+rimosso dal paniere il 2026-10-07 insieme alla voce RSS_FEEDS); THK e
 Harmonic Drive Systems non ne hanno uno accessibile, quindi restano solo
-sulla cascata sopra.
-
-Nota sul feed MSFT: osservato intermittente dietro protezione Cloudflare
-(risposta 200 con Content-Type RSS corretto, ma corpo che mescola contenuto
-del feed con un frammento HTML del footer anti-bot di Cloudflare, che rompe
-il parsing XML) — non un bug del parser, un blocco lato server sull'IP di
-chi chiama. _rss_news lo gestisce già come ogni altro fallimento: eccezione
-catturata, si torna silenziosamente alla sola cascata per quell'asset, mai
-un crash. Lasciato comunque nella lista: potrebbe funzionare da IP diversi
-(es. i runner di GitHub Actions) anche quando fallisce da questo sandbox."""
+sulla cascata sopra."""
 from __future__ import annotations
 
 import datetime as dt
@@ -33,7 +25,6 @@ TIMEOUT = 15
 
 RSS_FEEDS = {
     "AAPL": "https://www.apple.com/newsroom/rss-feed.rss",
-    "MSFT": "https://news.microsoft.com/feed/",
     "NVDA": "https://nvidianews.nvidia.com/rss.xml",
 }
 
