@@ -1133,6 +1133,45 @@
             return html;
         }
 
+        // Rating tecnico (consensus di indicatori TradingView: medie mobili +
+        // oscillatori), aggiunto il 2026-10-10. È un segnale diverso dalle
+        // probabilità calcolate dalla pipeline Predict — qui è il consensus
+        // tecnico di TradingView, non una previsione dell'app. Stesso
+        // snapshot statico, stessa scadenza a 6 mesi dei fondamentali.
+        const TECHNICALS_LABEL = {
+            STRONG_BUY: 'Strong Buy', BUY: 'Buy', NEUTRAL: 'Neutrale', SELL: 'Sell', STRONG_SELL: 'Strong Sell',
+        };
+
+        function renderTechnicalsRating(t) {
+            if (!t) return '';
+            const label = TECHNICALS_LABEL[t.recommendation] || t.recommendation;
+            return `
+                <br><br><strong>Rating tecnico (TradingView, ${t.interval})</strong><br>
+                Segnale: ${label} &nbsp;·&nbsp; RSI: ${NUM_IT(t.rsi, 1)}<br>
+                <span style="opacity:0.8">Medie mobili: ${TECHNICALS_LABEL[t.summary_ma] || t.summary_ma} · Oscillatori: ${TECHNICALS_LABEL[t.summary_other] || t.summary_other}</span>
+            `;
+        }
+
+        // Prossima trimestrale e ultimo dividendo da TradingView
+        // (get_earnings_calendar/get_dividends_calendar): solo per TER/VRT,
+        // dati che il resto della pipeline (SEC EDGAR) non espone in questa
+        // forma riassuntiva.
+        function renderNextEarnings(e) {
+            if (!e) return '';
+            return `
+                <br><br><strong>Prossima trimestrale</strong><br>
+                ${e.release_next_date} &nbsp;·&nbsp; EPS stimato ${NUM_IT(e.eps_forecast, 2)}
+            `;
+        }
+
+        function renderRecentDividend(d) {
+            if (!d) return '';
+            return `
+                <br><br><strong>Ultimo dividendo</strong><br>
+                Stacco ${d.ex_date} &nbsp;·&nbsp; ${NUM_IT(d.amount, 4)} &nbsp;·&nbsp; yield ${fmtPct(d.yield_pct)}
+            `;
+        }
+
         // Alcuni ticker (TSE:6481) non hanno i campi TTM nella fonte: si
         // mostra allora l'ultimo esercizio chiuso, ETICHETTATO come tale.
         // Mai un TTM ricostruito sommando i trimestri: per quel ticker le due
@@ -1228,6 +1267,9 @@
                 Dividend yield: ${fmtPct(a.dividends_yield)}<br><br>
                 ${renderPeriodFigures(a, cur)}
                 ${renderAnalystRating(a.analyst_rating, cur, a.price_targets, a.price_target_escluso_perche)}
+                ${renderTechnicalsRating(a.technicals_rating)}
+                ${renderNextEarnings(a.next_earnings)}
+                ${renderRecentDividend(a.recent_dividend)}
                 ${renderRecentNews(a.recent_news)}
                 <div style="font-size: 11px; opacity: 0.6; margin-top: 6px;">
                     Fonte: ${TV_FUNDAMENTALS.source}, snapshot del ${asOf}. Non si aggiorna in
