@@ -1,5 +1,5 @@
 {
-  "fetched_at": "2026-09-17",
+  "fetched_at": "2026-10-10",
   "source": "TradingView MCP (account personale)",
   "nota_licenza": "Snapshot statico per uso personale del progetto. Sono salvati valori aggregati e metadati (titoli, date, cifre di bilancio), non il testo integrale degli articoli. Non è un feed: non si aggiorna da solo.",
   "perche_esiste": "THK e Harmonic Drive sono quotate a Tokyo: SEC EDGAR non le copre e Finnhub/Alpha Vantage sul piano gratuito non hanno né fondamentali né news per quei ticker. Fino ad ora i loro fondamentali erano inseriti a mano in index.html con scadenza automatica a 6 mesi. Questi sono gli stessi dati presi da una fonte strutturata.",
@@ -9,12 +9,12 @@
       "tv_symbol": "TSE:6481",
       "exchange": "TSE",
       "currency": "JPY",
-      "close": 5999,
-      "market_cap": 685345014221,
-      "price_book_ratio": 2.5696,
+      "close": 6710,
+      "market_cap": 727128879913,
+      "price_book_ratio": 2.8742,
       "debt_to_equity": 0.5066,
       "current_ratio": 2.608,
-      "dividends_yield": 3.2505,
+      "dividends_yield": 2.9061,
       "number_of_employees": 13036,
       "sector": "Producer Manufacturing",
       "industry": "Industrial Machinery",
@@ -193,29 +193,58 @@
       "price_target": null,
       "price_target_escluso_perche": "TradingView stesso segnala target_mismatch: il price target è incoerente con il prezzo quotato (probabile disallineamento di valuta/unità nel feed). L'endpoint financials restituiva 8642 (+44%), l'endpoint forecasts lo rifiuta. Non propagato.",
       "estimates": {
-        "eps_next_quarter": 0.638149763814,
-        "eps_next_year": 2.8016922699,
-        "revenue_next_quarter": 535574785.7152,
-        "revenue_next_year": 2034656032.3155,
+        "eps_next_quarter": 0.6338,
+        "eps_next_year": 2.8017,
+        "revenue_next_quarter": 531890982.28,
+        "revenue_next_year": 2026034938.47,
         "nota_unita": "Stime in unità non allineate alle serie di bilancio dello stesso ticker (ricavi annui stimati 2,03 mld contro 240 mld dell'ultimo esercizio). È lo stesso disallineamento di valuta/unità che fa scartare il price target: non usare senza riconciliare l'unità."
       },
       "recent_news": {
-        "nota": "Titoli reali (Reuters/Quartr via TradingView), non generati dall'AI. Il sistema automatico (Finnhub/Alpha Vantage/GDELT) non trova quasi mai notizie per questo ticker Tokyo: questo snapshot colma il buco, ma non si aggiorna da solo.",
+        "nota": "Titoli reali (Reuters/Quartr via TradingView), non generati dall'AI. Il sistema automatico (Finnhub/Alpha Vantage/GDELT) non trova quasi mai notizie per questo ticker Tokyo: questo snapshot colma il buco, ma non si aggiorna da solo. Verificato il 2026-10-10: nessuna nuova notizia reale rispetto allo snapshot precedente (stessi fatti, stesse date).",
         "headlines": [
-          {"title": "THK: Revenue and profit surged on semiconductor demand and reforms, with FY 2026 outlook raised", "published": "2026-08-05", "provider": "Quartr", "link": "https://www.tradingview.com/news/urn:summary_document_transcript:quartr.com:4130458:0-thk-revenue-and-profit-surged-on-semiconductor-demand-and-reforms-with-fy-2026-outlook-raised/"},
-          {"title": "THK: Profit soared on strong machinery demand and a major business divestiture gain", "published": "2026-08-05", "provider": "Quartr", "link": "https://www.tradingview.com/news/urn:summary_document_report:quartr.com:3688014:0-thk-profit-soared-on-strong-machinery-demand-and-a-major-business-divestiture-gain/"},
-          {"title": "TABLE-THK 6-MTH group results (IFRS)", "published": "2026-08-05", "provider": "Reuters", "link": "https://www.tradingview.com/news/reuters.com,2026-08-05:newsml_XB1BMF4TT:0-table-thk-6-mth-group-results-ifrs/"},
-          {"title": "THK: Stable financials post-automotive transfer, with improved margins and global focus", "published": "2026-05-11", "provider": "Quartr", "link": "https://www.tradingview.com/news/urn:summary_document_slides:quartr.com:3320258:0-thk-stable-financials-post-automotive-transfer-with-improved-margins-and-global-focus/"}
+          {
+            "title": "THK: Revenue and profit surged on semiconductor demand and reforms, with FY 2026 outlook raised",
+            "published": "2026-08-05",
+            "provider": "Quartr",
+            "link": "https://www.tradingview.com/news/urn:summary_document_transcript:quartr.com:4130458:0-thk-revenue-and-profit-surged-on-semiconductor-demand-and-reforms-with-fy-2026-outlook-raised/"
+          },
+          {
+            "title": "THK: Profit soared on strong machinery demand and a major business divestiture gain",
+            "published": "2026-08-05",
+            "provider": "Quartr",
+            "link": "https://www.tradingview.com/news/urn:summary_document_report:quartr.com:3688014:0-thk-profit-soared-on-strong-machinery-demand-and-a-major-business-divestiture-gain/"
+          },
+          {
+            "title": "TABLE-THK 6-MTH group results (IFRS)",
+            "published": "2026-08-05",
+            "provider": "Reuters",
+            "link": "https://www.tradingview.com/news/reuters.com,2026-08-05:newsml_XB1BMF4TT:0-table-thk-6-mth-group-results-ifrs/"
+          },
+          {
+            "title": "THK: Stable financials post-automotive transfer, with improved margins and global focus",
+            "published": "2026-05-11",
+            "provider": "Quartr",
+            "link": "https://www.tradingview.com/news/urn:summary_document_slides:quartr.com:3320258:0-thk-stable-financials-post-automotive-transfer-with-improved-margins-and-global-focus/"
+          }
         ]
+      },
+      "technicals_rating": {
+        "interval": "1D",
+        "recommendation": "BUY",
+        "summary_ma": "STRONG_BUY",
+        "summary_other": "BUY",
+        "summary_value": 0.4242,
+        "rsi": 54.7164,
+        "price": 6710
       }
     },
     "HARMONIC_DRIVE": {
       "tv_symbol": "TSE:6324",
       "exchange": "TSE",
       "currency": "JPY",
-      "close": 5970,
-      "market_cap": 574690705032,
-      "price_earnings_ttm": 193.4725,
+      "close": 6220,
+      "market_cap": 592980693970,
+      "price_earnings_ttm": 201.5744,
       "eps_diluted_ttm": 30.8571,
       "eps_diluted_yoy_growth_ttm": -21.1842,
       "total_revenue_ttm": 62742841000,
@@ -228,10 +257,10 @@
       "operating_margin": 6.8327,
       "return_on_equity": 3.7093,
       "return_on_assets": 2.643,
-      "price_book_ratio": 7.0302,
+      "price_book_ratio": 7.3246,
       "debt_to_equity": 0.2075,
       "current_ratio": 3.8837,
-      "dividends_yield": 0.335,
+      "dividends_yield": 0.3215,
       "number_of_employees": 1419,
       "sector": "Producer Manufacturing",
       "industry": "Industrial Machinery",
@@ -346,10 +375,10 @@
         ]
       },
       "analyst_rating": {
-        "recommendation": "Buy",
-        "score": 1.5,
-        "total_analysts": 9,
-        "buy": 5,
+        "recommendation": "Strong Buy",
+        "score": 1.45,
+        "total_analysts": 10,
+        "buy": 6,
         "overweight": 1,
         "hold": 2,
         "underweight": 0,
@@ -358,29 +387,62 @@
       "price_target": null,
       "price_target_escluso_perche": "Stesso target_mismatch segnalato da TradingView per TSE:6481.",
       "estimates": {
-        "eps_next_quarter": 0.08124189999999999,
-        "eps_next_year": 0.4368237629519999,
-        "revenue_next_quarter": 125701050,
-        "revenue_next_year": 474666702.76775,
+        "eps_next_quarter": 0.0807,
+        "eps_next_year": 0.4321,
+        "revenue_next_quarter": 124836450,
+        "revenue_next_year": 471124155.18,
         "nota_unita": "Stesso disallineamento di unità segnalato per TSE:6481."
       },
       "recent_news": {
-        "nota": "Titoli reali (Reuters/Quartr via TradingView), non generati dall'AI. Il sistema automatico (Finnhub/Alpha Vantage/GDELT) non trova quasi mai notizie per questo ticker Tokyo: questo snapshot colma il buco, ma non si aggiorna da solo.",
+        "nota": "Titoli reali (Reuters/Quartr via TradingView), non generati dall'AI. Il sistema automatico (Finnhub/Alpha Vantage/GDELT) non trova quasi mai notizie per questo ticker Tokyo: questo snapshot colma il buco, ma non si aggiorna da solo. Verificato il 2026-10-10: nessuna nuova notizia reale rispetto allo snapshot precedente (stessi fatti, stesse date).",
         "headlines": [
-          {"title": "Harmonic Drive Systems: Q1 FY2026 delivered strong sales and profit growth, with robust full-year outlook maintained", "published": "2026-08-07", "provider": "Quartr", "link": "https://www.tradingview.com/news/urn:summary_document_report:quartr.com:3688281:0-harmonic-drive-systems-q1-fy2026-delivered-strong-sales-and-profit-growth-with-robust-full-year-outlook-maintained/"},
-          {"title": "TABLE-Harmonic Drive Systems -Q1 group results", "published": "2026-08-07", "provider": "Reuters", "link": "https://www.tradingview.com/news/reuters.com,2026-08-07:newsml_XB0VSL8HH:0-table-harmonic-drive-systems-q1-group-results/"},
-          {"title": "TABLE-Harmonic Drive Systems -2026/27 parent forecast", "published": "2026-08-07", "provider": "Reuters", "link": "https://www.tradingview.com/news/reuters.com,2026-08-07:newsml_XB1X8054R:0-table-harmonic-drive-systems-2026-27-parent-forecast/"},
-          {"title": "Harmonic Drive Systems: Upward forecast revisions reflect strong demand and improved profitability in key sectors", "published": "2026-08-07", "provider": "Quartr", "link": "https://www.tradingview.com/news/urn:summary_document_slides:quartr.com:4032990:0-harmonic-drive-systems-upward-forecast-revisions-reflect-strong-demand-and-improved-profitability-in-key-sectors/"}
+          {
+            "title": "Harmonic Drive Systems: Q1 FY2026 delivered strong sales and profit growth, with robust full-year outlook maintained",
+            "published": "2026-08-07",
+            "provider": "Quartr",
+            "link": "https://www.tradingview.com/news/urn:summary_document_report:quartr.com:3688281:0-harmonic-drive-systems-q1-fy2026-delivered-strong-sales-and-profit-growth-with-robust-full-year-outlook-maintained/"
+          },
+          {
+            "title": "TABLE-Harmonic Drive Systems -Q1 group results",
+            "published": "2026-08-07",
+            "provider": "Reuters",
+            "link": "https://www.tradingview.com/news/reuters.com,2026-08-07:newsml_XB0VSL8HH:0-table-harmonic-drive-systems-q1-group-results/"
+          },
+          {
+            "title": "TABLE-Harmonic Drive Systems -2026/27 parent forecast",
+            "published": "2026-08-07",
+            "provider": "Reuters",
+            "link": "https://www.tradingview.com/news/reuters.com,2026-08-07:newsml_XB1X8054R:0-table-harmonic-drive-systems-2026-27-parent-forecast/"
+          },
+          {
+            "title": "Harmonic Drive Systems: Upward forecast revisions reflect strong demand and improved profitability in key sectors",
+            "published": "2026-08-07",
+            "provider": "Quartr",
+            "link": "https://www.tradingview.com/news/urn:summary_document_slides:quartr.com:4032990:0-harmonic-drive-systems-upward-forecast-revisions-reflect-strong-demand-and-improved-profitability-in-key-sectors/"
+          }
         ]
+      },
+      "ebitda_yoy_growth_ttm": 41.6809,
+      "gross_profit_ttm": 20236503000,
+      "gross_profit_yoy_growth_ttm": 32.4918,
+      "oper_income_ttm": 4287016000,
+      "technicals_rating": {
+        "interval": "1D",
+        "recommendation": "NEUTRAL",
+        "summary_ma": "SELL",
+        "summary_other": "BUY",
+        "summary_value": 0.0242,
+        "rsi": 48.94,
+        "price": 6220
       }
     },
     "TER": {
       "tv_symbol": "NASDAQ:TER",
       "exchange": "NASDAQ",
       "currency": "USD",
-      "close": 358.84,
-      "market_cap": 56101311580,
-      "price_earnings_ttm": 49.2324,
+      "close": 402.68,
+      "market_cap": 62955290994,
+      "price_earnings_ttm": 55.2472,
       "eps_diluted_ttm": 7.2887,
       "eps_diluted_yoy_growth_ttm": 152.8253,
       "total_revenue_ttm": 4462783000,
@@ -394,45 +456,71 @@
       "operating_margin": 30.8796,
       "return_on_equity": 36.6635,
       "return_on_assets": 26.4799,
-      "price_book_ratio": 20.0342,
+      "price_book_ratio": 22.4818,
       "debt_to_equity": 0.0291,
       "current_ratio": 2.1248,
-      "dividends_yield": 0.1524,
+      "dividends_yield": 0.1291,
       "number_of_employees": 6600,
       "sector": "Electronic Technology",
       "industry": "Electronic Production Equipment",
-      "price_target_1y": 455.923,
-      "price_target_1y_delta_pct": 27.0547,
       "analyst_rating": {
         "recommendation": "Strong Buy",
-        "score": 1.35,
+        "score": 1.38,
         "total_analysts": 20,
         "buy": 12,
         "overweight": 2,
-        "hold": 6,
-        "underweight": 0,
+        "hold": 5,
+        "underweight": 1,
         "sell": 0
       },
       "price_targets": {
         "average": 455.923077,
         "high": 550,
         "low": 390,
-        "upside_pct": 27.5
+        "upside_pct": 13.2
       },
       "estimates": {
-        "eps_next_quarter": 2.076829,
-        "eps_next_year": 9.218135,
+        "eps_next_quarter": 2.0768,
+        "eps_next_year": 9.2068,
         "revenue_next_quarter": 1259579400,
-        "revenue_next_year": 5147678843
+        "revenue_next_year": 5145478843
+      },
+      "earnings_per_share_basic_ttm": 7.3424,
+      "gross_profit_ttm": 2635761000,
+      "gross_profit_yoy_growth_ttm": 58.5061,
+      "oper_income_ttm": 1378090000,
+      "price_revenue_ttm": 14.2287,
+      "free_cash_flow_yoy_growth_ttm": 40.6105,
+      "technicals_rating": {
+        "interval": "1D",
+        "recommendation": "BUY",
+        "summary_ma": "STRONG_BUY",
+        "summary_other": "NEUTRAL",
+        "summary_value": 0.3121,
+        "rsi": 52.5506,
+        "price": 402.68
+      },
+      "next_earnings": {
+        "release_next_date": "2026-10-27",
+        "eps_forecast": 2.0768,
+        "revenue_forecast": 1259579400,
+        "last_release_date": "2026-07-28",
+        "nota": "Calendario utili reale da TradingView (get_earnings_calendar), non coperto in questa forma dal resto della pipeline."
+      },
+      "recent_dividend": {
+        "ex_date": "2026-09-04",
+        "amount": 0.13,
+        "payment_date": "2026-09-25",
+        "yield_pct": 0.13
       }
     },
     "VRT": {
       "tv_symbol": "NYSE:VRT",
       "exchange": "NYSE",
       "currency": "USD",
-      "close": 242.985,
-      "market_cap": 93546356704,
-      "price_earnings_ttm": 54.9814,
+      "close": 242.78,
+      "market_cap": 93467431056,
+      "price_earnings_ttm": 54.9351,
       "eps_diluted_ttm": 4.4194,
       "eps_diluted_yoy_growth_ttm": 111.1313,
       "total_revenue_ttm": 11479600000,
@@ -446,37 +534,63 @@
       "operating_margin": 19.8125,
       "return_on_equity": 43.9427,
       "return_on_assets": 13.1675,
-      "price_book_ratio": 23.5848,
+      "price_book_ratio": 23.5649,
       "debt_to_equity": 0.7017,
       "current_ratio": 1.3786,
-      "dividends_yield": 0.1044,
+      "dividends_yield": 0.103,
       "number_of_employees": 34000,
       "sector": "Electronic Technology",
       "industry": "Electronic Production Equipment",
-      "price_target_1y": 339.178,
-      "price_target_1y_delta_pct": 39.5879,
       "analyst_rating": {
         "recommendation": "Strong Buy",
-        "score": 1.2,
-        "total_analysts": 33,
-        "buy": 25,
+        "score": 1.24,
+        "total_analysts": 36,
+        "buy": 27,
         "overweight": 3,
         "hold": 5,
         "underweight": 0,
-        "sell": 0
+        "sell": 1
       },
       "price_targets": {
-        "average": 339.177778,
+        "average": 333.393333,
         "high": 427,
-        "low": 245,
-        "upside_pct": 39.6
+        "low": 188,
+        "upside_pct": 37.3
       },
       "estimates": {
-        "eps_next_quarter": 1.822894,
-        "eps_next_year": 6.724003,
-        "revenue_next_quarter": 3758729033,
-        "revenue_next_year": 14022863257
+        "eps_next_quarter": 1.8245,
+        "eps_next_year": 6.7266,
+        "revenue_next_quarter": 3753572835,
+        "revenue_next_year": 14010117559
+      },
+      "earnings_per_share_basic_ttm": 4.5214,
+      "gross_profit_ttm": 4101400000,
+      "oper_income_ttm": 2274400000,
+      "price_revenue_ttm": 8.3061,
+      "free_cash_flow_yoy_growth_ttm": 134.1966,
+      "technicals_rating": {
+        "interval": "1D",
+        "recommendation": "STRONG_SELL",
+        "summary_ma": "STRONG_SELL",
+        "summary_other": "SELL",
+        "summary_value": -0.5576,
+        "rsi": 43.7055,
+        "price": 242.78
+      },
+      "next_earnings": {
+        "release_next_date": "2026-10-28",
+        "eps_forecast": 1.8245,
+        "revenue_forecast": 3753572835,
+        "last_release_date": "2026-07-29",
+        "nota": "Calendario utili reale da TradingView (get_earnings_calendar), non coperto in questa forma dal resto della pipeline."
+      },
+      "recent_dividend": {
+        "ex_date": "2026-09-14",
+        "amount": 0.0625,
+        "payment_date": "2026-09-24",
+        "yield_pct": 0.1
       }
     }
-  }
+  },
+  "nota_technicals_rating": "Rating tecnico (summary/ma/other, RSI) aggiunto il 2026-10-10 da get_technicals_rating (interval 1D): un consensus di indicatori tecnici TradingView, diverso dalle probabilita' calcolate dalla pipeline Predict. Stesso snapshot statico, stessa scadenza a 6 mesi."
 }
