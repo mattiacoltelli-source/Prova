@@ -1948,6 +1948,13 @@
         }
 
         function renderDashboard() {
+            // Un cambio di filtro (bottone orizzonte) può arrivare prima che
+            // loadDashboardData() abbia finito il primo fetch: rawPerAsset è
+            // ancora [] mentre ASSETS ha già 4 voci, e filteredPerAsset[i]
+            // sarebbe undefined per ogni i — niente da renderizzare finché il
+            // primo caricamento non è completo.
+            if (rawPerAsset.length === 0) return;
+
             const h = currentHorizonFilter;
             const matchesHorizon = (row) => h === 'all' || row.horizon === h;
 
@@ -1967,18 +1974,19 @@
             document.getElementById('stat-pending').innerText = filteredPending.length;
 
             ASSETS.forEach((asset, i) => {
-                const [predictions, outcomes] = filteredPerAsset[i];
-                const [predictionsRes, outcomesRes] = rawPerAsset[i];
-                const snapshot = rawSnapshots[i];
                 try {
+                    const [predictions, outcomes] = filteredPerAsset[i];
+                    const [predictionsRes, outcomesRes] = rawPerAsset[i];
+                    const snapshot = rawSnapshots[i];
                     renderAssetData(asset, predictions, outcomes, predictionsRes.data, snapshot, {
                         predictionsOk: predictionsRes.ok,
                         outcomesOk: outcomesRes.ok
                     });
                 } catch (err) {
-                    // Un errore per un solo asset (es. Chart.js non caricato
-                    // dal CDN) non deve bloccare il forEach e lasciare gli
-                    // asset successivi bloccati sullo skeleton di caricamento.
+                    // Un errore per un solo asset (es. dato mancante per quel
+                    // indice, Chart.js non caricato dal CDN) non deve
+                    // bloccare il forEach e lasciare gli asset successivi
+                    // bloccati sullo skeleton di caricamento.
                     console.error(`Errore nel render di ${asset}:`, err);
                 }
             });
@@ -2058,7 +2066,7 @@
                     + `<strong>${r.qqq_return_5d_pct}%</strong> (5g), <strong>${r.qqq_return_20d_pct}%</strong> (20g)`
                 );
             }
-            if (r.vix) {
+            if (r.vix && typeof r.vix.value === 'number') {
                 lines.push(`VIX: <strong>${r.vix.value}</strong> (percentile <strong>${r.vix.percentile}%</strong> sull'ultimo anno)`);
             }
             if (r.risk_mode) {
