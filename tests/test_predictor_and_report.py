@@ -114,3 +114,36 @@ def test_report_generation(tmp_path, monkeypatch):
     assert "# Report accuratezza" in content
     assert "Previsioni valutate: 1 — accuratezza complessiva: 100.0%" in content
     assert "| AAPL | 1d | 1 | 100.0% |" in content
+    # Nessun esito Chronos ancora valutato: la riga non compare (vuoto, non
+    # zero finto).
+    assert "Chronos-Bolt-tiny" not in content
+
+
+def test_report_generation_con_baseline_chronos(tmp_path, monkeypatch):
+    report_file = str(tmp_path / "REPORT.md")
+    monkeypatch.setattr(config, "REPORT_FILE", report_file)
+    monkeypatch.setattr(config, "DATA_DIR", str(tmp_path))
+
+    outcome = {
+        "prediction_id": "p1", "asset": "AAPL", "horizon": "1d",
+        "evaluated_at": "2026-08-30T12:00:00Z", "price_at_target": 225.0,
+        "target_bar_date": "2026-08-30", "actual_change_pct": 1.5,
+        "actual_class": "UP", "predicted_class": "UP", "confidence": 80, "correct": True,
+    }
+    storage.append_record(config.outcomes_file("AAPL"), outcome)
+
+    chronos_outcome = {
+        "prediction_id": "shadow-1", "linked_ai_prediction_id": "p1", "asset": "AAPL",
+        "horizon": "1d", "evaluated_at": "2026-08-30T12:00:00Z", "price_at_target": 225.0,
+        "target_bar_date": "2026-08-30", "actual_change_pct": 1.5, "actual_class": "UP",
+        "predicted_class": "DOWN", "correct": False,
+    }
+    storage.append_record(config.chronos_outcomes_file("AAPL"), chronos_outcome)
+
+    report.generate_report()
+
+    with open(report_file, "r", encoding="utf-8") as fh:
+        content = fh.read()
+
+    assert "Chronos-Bolt-tiny" in content
+    assert "0.0% (n=1)" in content

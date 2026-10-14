@@ -25,6 +25,13 @@ def load_all_outcomes() -> list[dict]:
     return outcomes
 
 
+def load_all_chronos_outcomes() -> list[dict]:
+    outcomes = []
+    for asset in config.ASSETS:
+        outcomes.extend(storage.read_all(config.chronos_outcomes_file(asset)))
+    return outcomes
+
+
 def _accuracy(rows: list[dict]) -> tuple[int, int, float]:
     total = len(rows)
     correct = sum(1 for r in rows if r["correct"])
@@ -105,6 +112,20 @@ def _persistence_baseline(rows: list[dict]) -> tuple[int, int, float]:
                 correct += 1
     pct = round(correct / total * 100, 1) if total else 0.0
     return correct, total, pct
+
+
+def _chronos_baseline() -> tuple[int, float] | None:
+    """Accuratezza di Chronos-Bolt-tiny (Amazon, open-source — previsione
+    numerica pura su serie storiche, zero news/macro/fondamentali) sulle
+    previsioni "ombra" valutate finora (src/chronos_run.py +
+    evaluate_run.py). None finché non ce n'è ancora nessuna: la feature è
+    più recente dello storico predictions/outcomes, quindi all'inizio
+    questo confronto è vuoto, non zero."""
+    rows = load_all_chronos_outcomes()
+    if not rows:
+        return None
+    _, total, pct = _accuracy(rows)
+    return total, pct
 
 
 def _historical_baseline(rows: list[dict], baseline_data: dict) -> tuple[int, float] | None:
@@ -224,6 +245,13 @@ def render_markdown(rows: list[dict]) -> str:
                 f"- Classe più frequente (frequenza storica su decenni di prezzi, "
                 f"pesata sullo stesso mix asset/orizzonte): {expected_pct}% (n={n_matched})"
             )
+    chronos = _chronos_baseline()
+    if chronos:
+        n_chronos, chronos_pct = chronos
+        lines.append(
+            f"- Chronos-Bolt-tiny (Amazon, open-source — previsione numerica pura su serie "
+            f"storiche, zero news/macro/fondamentali): {chronos_pct}% (n={n_chronos})"
+        )
     lines.append(f"- **Agente AI: {pct}%**")
     lines.append("")
 

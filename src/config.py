@@ -485,6 +485,19 @@ def outcomes_file(asset: str) -> str:
     return f"{asset_dir(asset)}/outcomes.jsonl"
 
 
+# Previsioni "ombra" di Chronos-Bolt-tiny (src/chronos_run.py), una per
+# ogni previsione AI reale dello stesso giorno (collegate da
+# prediction_id): stesso pattern append-only hash-chained di predictions/
+# outcomes.jsonl, file separati per non mescolare le due fonti nello
+# stesso storico.
+def chronos_predictions_file(asset: str) -> str:
+    return f"{asset_dir(asset)}/chronos_predictions.jsonl"
+
+
+def chronos_outcomes_file(asset: str) -> str:
+    return f"{asset_dir(asset)}/chronos_outcomes.jsonl"
+
+
 def snapshot_file(asset: str) -> str:
     return f"{asset_dir(asset)}/snapshot.json"
 

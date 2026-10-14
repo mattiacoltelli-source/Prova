@@ -85,6 +85,20 @@ jobs:
           if [ "${{ steps.mode.outputs.force }}" = "true" ]; then ARGS="$ARGS --force"; fi
           python -m src.predict_run $ARGS
 
+      # Previsione "ombra" di Chronos-Bolt-tiny (Amazon, open-source) per
+      # ogni previsione AI appena generata sopra — solo se davvero scritta
+      # (dry_run scrive comunque nulla, chronos_run.py non avrebbe nulla
+      # da affiancare). torch/chronos-forecasting restano fuori da
+      # requirements.txt: pesano solo questo step, non evaluate.yml/
+      # snapshot.yml che non ne hanno bisogno.
+      - name: Installa dipendenze Chronos
+        if: steps.mode.outputs.dry_run != 'true'
+        run: pip install torch chronos-forecasting
+
+      - name: Genera previsione ombra Chronos-Bolt-tiny
+        if: steps.mode.outputs.dry_run != 'true'
+        run: python -m src.chronos_run
+
       # Retry con rebase su push rifiutato: predict.yml, evaluate.yml e
       # snapshot.yml scrivono tutti su data/ in modo indipendente (proprio
       # gruppo di concorrenza ciascuno, non si bloccano a vicenda), quindi

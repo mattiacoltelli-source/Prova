@@ -85,6 +85,52 @@ def test_orizzonte_scaduto_oggi_dopo_la_chiusura_viene_valutato(tmp_path, monkey
     assert outcomes[0]["correct"] is True  # +2% > soglia 1% -> UP, previsto UP
 
 
+def test_valuta_anche_la_previsione_ombra_di_chronos_collegata(tmp_path, monkeypatch):
+    _isolate(tmp_path, monkeypatch)
+    _seed_prediction_and_pending("NVDA", "pred-1", "2026-09-04T00:00:00+00:00")
+    storage.append_record(
+        config.chronos_predictions_file("NVDA"),
+        {
+            "id": "shadow-1",
+            "prediction_id": "pred-1",
+            "asset": "NVDA",
+            "horizon": "1d",
+            "predicted_class": "DOWN",
+        },
+    )
+
+    now_utc = dt.datetime(2026, 9, 5, 1, 0, tzinfo=dt.timezone.utc)
+    with patch(
+        "src.evaluate_run.prices.price_on_or_after",
+        return_value={"date": "2026-09-04", "close": 102.0},
+    ):
+        evaluate_run.run(dry_run=False, now_utc=now_utc)
+
+    chronos_outcomes = storage.read_all(config.chronos_outcomes_file("NVDA"))
+    assert len(chronos_outcomes) == 1
+    outcome = chronos_outcomes[0]
+    assert outcome["prediction_id"] == "shadow-1"
+    assert outcome["linked_ai_prediction_id"] == "pred-1"
+    assert outcome["actual_class"] == "UP"  # +2% > soglia 1% -> UP, come per l'AI
+    assert outcome["predicted_class"] == "DOWN"
+    assert outcome["correct"] is False
+
+
+def test_nessuna_previsione_ombra_collegata_non_scrive_chronos_outcomes(tmp_path, monkeypatch):
+    _isolate(tmp_path, monkeypatch)
+    _seed_prediction_and_pending("NVDA", "pred-1", "2026-09-04T00:00:00+00:00")
+    # Nessun record in chronos_predictions.jsonl per questa previsione.
+
+    now_utc = dt.datetime(2026, 9, 5, 1, 0, tzinfo=dt.timezone.utc)
+    with patch(
+        "src.evaluate_run.prices.price_on_or_after",
+        return_value={"date": "2026-09-04", "close": 102.0},
+    ):
+        evaluate_run.run(dry_run=False, now_utc=now_utc)
+
+    assert storage.read_all(config.chronos_outcomes_file("NVDA")) == []
+
+
 def test_orizzonte_scaduto_un_giorno_fa_viene_valutato_anche_a_mercato_aperto(tmp_path, monkeypatch):
     _isolate(tmp_path, monkeypatch)
     _seed_prediction_and_pending("NVDA", "pred-1", "2026-09-03T00:00:00+00:00")

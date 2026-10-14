@@ -46,6 +46,22 @@ def _find_prediction(asset: str, prediction_id: str) -> dict | None:
     return None
 
 
+def _find_chronos_shadow(asset: str, ai_prediction_id: str) -> dict | None:
+    """Previsione "ombra" di Chronos-Bolt-tiny (src/chronos_run.py)
+    collegata a questa previsione AI, se esiste — non tutte le previsioni
+    ne hanno una (feature introdotta dopo, o un run di chronos_run.py
+    saltato per dati insufficienti)."""
+    for record in storage.read_all(config.chronos_predictions_file(asset)):
+        if record["prediction_id"] == ai_prediction_id:
+            return record
+    return None
+
+
+def _chronos_already_evaluated(asset: str, chronos_prediction_id: str) -> bool:
+    existing = storage.read_all(config.chronos_outcomes_file(asset))
+    return any(r["prediction_id"] == chronos_prediction_id for r in existing)
+
+
 def run(dry_run: bool, now_utc: dt.datetime | None = None) -> None:
     now_utc = now_utc or dt.datetime.now(dt.timezone.utc)
     now_et = now_utc.astimezone(config.EASTERN)
@@ -121,6 +137,28 @@ def run(dry_run: bool, now_utc: dt.datetime | None = None) -> None:
                 continue
 
             storage.append_record(config.outcomes_file(asset), outcome)
+
+            # Valuta anche la previsione "ombra" di Chronos-Bolt-tiny, se
+            # esiste per questa previsione AI: riusa lo stesso esito reale
+            # appena calcolato sopra (target_bar/actual_change_pct/
+            # actual_class), nessuna nuova chiamata prezzi — è lo stesso
+            # evento di mercato, solo due previsioni diverse da confrontare.
+            chronos_pred = _find_chronos_shadow(asset, entry["id"])
+            if chronos_pred and not _chronos_already_evaluated(asset, chronos_pred["id"]):
+                chronos_outcome = {
+                    "prediction_id": chronos_pred["id"],
+                    "linked_ai_prediction_id": entry["id"],
+                    "asset": asset,
+                    "horizon": entry["horizon"],
+                    "evaluated_at": now_utc.isoformat(),
+                    "price_at_target": target_bar["close"],
+                    "target_bar_date": target_bar["date"],
+                    "actual_change_pct": actual_change_pct,
+                    "actual_class": actual_class,
+                    "predicted_class": chronos_pred["predicted_class"],
+                    "correct": actual_class == chronos_pred["predicted_class"],
+                }
+                storage.append_record(config.chronos_outcomes_file(asset), chronos_outcome)
             storage.remove_pending(entry["id"])
             print(
                 f"[{asset}/{entry['horizon']}] valutata: predetto {outcome['predicted_class']} "
