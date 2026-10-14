@@ -1,0 +1,30 @@
+name: Baseline Chronos-Bolt (diagnostico)
+
+# Solo manuale: confronta Chronos-Bolt-tiny (Amazon, open-source) con
+# l'agente AI come terzo baseline, sullo stesso storico già valutato in
+# outcomes.jsonl. Nessuna scrittura su data/, nessuno schedule: gira solo
+# su richiesta. torch + chronos-forecasting restano fuori da
+# requirements.txt apposta, per non appesantire predict.yml/evaluate.yml
+# che non ne hanno bisogno.
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - run: pip install -r requirements.txt
+      - run: pip install torch chronos-forecasting
+
+      - name: Confronta Chronos-Bolt-tiny con l'agente AI
+        run: python -m src.chronos_check_run
