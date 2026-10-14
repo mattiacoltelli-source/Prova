@@ -1940,7 +1940,12 @@
         async function loadDashboardData() {
             rawPerAsset = await Promise.all(ASSETS.map(asset => Promise.all([
                 parseJsonl(`data/${asset.toLowerCase()}/predictions.jsonl`),
-                parseJsonl(`data/${asset.toLowerCase()}/outcomes.jsonl`)
+                parseJsonl(`data/${asset.toLowerCase()}/outcomes.jsonl`),
+                // Previsioni "ombra" di Chronos-Bolt-tiny (src/chronos_run.py):
+                // non filtrate per orizzonte qui, l'abbinamento con la
+                // previsione AI avviene per prediction_id in renderAssetData.
+                parseJsonl(`data/${asset.toLowerCase()}/chronos_predictions.jsonl`),
+                parseJsonl(`data/${asset.toLowerCase()}/chronos_outcomes.jsonl`)
             ])));
             rawSnapshots = await Promise.all(ASSETS.map(asset => fetchSnapshot(asset)));
             rawPending = await fetchPending();
@@ -1976,12 +1981,12 @@
             ASSETS.forEach((asset, i) => {
                 try {
                     const [predictions, outcomes] = filteredPerAsset[i];
-                    const [predictionsRes, outcomesRes] = rawPerAsset[i];
+                    const [predictionsRes, outcomesRes, chronosPredictionsRes, chronosOutcomesRes] = rawPerAsset[i];
                     const snapshot = rawSnapshots[i];
                     renderAssetData(asset, predictions, outcomes, predictionsRes.data, snapshot, {
                         predictionsOk: predictionsRes.ok,
                         outcomesOk: outcomesRes.ok
-                    });
+                    }, chronosPredictionsRes.data, chronosOutcomesRes.data);
                 } catch (err) {
                     // Un errore per un solo asset (es. dato mancante per quel
                     // indice, Chart.js non caricato dal CDN) non deve
@@ -2130,6 +2135,27 @@
                 + `FLAT <strong>${pct(probability_flat)}%</strong>`;
         }
 
+        // Previsione "ombra" di Chronos-Bolt-tiny (src/chronos_run.py): un
+        // modello numerico open-source che vede solo lo storico prezzi
+        // (zero news/macro/fondamentali), generato lo stesso giorno sullo
+        // stesso prezzo/soglia della previsione AI per un confronto diretto
+        // — non sostituisce l'agente, è un secondo parere. Assente per le
+        // previsioni precedenti all'introduzione della feature, o quando il
+        // contesto storico era insufficiente: null invece di una riga vuota.
+        function renderChronosShadow(pred) {
+            const shadow = pred && pred._chronosPrediction;
+            if (!shadow) return null;
+            let line = `<strong>Chronos-Bolt-tiny (sperimentale, solo prezzi):</strong> `
+                + `<span class="badge badge-${shadow.predicted_class}">${shadow.predicted_class}</span>`;
+            const outcome = pred._chronosOutcome;
+            if (outcome) {
+                line += outcome.correct
+                    ? ` — <span style="color: var(--accent-green); display: inline-flex; align-items: center; gap: 4px; vertical-align: -2px;">${ICON_CHECK}corretta</span>`
+                    : ` — <span style="color: var(--accent-yellow)">reale: ${outcome.actual_class}</span>`;
+            }
+            return line;
+        }
+
         function predictionDetailHtml(pred) {
             if (!pred) return '<em>Previsione originale non trovata.</em>';
             const s = pred.inputs_summary || {};
@@ -2137,6 +2163,7 @@
                 `<strong>Motivazione del modello:</strong> ${escapeHtml(pred.reasoning_short || '-')}`,
                 probabilityLine(pred),
                 flatRangeLine(pred),
+                renderChronosShadow(pred),
                 `News analizzate: <strong>${s.news_count ?? 0}</strong>`,
                 ...(s.news_sentiment_avg !== undefined && s.news_sentiment_avg !== null
                     ? [`Sentiment medio news: <strong>${s.news_sentiment_avg}</strong>`]
@@ -2247,7 +2274,7 @@
                 : `<button onclick="toggleShowAllRows('${kind}', '${asset}')">Mostra tutto (${totalCount})</button>`;
         }
 
-        function renderAssetData(asset, predictions, outcomes, rawPredictions, snapshot, status = {}) {
+        function renderAssetData(asset, predictions, outcomes, rawPredictions, snapshot, status = {}, chronosPredictions = [], chronosOutcomes = []) {
             const total = outcomes.length;
             const correct = outcomes.filter(o => o.correct === true).length;
             const accuracy = total > 0 ? ((correct / total) * 100).toFixed(1) : "0.0";
@@ -2268,6 +2295,21 @@
 
             const predsMap = {};
             predictions.forEach(p => { if (p.id) predsMap[p.id] = p; });
+
+            // Arricchisce ogni previsione AI con la sua previsione "ombra" di
+            // Chronos-Bolt-tiny, se esiste (vedi renderChronosShadow più
+            // sotto): mutazione diretta sugli oggetti già in `predictions`,
+            // visibile sia dalla tabella previsioni sia da quella esiti
+            // (che referenzia lo stesso oggetto via predsMap/_prediction).
+            const chronosPredsMap = {};
+            (chronosPredictions || []).forEach(c => { if (c.prediction_id) chronosPredsMap[c.prediction_id] = c; });
+            const chronosOutcomesMap = {};
+            (chronosOutcomes || []).forEach(c => { if (c.linked_ai_prediction_id) chronosOutcomesMap[c.linked_ai_prediction_id] = c; });
+            predictions.forEach(p => {
+                if (!p.id) return;
+                if (chronosPredsMap[p.id]) p._chronosPrediction = chronosPredsMap[p.id];
+                if (chronosOutcomesMap[p.id]) p._chronosOutcome = chronosOutcomesMap[p.id];
+            });
 
             const sortedOutcomes = [...outcomes].sort((a, b) => (b.evaluated_at || '').localeCompare(a.evaluated_at || ''));
             const sortedPredictions = [...predictions].sort((a, b) => (b.generated_at || '').localeCompare(a.generated_at || ''));
