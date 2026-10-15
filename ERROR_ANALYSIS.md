@@ -1,28 +1,29 @@
-# Analisi errori — aggiornato al 2026-10-01T15:09:51.615702+00:00
+# Analisi errori — aggiornato al 2026-10-15T13:07:32.223319+00:00
 
-**Previsioni valutate: 107 — accuratezza complessiva: 46.7%**
+**Previsioni valutate: 138 — accuratezza complessiva: 47.1%**
 
 ## Per asset
 
 | Asset | Valutate | Corrette | Accuratezza |
 |---|---|---|---|
-| AAPL | 36 | 20 | 55.6% |
-| MSFT | 35 | 12 | 34.3% |
-| NVDA | 36 | 18 | 50.0% |
+| AAPL | 60 | 31 | 51.7% |
+| AMD | 12 | 4 | 33.3% |
+| MU | 6 | 2 | 33.3% |
+| NVDA | 60 | 28 | 46.7% |
 
 ## Per classe prevista
 
 | Prevista | N. volte | Corrette | Accuratezza |
 |---|---|---|---|
-| UP | 40 | 9 | 22.5% |
-| FLAT | 67 | 41 | 61.2% |
-| DOWN | 0 | — | mai prevista |
+| UP | 43 | 13 | 30.2% |
+| DOWN | 1 | 1 | 100.0% |
+| FLAT | 94 | 51 | 54.3% |
 
 ## Pattern osservati
 
-- **DOWN** osservata nella realtà 21 volte (19.6%) ma mai prevista dal modello.
+- **DOWN** prevista meno spesso di quanto accada davvero: 0.7% delle previsioni contro 22.5% delle volte in cui si è verificata realmente.
 
 ## Confidence
 
-Range dichiarato: 40-78%.
+Range dichiarato: 35-78%.
 
