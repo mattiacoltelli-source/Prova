@@ -1,12 +1,6 @@
 [
   {
     "asset": "AAPL",
-    "horizon": "1d",
-    "id": "d9eb315d-a44c-494a-bce0-ae711ac5e49b",
-    "target_at": "2026-10-16T00:00:00+00:00"
-  },
-  {
-    "asset": "AAPL",
     "horizon": "1m",
     "id": "1ae0f0ae-c358-4760-8bf2-5e164a2c5dbc",
     "target_at": "2026-10-23T00:00:00+00:00"
@@ -34,12 +28,6 @@
     "horizon": "1m",
     "id": "4425594d-44d8-4e94-8844-61456551c68f",
     "target_at": "2026-10-17T00:00:00+00:00"
-  },
-  {
-    "asset": "AAPL",
-    "horizon": "1m",
-    "id": "63b8ee47-6435-4686-be45-e7eac586e085",
-    "target_at": "2026-10-16T00:00:00+00:00"
   },
   {
     "asset": "AAPL",
@@ -94,12 +82,6 @@
     "horizon": "7d",
     "id": "b717fa71-0844-4ad7-8a84-26021eb7f70b",
     "target_at": "2026-10-20T00:00:00+00:00"
-  },
-  {
-    "asset": "AMD",
-    "horizon": "1d",
-    "id": "1cf30cab-eea9-4ab5-bfd3-9411612ef029",
-    "target_at": "2026-10-16T00:00:00+00:00"
   },
   {
     "asset": "AMD",
@@ -198,18 +180,6 @@
     "target_at": "2026-10-23T00:00:00+00:00"
   },
   {
-    "asset": "MSFT",
-    "horizon": "1m",
-    "id": "f4d1b1c3-ca03-4a06-a4f9-f9d252c05f93",
-    "target_at": "2026-10-16T00:00:00+00:00"
-  },
-  {
-    "asset": "MU",
-    "horizon": "1d",
-    "id": "f06e28f7-b6d6-4f75-85dd-bb853bfdf42c",
-    "target_at": "2026-10-16T00:00:00+00:00"
-  },
-  {
     "asset": "MU",
     "horizon": "1m",
     "id": "236970e0-066b-47f5-8563-6ebe1756d681",
@@ -232,12 +202,6 @@
     "horizon": "7d",
     "id": "332d3968-56b6-4c92-a434-4f66d42ed65f",
     "target_at": "2026-10-21T00:00:00+00:00"
-  },
-  {
-    "asset": "NVDA",
-    "horizon": "1d",
-    "id": "968eac52-a1b2-4c3c-b1fd-a275d46b9652",
-    "target_at": "2026-10-16T00:00:00+00:00"
   },
   {
     "asset": "NVDA",
@@ -316,12 +280,6 @@
     "horizon": "1m",
     "id": "f85dfc11-d418-4d01-a880-fbd22663c953",
     "target_at": "2026-11-08T00:00:00+00:00"
-  },
-  {
-    "asset": "NVDA",
-    "horizon": "1m",
-    "id": "f9a0f725-8039-4b65-9496-de6ce2eb714e",
-    "target_at": "2026-10-16T00:00:00+00:00"
   },
   {
     "asset": "NVDA",
