@@ -114,6 +114,35 @@ def _persistence_baseline(rows: list[dict]) -> tuple[int, int, float]:
     return correct, total, pct
 
 
+def persistence_accuracy_summary(rows: list[dict] | None = None) -> tuple[int, float]:
+    """Wrapper pubblico di _persistence_baseline: usato anche da
+    predict_run.py per mostrare nel prompt quanto è dura da battere questa
+    baseline (non solo per il confronto renderizzato in REPORT.md)."""
+    if rows is None:
+        rows = load_all_outcomes()
+    _, total, pct = _persistence_baseline(rows)
+    return total, pct
+
+
+def last_resolved_outcome(rows: list[dict], asset: str, horizon_code: str) -> dict | None:
+    """Esito reale più recente già risolto per questa esatta coppia
+    asset/orizzonte, nello stesso ordine temporale (evaluated_at) usato da
+    _persistence_baseline. None se questa coppia non ha ancora nessun esito
+    risolto.
+
+    `rows` è lo storico già caricato (load_all_outcomes()), passato invece
+    di ricaricarlo: predict_run.py lo legge una volta per run e lo
+    interroga per ogni coppia asset/orizzonte, non N volte."""
+    series = sorted(
+        (r for r in rows if r["asset"] == asset and r["horizon"] == horizon_code),
+        key=lambda r: r["evaluated_at"],
+    )
+    if not series:
+        return None
+    last = series[-1]
+    return {"actual_class": last["actual_class"], "evaluated_at": last["evaluated_at"]}
+
+
 def _chronos_baseline() -> tuple[int, float] | None:
     """Accuratezza di Chronos-Bolt-tiny (Amazon, open-source — previsione
     numerica pura su serie storiche, zero news/macro/fondamentali) sulle

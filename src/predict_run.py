@@ -17,7 +17,7 @@ import os
 import sys
 import uuid
 
-from . import baseline, budget, config, market_regime, predictor, storage, technicals, volatility
+from . import baseline, budget, config, market_regime, predictor, report, storage, technicals, volatility
 from .data_sources import fundamentals, insider, macro, news, prices
 
 BENCHMARK_TICKER = "SPY"
@@ -310,6 +310,14 @@ def run(dry_run: bool, force: bool) -> None:
     # non mostrare la sezione.
     baseline_data = baseline.load()
 
+    # Idem per lo storico degli esiti: serve sia per il secondo ancoraggio
+    # del prompt (ultimo esito reale per coppia asset/orizzonte, v3) sia
+    # per l'accuratezza globale della baseline di persistenza con cui
+    # quell'ancoraggio viene presentato al modello. Letto una volta per
+    # run invece che per coppia, stesso motivo di baseline_data sopra.
+    outcomes_rows = report.load_all_outcomes()
+    persistence_n, persistence_pct = report.persistence_accuracy_summary(outcomes_rows)
+
     try:
         benchmark_bars = _completed_bars(
             prices.fetch_daily_history(BENCHMARK_TICKER, range_=config.PRICE_HISTORY_RANGE),
@@ -422,12 +430,35 @@ def run(dry_run: bool, force: bool) -> None:
                 print(f"[{asset}/{horizon.code}] skipped_budget_cap: tetto giornaliero raggiunto")
                 continue
 
+            pair_persistence = report.last_resolved_outcome(outcomes_rows, asset, horizon.code)
+            persistence_signal = None
+            if pair_persistence:
+                persistence_signal = {
+                    "actual_class": pair_persistence["actual_class"],
+                    "evaluated_at": pair_persistence["evaluated_at"],
+                    "global_accuracy_pct": persistence_pct,
+                    "global_n": persistence_n,
+                }
+
             try:
+                # Per nome, non posizionali: generate_prediction ha già
+                # dodici parametri opzionali (vedi lo stesso motivo dentro
+                # predictor.generate_prediction per build_prompt).
                 pred = predictor.generate_prediction(
-                    asset, horizon.code, price, price_asof, threshold_pct,
-                    news_items, fundamentals_data, macro_data,
-                    baseline.base_rates(asset, horizon.code, baseline_data),
-                    technical_signals, analyst_outlook, insider_summary, regime,
+                    asset=asset,
+                    horizon_code=horizon.code,
+                    price=price,
+                    price_asof=price_asof,
+                    threshold_pct=threshold_pct,
+                    news=news_items,
+                    fundamentals=fundamentals_data,
+                    macro=macro_data,
+                    base_rates=baseline.base_rates(asset, horizon.code, baseline_data),
+                    persistence=persistence_signal,
+                    technicals=technical_signals,
+                    analyst_outlook=analyst_outlook,
+                    insider_summary=insider_summary,
+                    market_regime=regime,
                 )
             except Exception as exc:  # noqa: BLE001
                 print(f"[{asset}/{horizon.code}] skipped_model_error: {exc}")

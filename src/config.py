@@ -437,7 +437,24 @@ ANTHROPIC_MODEL = "claude-haiku-4-5-20251001"
 #     asset/orizzonte (da data/baseline.json) e distingue esplicitamente il
 #     regime di trend dalla probabilità di superare la banda nell'orizzonte
 #     dato — la confusione fra le due cose spiega il bias di v1.
-PROMPT_VERSION = 2
+# v3: aggiunge un secondo ancoraggio concreto, oltre alle frequenze
+#     storiche: l'ultimo esito reale già risolto per questa stessa coppia
+#     asset/orizzonte (persistenza), insieme all'accuratezza globale di
+#     quella baseline misurata in REPORT.md. Motivazione, misurata su 104
+#     previsioni valutate con v2: la correzione del bias di v1 (UP
+#     previsto nel 62% dei casi, DOWN mai) ha sovracorretto — v2 predice
+#     FLAT l'81.7% delle volte (frequenza reale: 50%), con un'accuratezza
+#     quando prevede FLAT (48.2%) indistinguibile dalla frequenza di base:
+#     zero informazione aggiunta, solo collassato sulla classe più
+#     frequente che il prompt stesso diceva di non copiare. Nello stesso
+#     periodo la persistenza (ripetere l'ultimo esito reale osservato per
+#     quella coppia) ha battuto sia v1 sia v2: 54.4% contro 45.9%
+#     complessivo. v3 la dà al modello come secondo punto di riferimento
+#     concreto, con lo stesso avvertimento "non è un suggerimento su cosa
+#     rispondere" già usato per le frequenze storiche, per impedire un
+#     nuovo collasso su una singola classe senza fargli ignorare l'unico
+#     segnale che finora ha funzionato meglio.
+PROMPT_VERSION = 3
 ANTHROPIC_MAX_TOKENS = 500
 
 # Più ampio di ANTHROPIC_MAX_TOKENS: l'output atteso qui è una narrativa

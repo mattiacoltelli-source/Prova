@@ -133,6 +133,7 @@ def test_generate_prediction_passa_le_frequenze_al_prompt(monkeypatch):
     result = predictor.generate_prediction(
         "NVDA", "1d", 219.05, "x", 1.06, [], None, {},
         BASE_RATES,
+        None,  # persistence (v3): slot presente, non sotto test qui
         {"sma_trend": "rialzista"},
         None,
         None,
@@ -185,4 +186,4 @@ def test_report_non_mostra_la_tabella_con_una_sola_versione():
 
 def test_prompt_version_configurata_e_intera():
     assert isinstance(config.PROMPT_VERSION, int)
-    assert config.PROMPT_VERSION >= 2
+    assert config.PROMPT_VERSION >= 2  # v3 (tests/test_prompt_v3.py) ha il proprio >= 3

@@ -26,6 +26,7 @@ def build_prompt(
     fundamentals: dict | None,
     macro: dict,
     base_rates: dict | None = None,
+    persistence: dict | None = None,
     technicals: dict | None = None,
     analyst_outlook: dict | None = None,
     insider_summary: dict | None = None,
@@ -190,6 +191,33 @@ allinearti a queste percentuali."""
             "Non disponibili per questa coppia asset/orizzonte."
         )
 
+    # Secondo ancoraggio concreto, oltre alle frequenze storiche sopra.
+    # Motivazione (v3): la v2 ha corretto il bias di v1 (UP previsto nel
+    # 62% dei casi, DOWN mai) ma ha sovracorretto — su 104 previsioni
+    # valutate con v2 il modello ha predetto FLAT l'81.7% delle volte
+    # (frequenza reale: 50%), con un'accuratezza quando prevede FLAT
+    # (48.2%) indistinguibile dalla frequenza di base: ha copiato la
+    # classe più frequente nonostante il prompt dicesse esplicitamente di
+    # non farlo. La persistenza (ripetere l'ultimo esito reale osservato
+    # per QUESTA coppia) ha battuto sia v1 sia v2 nello stesso periodo
+    # (54.4% contro 45.9%): darla come secondo riferimento, con lo stesso
+    # avvertimento "non è un suggerimento" già usato per le frequenze,
+    # mira a impedire un nuovo collasso su un'unica classe senza fargli
+    # ignorare l'unico segnale che finora ha funzionato meglio.
+    if persistence:
+        persistence_block = f"""L'ultimo esito reale già risolto per questa stessa coppia asset/orizzonte
+(valutato il {persistence['evaluated_at'][:10]}) è stato: {persistence['actual_class']}.
+
+È un secondo metro di paragone concreto, indipendente dalle frequenze storiche sopra:
+prevedere semplicemente "quello che è successo l'ultima volta", per ogni coppia
+asset/orizzonte seguita (non specifico a {asset}), ha finora un'accuratezza di
+{persistence['global_accuracy_pct']}% su {persistence['global_n']} casi (vedi REPORT.md,
+sezione baseline). Non è un suggerimento su cosa rispondere più delle frequenze
+storiche: sono due baseline naive indipendenti, e allinearsi sempre a una delle due
+senza un vero vantaggio informativo non batte né l'una né l'altra."""
+    else:
+        persistence_block = "Nessun esito ancora risolto per questa coppia asset/orizzonte."
+
     return f"""Devi stimare la probabilità di ciascuno dei tre esiti possibili per {asset}
 nell'orizzonte {horizon_code} a partire da adesso. Non è una valutazione del titolo né
 una raccomandazione: è una distribuzione di probabilità su tre classi, verificabile con
@@ -213,14 +241,17 @@ questo specifico orizzonte. "Il titolo sale" non implica "supererà +{threshold_
 FREQUENZE STORICHE
 {base_rates_block}
 
+ULTIMO ESITO REALE (persistenza)
+{persistence_block}
+
 Tutte e tre le classi sono risposte legittime. In particolare DOWN: se gli indicatori
 sono quasi sempre rialzisti su questi titoli, non ne segue che DOWN non si verifichi —
 la frequenza storica sopra dice quanto si verifica per davvero.
 
 {brier_note}
 
-In `reasoning_short`, se ti discosti dalla frequenza storica, scrivi quale informazione
-specifica di oggi lo giustifica.
+In `reasoning_short`, se ti discosti dalla frequenza storica o dall'ultimo esito
+osservato, scrivi quale informazione specifica di oggi lo giustifica.
 
 News recenti:
 {news_block}
@@ -335,13 +366,14 @@ def generate_prediction(
     fundamentals: dict | None,
     macro: dict,
     base_rates: dict | None = None,
+    persistence: dict | None = None,
     technicals: dict | None = None,
     analyst_outlook: dict | None = None,
     insider_summary: dict | None = None,
     market_regime: dict | None = None,
 ) -> dict:
     # Argomenti per nome, non posizionali: la firma di build_prompt ha già
-    # undici parametri opzionali e un inserimento in mezzo sposterebbe in
+    # dodici parametri opzionali e un inserimento in mezzo sposterebbe in
     # silenzio tutto quello che segue.
     prompt = build_prompt(
         asset=asset,
@@ -353,6 +385,7 @@ def generate_prediction(
         fundamentals=fundamentals,
         macro=macro,
         base_rates=base_rates,
+        persistence=persistence,
         technicals=technicals,
         analyst_outlook=analyst_outlook,
         insider_summary=insider_summary,
