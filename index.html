@@ -295,6 +295,44 @@
 
         .data-status .icon { flex-shrink: 0; margin-top: 1px; }
 
+        .latest-prediction {
+            background: var(--bg-color-2);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius-md);
+            padding: 12px 14px;
+            margin: -2px 0 12px;
+            display: none;
+        }
+
+        .latest-prediction-head {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+
+        .latest-prediction-conf {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .latest-prediction-text {
+            font-size: 0.85rem;
+            color: var(--text-main);
+            line-height: 1.5;
+        }
+
+        .persistence-note {
+            font-size: 0.78rem;
+            color: var(--text-dim);
+            font-style: italic;
+            border-left: 2px solid var(--accent-yellow);
+            padding-left: 10px;
+            margin-top: 10px;
+            line-height: 1.5;
+        }
+
         .badge-accuracy {
             background-color: rgba(61, 220, 154, 0.15);
             color: var(--accent-green);
@@ -1756,6 +1794,7 @@
                     ${renderCompanyInfoPanel(asset)}
                     <div class="snapshot-status" id="snapshot-status-${asset}"></div>
                     <div class="data-status" id="data-status-${asset}"></div>
+                    <div class="latest-prediction" id="latest-prediction-${asset}"></div>
                     <div class="section-title">Accuratezza nel tempo</div>
                     <div class="chart-container small" id="accuracy-wrap-${asset}">
                         <canvas id="accuracy-chart-${asset}"></canvas>
@@ -1952,6 +1991,28 @@
             renderDashboard();
         }
 
+        // Baseline di persistenza calcolata lato client, stessa logica di
+        // report.py (_persistence_baseline): per ogni coppia asset/orizzonte,
+        // quante volte l'esito reale ripete quello immediatamente precedente.
+        // Serve a mostrare nella card il confronto onesto fra l'agente AI e
+        // questa baseline naive, non solo nel REPORT.md.
+        function persistenceAccuracy(outcomes) {
+            const groups = {};
+            outcomes.forEach(o => {
+                const key = `${o.asset}|${o.horizon}`;
+                (groups[key] = groups[key] || []).push(o);
+            });
+            let correct = 0, total = 0;
+            Object.values(groups).forEach(series => {
+                series.sort((a, b) => (a.evaluated_at || '').localeCompare(b.evaluated_at || ''));
+                for (let i = 1; i < series.length; i++) {
+                    total++;
+                    if (series[i].actual_class === series[i - 1].actual_class) correct++;
+                }
+            });
+            return total > 0 ? { pct: ((correct / total) * 100).toFixed(1), n: total } : null;
+        }
+
         function renderDashboard() {
             // Un cambio di filtro (bottone orizzonte) può arrivare prima che
             // loadDashboardData() abbia finito il primo fetch: rawPerAsset è
@@ -1978,6 +2039,8 @@
             document.getElementById('stat-outcomes').innerText = totalOutcomes;
             document.getElementById('stat-pending').innerText = filteredPending.length;
 
+            const persistence = persistenceAccuracy(allOutcomes);
+
             ASSETS.forEach((asset, i) => {
                 try {
                     const [predictions, outcomes] = filteredPerAsset[i];
@@ -1986,7 +2049,7 @@
                     renderAssetData(asset, predictions, outcomes, predictionsRes.data, snapshot, {
                         predictionsOk: predictionsRes.ok,
                         outcomesOk: outcomesRes.ok
-                    }, chronosPredictionsRes.data, chronosOutcomesRes.data);
+                    }, chronosPredictionsRes.data, chronosOutcomesRes.data, overallAccuracy, persistence);
                 } catch (err) {
                     // Un errore per un solo asset (es. dato mancante per quel
                     // indice, Chart.js non caricato dal CDN) non deve
@@ -2274,7 +2337,7 @@
                 : `<button onclick="toggleShowAllRows('${kind}', '${asset}')">Mostra tutto (${totalCount})</button>`;
         }
 
-        function renderAssetData(asset, predictions, outcomes, rawPredictions, snapshot, status = {}, chronosPredictions = [], chronosOutcomes = []) {
+        function renderAssetData(asset, predictions, outcomes, rawPredictions, snapshot, status = {}, chronosPredictions = [], chronosOutcomes = [], overallAccuracy = null, persistence = null) {
             const total = outcomes.length;
             const correct = outcomes.filter(o => o.correct === true).length;
             const accuracy = total > 0 ? ((correct / total) * 100).toFixed(1) : "0.0";
@@ -2313,6 +2376,38 @@
 
             const sortedOutcomes = [...outcomes].sort((a, b) => (b.evaluated_at || '').localeCompare(a.evaluated_at || ''));
             const sortedPredictions = [...predictions].sort((a, b) => (b.generated_at || '').localeCompare(a.generated_at || ''));
+
+            // Riquadro "previsione più recente": motivazione del modello
+            // visibile subito, senza dover aprire il dettaglio di una riga
+            // in tabella, più la nota a margine sul confronto onesto con la
+            // baseline di persistenza (richiesta esplicita: va in prima
+            // pagina, non solo nel REPORT.md).
+            const latestPredictionEl = document.getElementById(`latest-prediction-${asset}`);
+            if (latestPredictionEl) {
+                const latest = sortedPredictions[0];
+                if (!latest) {
+                    latestPredictionEl.innerHTML = '';
+                    latestPredictionEl.style.display = 'none';
+                } else {
+                    let note = '';
+                    if (persistence && overallAccuracy !== null) {
+                        const aheadOfAi = parseFloat(persistence.pct) > parseFloat(overallAccuracy);
+                        note = `<div class="persistence-note">la persistenza (ripetere l'ultimo esito reale osservato) è al `
+                            + `${persistence.pct}% (n=${persistence.n}) — `
+                            + `${aheadOfAi ? "ancora davanti all'agente AI" : "l'agente AI la supera"}, `
+                            + `che è al ${overallAccuracy}%.</div>`;
+                    }
+                    latestPredictionEl.innerHTML = `
+                        <div class="latest-prediction-head">
+                            <span class="badge badge-${latest.predicted_class}">${latest.predicted_class}</span>
+                            <span class="latest-prediction-conf">fiducia ${latest.confidence ?? 0}%</span>
+                        </div>
+                        <div class="latest-prediction-text">${escapeHtml(latest.reasoning_short || '')}</div>
+                        ${note}
+                    `;
+                    latestPredictionEl.style.display = 'block';
+                }
+            }
 
             fullTableData[asset] = {
                 sortedOutcomes, sortedPredictions, predsMap,
