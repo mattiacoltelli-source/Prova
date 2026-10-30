@@ -452,6 +452,32 @@ non riflettono una scelta dell'insider sul titolo.
 - `TWELVE_DATA_KEY`
 - `FINNHUB_KEY`
 - `ANTHROPIC_API_KEY`
+- `ALPACA_API_KEY` / `ALPACA_SECRET_KEY` (solo se si usa il portafoglio paper trading, sezione sotto — opzionali, il resto della pipeline funziona senza)
+
+## Portafoglio paper trading (Alpaca)
+
+Modulo separato e indipendente dal motore predittivo: non lo tocca, non lo
+usa, non ne dipende. Collega il repo a un conto **paper** (denaro finto) su
+[Alpaca](https://alpaca.markets), per vedere accanto alle previsioni anche
+l'andamento reale di un portafoglio simulato.
+
+**Sempre paper, mai live.** `src/paper_trading.py` punta a
+`paper-api.alpaca.markets` come costante fissata nel codice — non un
+parametro, non una variabile d'ambiente: nessun input del workflow può
+fargli toccare un conto vero.
+
+**Un solo modo di inviare un ordine**: a mano, da
+[Actions → "Ordine paper trading (Alpaca)"](https://github.com/mattiacoltelli-source/Prova/actions/workflows/paper_order.yml),
+scegliendo titolo/lato/quantità come parametri del run. Nessuno schedule,
+nessun automatismo, nessun collegamento alle previsioni dell'agente AI: è
+sempre l'utente a decidere cosa comprare o vendere. L'input "Mostra senza
+inviare" (`dry_run`, attivo di default) mostra l'ordine senza spedirlo,
+utile per controllare i parametri prima di disattivarlo.
+
+Ogni ordine inviato finisce in `data/paper/orders.jsonl` (stessa catena
+hash append-only di predictions/outcomes), e lo stato del conto
+(`data/paper/account.json`) viene riscritto dopo ogni ordine — entrambi
+letti in sola lettura dalla dashboard, tab "Portafoglio Paper".
 
 ## Tetto di spesa AI
 

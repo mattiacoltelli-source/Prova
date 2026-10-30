@@ -1,0 +1,123 @@
+name: Ordine paper trading (Alpaca)
+
+# Solo manuale, sempre: nessuno schedule. Ogni ordine è l'utente che lo
+# scrive negli input qui sotto e preme "Run workflow" — è il sì esplicito
+# richiesto prima di qualunque ordine (vedi src/paper_trading.py). Punta
+# sempre al conto paper di Alpaca (ALPACA_PAPER_BASE_URL fissato nel
+# codice, non configurabile da qui): nessun input di questo workflow può
+# fargli toccare un conto vero.
+#
+# dry_run default true, al contrario di predict.yml (dove default è
+# false): qui un default "sicuro" significa non piazzare nulla finché non
+# lo si disattiva esplicitamente, perché "Run workflow" coi parametri
+# sbagliati per sbaglio è un errore molto più facile da fare su un ordine
+# che su una previsione.
+on:
+  workflow_dispatch:
+    inputs:
+      symbol:
+        description: "Ticker (es. NVDA)"
+        type: string
+        required: true
+      side:
+        description: "Compra o vendi"
+        type: choice
+        options: ["buy", "sell"]
+        required: true
+      qty:
+        description: "Numero di azioni (lascia vuoto se usi 'notional')"
+        type: string
+        default: ""
+      notional:
+        description: "Importo in $ invece delle azioni (lascia vuoto se usi 'qty')"
+        type: string
+        default: ""
+      order_type:
+        description: "Tipo di ordine"
+        type: choice
+        options: ["market", "limit"]
+        default: "market"
+      limit_price:
+        description: "Prezzo limite (solo se order_type=limit)"
+        type: string
+        default: ""
+      dry_run:
+        description: "Mostra l'ordine senza inviarlo (test sicuro)"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+jobs:
+  order:
+    runs-on: ubuntu-latest
+    env:
+      ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+      ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - run: pip install -r requirements.txt
+
+      - name: Invia ordine paper
+        run: |
+          ARGS="--symbol ${{ inputs.symbol }} --side ${{ inputs.side }} --order-type ${{ inputs.order_type }}"
+          if [ -n "${{ inputs.qty }}" ]; then ARGS="$ARGS --qty ${{ inputs.qty }}"; fi
+          if [ -n "${{ inputs.notional }}" ]; then ARGS="$ARGS --notional ${{ inputs.notional }}"; fi
+          if [ -n "${{ inputs.limit_price }}" ]; then ARGS="$ARGS --limit-price ${{ inputs.limit_price }}"; fi
+          if [ "${{ inputs.dry_run }}" = "true" ]; then ARGS="$ARGS --dry-run"; fi
+          python -m src.paper_order_run $ARGS
+
+      # Stesso pattern di retry-con-rebase di predict.yml/evaluate.yml:
+      # tocca un path diverso (data/paper/) quindi un conflitto reale con
+      # quei due workflow è comunque impossibile, ma un secondo run manuale
+      # di QUESTO stesso workflow lanciato quasi in parallelo resta
+      # possibile.
+      - name: Commit e push
+        if: inputs.dry_run != 'true'
+        run: |
+          git config user.name "predictive-agent-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/paper/
+          if git diff --cached --quiet; then
+            echo "Nessuna modifica da committare."
+            exit 0
+          fi
+          git commit -m "Ordine paper trading $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          for i in 1 2 3 4 5; do
+            if git push; then
+              exit 0
+            fi
+            echo "Push rifiutato, tentativo $i/5: fetch + rebase e riprovo..."
+            git fetch origin "$GITHUB_REF_NAME"
+            if ! git rebase "origin/$GITHUB_REF_NAME"; then
+              echo "::error::Rebase fallito: conflitto reale, serve intervento manuale."
+              git rebase --abort
+              exit 1
+            fi
+            sleep $((i * 3))
+          done
+          echo "::error::Push fallito dopo 5 tentativi di rebase."
+          exit 1
+
+      - name: Notifica Telegram in caso di fallimento
+        if: failure()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ]; then
+            echo "TELEGRAM_BOT_TOKEN/TELEGRAM_CHAT_ID non configurati nei secret del repo: notifica saltata."
+            exit 0
+          fi
+          MESSAGE=$'\xe2\x9a\xa0\xef\xb8\x8f <b>Ordine paper trading fallito</b>\nRun: '"${RUN_URL}"
+          curl -sS -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "parse_mode=HTML" \
+            --data-urlencode "text=${MESSAGE}"

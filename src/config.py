@@ -515,6 +515,22 @@ def chronos_outcomes_file(asset: str) -> str:
     return f"{asset_dir(asset)}/chronos_outcomes.jsonl"
 
 
+# Portafoglio paper trading (src/paper_trading.py, src/paper_order_run.py):
+# un solo conto Alpaca condiviso, non per asset, quindi un file solo invece
+# del pattern asset_dir() sopra.
+#
+# orders.jsonl è append-only hash-chained come predictions/outcomes: ogni
+# riga è un ordine REALMENTE inviato ad Alpaca (sempre paper, mai live — vedi
+# ALPACA_PAPER_BASE_URL in paper_trading.py), mai riscritta.
+#
+# account.json invece è un'istantanea sovrascritta ad ogni run, stesso
+# motivo di BASELINE_FILE sopra: non è uno storico, è lo stato attuale del
+# conto così come Alpaca lo riporta in quel momento — ricalcolabile in
+# qualsiasi momento da Alpaca stesso, non un evento da preservare per sempre.
+PAPER_ORDERS_FILE = "data/paper/orders.jsonl"
+PAPER_ACCOUNT_FILE = "data/paper/account.json"
+
+
 def snapshot_file(asset: str) -> str:
     return f"{asset_dir(asset)}/snapshot.json"
 
