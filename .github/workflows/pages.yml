@@ -12,7 +12,17 @@ name: Pubblica GitHub Pages
 #
 # workflow_run si basa sul completamento del workflow (qualunque token
 # l'abbia fatto scrivere), quindi non ha questo problema. Copre predict.yml,
-# evaluate.yml e snapshot.yml — tutti e tre possono cambiare data/.
+# evaluate.yml, snapshot.yml e trend.yml — tutti scrivono su data/.
+#
+# paper_order.yml aggiunto qui il 2026-10-31, stesso bug ripetuto per
+# distrazione: creato il workflow senza aggiungerlo a questa lista, quindi
+# i primi due ordini paper (QQQ, BTC) sono finiti su Main ma non si sono
+# mai visti sulla dashboard pubblica finché non è arrivato un commit
+# automatico di evaluate.yml a far scattare un deploy per un altro
+# motivo. Qualunque nuovo workflow che scrive su data/ va aggiunto qui,
+# non solo a "on: push" in cima — quella parte del trigger non si attiva
+# mai per i push fatti da un altro workflow con il GITHUB_TOKEN di
+# default.
 #
 # BUG SCOPERTO IL 2026-09-02 (dashboard senza le previsioni del giorno
 # nonostante un "Genera previsioni" concluso con successo poco prima):
@@ -37,7 +47,7 @@ on:
       - "data/**"
       - "REPORT.md"
   workflow_run:
-    workflows: ["Genera previsioni", "Valuta previsioni scadute", "Istantanea prezzi", "Analisi trend strutturali"]
+    workflows: ["Genera previsioni", "Valuta previsioni scadute", "Istantanea prezzi", "Analisi trend strutturali", "Ordine paper trading (Alpaca)"]
     types: [completed]
   workflow_dispatch: {}
 
