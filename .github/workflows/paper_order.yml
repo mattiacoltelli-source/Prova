@@ -64,13 +64,26 @@ jobs:
 
       - run: pip install -r requirements.txt
 
+      # inputs.dry_run è dichiarato type: boolean: usato direttamente in un
+      # if: a livello YAML (sotto, nello step di commit) GitHub Actions lo
+      # confronta con la stringa 'true' facendo una coercizione di tipo che
+      # lo rende SEMPRE vero (visto dal vivo: un run con dry_run=true ha
+      # comunque fatto partire "Commit e push", fallito solo perché
+      # data/paper/ non esisteva — stesso bug di tipo già risolto allo
+      # stesso modo in predict.yml). Normalizzato qui in un output di step,
+      # stringa shell confrontata con = fin dall'inizio, mai più un booleano
+      # nativo nei passaggi successivi.
+      - name: Determina parametri run
+        id: mode
+        run: echo "dry_run=${{ inputs.dry_run }}" >> "$GITHUB_OUTPUT"
+
       - name: Invia ordine paper
         run: |
           ARGS="--symbol ${{ inputs.symbol }} --side ${{ inputs.side }} --order-type ${{ inputs.order_type }}"
           if [ -n "${{ inputs.qty }}" ]; then ARGS="$ARGS --qty ${{ inputs.qty }}"; fi
           if [ -n "${{ inputs.notional }}" ]; then ARGS="$ARGS --notional ${{ inputs.notional }}"; fi
           if [ -n "${{ inputs.limit_price }}" ]; then ARGS="$ARGS --limit-price ${{ inputs.limit_price }}"; fi
-          if [ "${{ inputs.dry_run }}" = "true" ]; then ARGS="$ARGS --dry-run"; fi
+          if [ "${{ steps.mode.outputs.dry_run }}" = "true" ]; then ARGS="$ARGS --dry-run"; fi
           python -m src.paper_order_run $ARGS
 
       # Stesso pattern di retry-con-rebase di predict.yml/evaluate.yml:
@@ -79,7 +92,7 @@ jobs:
       # di QUESTO stesso workflow lanciato quasi in parallelo resta
       # possibile.
       - name: Commit e push
-        if: inputs.dry_run != 'true'
+        if: steps.mode.outputs.dry_run != 'true'
         run: |
           git config user.name "predictive-agent-bot"
           git config user.email "actions@users.noreply.github.com"
