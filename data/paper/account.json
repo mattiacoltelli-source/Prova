@@ -1,9 +1,19 @@
 {
   "account_number": "PA3GQKP6W",
-  "buying_power": "396537.64",
-  "cash": "100000",
-  "equity": "100000",
-  "portfolio_value": "100000",
-  "positions": [],
+  "buying_power": "370802.67",
+  "cash": "93566.34",
+  "equity": "99977.95",
+  "portfolio_value": "99977.95",
+  "positions": [
+    {
+      "avg_entry_price": "77203.96",
+      "current_price": "77132.174",
+      "market_value": "6411.611655",
+      "qty": "0.083124996",
+      "symbol": "BTCUSD",
+      "unrealized_pl": "-5.967211",
+      "unrealized_plpc": "-0.00093"
+    }
+  ],
   "status": "ACTIVE"
 }
