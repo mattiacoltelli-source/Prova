@@ -73,6 +73,16 @@ def place_order(
         raise ValueError("limit_price è obbligatorio per un ordine 'limit'")
     if (qty is None) == (notional is None):
         raise ValueError("specifica esattamente uno tra qty e notional, non entrambi o nessuno")
+    # Crypto (simbolo "BASE/QUOTE", es. BTC/USD) accetta solo gtc/ioc come
+    # time_in_force: "day" non ha senso per un mercato che non chiude mai,
+    # e Alpaca lo rifiuta. Controllato qui, prima della rete, invece di
+    # lasciar tornare un 422 poco chiaro da Alpaca — stesso principio delle
+    # validazioni sopra.
+    is_crypto = "/" in symbol
+    if is_crypto and time_in_force not in ("gtc", "ioc"):
+        raise ValueError(
+            f"time_in_force per un ordine crypto ({symbol}) deve essere 'gtc' o 'ioc', non {time_in_force!r}"
+        )
 
     payload = {
         "symbol": symbol.upper(),

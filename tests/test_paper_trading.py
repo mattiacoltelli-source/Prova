@@ -71,6 +71,41 @@ def test_place_order_qty_e_notional_insieme_non_chiama_la_rete(monkeypatch):
         mock_post.assert_not_called()
 
 
+def test_place_order_crypto_con_day_non_chiama_la_rete(monkeypatch):
+    """Alpaca rifiuta time_in_force='day' per un ordine crypto (il mercato
+    non chiude mai): validato qui prima della rete, non lasciato tornare
+    come un 422 poco chiaro da Alpaca."""
+    monkeypatch.setenv("ALPACA_API_KEY", "x")
+    monkeypatch.setenv("ALPACA_SECRET_KEY", "y")
+    with patch("src.paper_trading.requests.post") as mock_post:
+        with pytest.raises(ValueError, match="gtc.*ioc"):
+            paper_trading.place_order("BTC/USD", side="buy", qty=0.01)
+        mock_post.assert_not_called()
+
+
+def test_place_order_crypto_con_gtc_chiama_la_rete(monkeypatch):
+    monkeypatch.setenv("ALPACA_API_KEY", "x")
+    monkeypatch.setenv("ALPACA_SECRET_KEY", "y")
+    fake_resp = FakeResponse(200, {"id": "ord-btc", "symbol": "BTC/USD", "status": "accepted"})
+    with patch("src.paper_trading.requests.post", return_value=fake_resp) as mock_post:
+        result = paper_trading.place_order("btc/usd", side="buy", qty=0.0833333, time_in_force="gtc")
+    assert result["id"] == "ord-btc"
+    _, kwargs = mock_post.call_args
+    assert kwargs["json"]["symbol"] == "BTC/USD"
+    assert kwargs["json"]["time_in_force"] == "gtc"
+
+
+def test_place_order_azione_con_day_resta_valido(monkeypatch):
+    """Il controllo è specifico per i simboli crypto (contengono '/'): un
+    titolo azionario con time_in_force='day' (il default) non deve rompersi."""
+    monkeypatch.setenv("ALPACA_API_KEY", "x")
+    monkeypatch.setenv("ALPACA_SECRET_KEY", "y")
+    fake_resp = FakeResponse(200, {"id": "ord-x", "symbol": "NVDA", "status": "accepted"})
+    with patch("src.paper_trading.requests.post", return_value=fake_resp):
+        result = paper_trading.place_order("NVDA", side="buy", qty=1)
+    assert result["id"] == "ord-x"
+
+
 def test_place_order_ne_qty_ne_notional_non_chiama_la_rete(monkeypatch):
     monkeypatch.setenv("ALPACA_API_KEY", "x")
     monkeypatch.setenv("ALPACA_SECRET_KEY", "y")

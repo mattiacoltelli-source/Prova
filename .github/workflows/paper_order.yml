@@ -16,7 +16,7 @@ on:
   workflow_dispatch:
     inputs:
       symbol:
-        description: "Ticker (es. NVDA)"
+        description: "Ticker azionario (es. NVDA) o coppia crypto (es. BTC/USD)"
         type: string
         required: true
       side:
@@ -41,6 +41,11 @@ on:
         description: "Prezzo limite (solo se order_type=limit)"
         type: string
         default: ""
+      time_in_force:
+        description: "Validità ordine (crypto: solo gtc o ioc, mai day)"
+        type: choice
+        options: ["day", "gtc", "ioc"]
+        default: "day"
       dry_run:
         description: "Mostra l'ordine senza inviarlo (test sicuro)"
         type: boolean
@@ -83,6 +88,7 @@ jobs:
           if [ -n "${{ inputs.qty }}" ]; then ARGS="$ARGS --qty ${{ inputs.qty }}"; fi
           if [ -n "${{ inputs.notional }}" ]; then ARGS="$ARGS --notional ${{ inputs.notional }}"; fi
           if [ -n "${{ inputs.limit_price }}" ]; then ARGS="$ARGS --limit-price ${{ inputs.limit_price }}"; fi
+          ARGS="$ARGS --time-in-force ${{ inputs.time_in_force }}"
           if [ "${{ steps.mode.outputs.dry_run }}" = "true" ]; then ARGS="$ARGS --dry-run"; fi
           python -m src.paper_order_run $ARGS
 

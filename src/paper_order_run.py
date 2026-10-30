@@ -22,12 +22,13 @@ def run(
     order_type: str,
     limit_price: float | None,
     dry_run: bool,
+    time_in_force: str = "day",
 ) -> None:
     if dry_run:
         print(
             f"[DRY-RUN] ordine NON inviato: {side} {qty or notional}"
             f"{'quota' if notional else ''} {symbol} ({order_type}"
-            f"{f' @ {limit_price}' if limit_price else ''})"
+            f"{f' @ {limit_price}' if limit_price else ''}, time_in_force={time_in_force})"
         )
         return
 
@@ -38,6 +39,7 @@ def run(
         notional=notional,
         order_type=order_type,
         limit_price=limit_price,
+        time_in_force=time_in_force,
     )
     saved = paper_trading.record_order(order)
     print(
@@ -59,6 +61,7 @@ if __name__ == "__main__":
     parser.add_argument("--notional", type=float, default=None)
     parser.add_argument("--order-type", default="market", choices=["market", "limit"])
     parser.add_argument("--limit-price", type=float, default=None)
+    parser.add_argument("--time-in-force", default="day", choices=["day", "gtc", "ioc"])
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
@@ -75,6 +78,7 @@ if __name__ == "__main__":
             order_type=args.order_type,
             limit_price=args.limit_price,
             dry_run=args.dry_run,
+            time_in_force=args.time_in_force,
         )
     except Exception as exc:  # noqa: BLE001
         print(f"Errore fatale: {exc}", file=sys.stderr)
