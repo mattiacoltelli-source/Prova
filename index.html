@@ -636,25 +636,30 @@
             border-radius: 10px;
             font-family: 'Outfit', sans-serif;
         }
-        /* Switch AI reale/Momentum come un'unica pillola con il bottone
-           attivo pieno, stessa dimensione dell'artefatto approvato (non più
-           due pillole separate e grandi come le altre coppie di filtri del
-           sito — Asset/Orizzonte in Tech restano invariate, questo override
-           riguarda solo #aitrader-strategy-filter). Il bersaglio di tocco
-           44px di un audit precedente qui viene volutamente ridotto
-           (richiesto due volte dall'utente, 2026-11: "molto più grande
-           rispetto all'artefatto") — resta comunque un pulsante largo (non
-           un'icona), non sotto i criteri minimi di leggibilità. */
-        #aitrader-strategy-filter {
+        /* Ogni gruppo di filtri a pillola (switch AI reale/Momentum, Asset,
+           Orizzonte, Trend/Report/Scanner...) come un'unica pillola con il
+           bottone attivo pieno, stessa misura dell'artefatto approvato —
+           non più pillole separate e grandi come prima. Generalizzato a
+           tutti i .horizon-filter delle tre pagine ri-tematizzate
+           (richiesto dall'utente, 2026-11: "questi toggle devono essere
+           uguali o simili a quello di Trading AI... deve essere coerente
+           l'applicazione" — prima lo stile ridotto era solo sullo switch di
+           Trading AI). Il bersaglio di tocco 44px di un audit precedente
+           viene ridotto ovunque per lo stesso motivo (richiesto due volte
+           per lo switch di Trading AI: "molto più grande rispetto
+           all'artefatto") — resta un pulsante largo (non un'icona), non
+           sotto i criteri minimi di leggibilità. overflow-x:auto della
+           regola base (.horizon-filter) resta invariato: un gruppo con
+           molte voci (Asset) scorre lui, non si restringe. */
+        #page-aitrader .horizon-filter, #page-tech .horizon-filter, #page-explore .horizon-filter {
             display: inline-flex;
             background: var(--card-bg);
             border: 1px solid var(--card-border);
             border-radius: var(--radius-pill);
             padding: 3px;
             gap: 2px;
-            overflow: visible;
         }
-        #aitrader-strategy-filter .horizon-filter-btn {
+        #page-aitrader .horizon-filter-btn, #page-tech .horizon-filter-btn, #page-explore .horizon-filter-btn {
             background: transparent;
             border: none;
             box-shadow: none;
@@ -664,7 +669,7 @@
             font-size: 12.5px;
             font-weight: 700;
         }
-        #aitrader-strategy-filter .horizon-filter-btn.active {
+        #page-aitrader .horizon-filter-btn.active, #page-tech .horizon-filter-btn.active, #page-explore .horizon-filter-btn.active {
             background: var(--accent-signal);
             color: #fff;
             border-color: transparent;
