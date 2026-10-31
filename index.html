@@ -154,17 +154,38 @@
         /* Il banner del portafoglio paper mostra importi in valuta
            ("$370.802,67"), molto più lunghi dei valori brevi della
            dashboard principale ("41.5%", "205") che questo stesso
-           componente mostra altrove: a 3 colonne su schermi stretti anche
-           col clamp su .stat-value il numero va a capo a metà cifra
-           (es. "$370.802," / "67"), leggibile ma brutto da vedere. Sotto i
-           480px le 3 statistiche del solo portafoglio paper si impilano su
-           una colonna, dove ogni valore ha tutta la larghezza per stare su
-           una riga; la dashboard principale (3 colonne corte) resta
-           invariata. */
+           componente mostra altrove: a 3 colonne su schermi stretti il
+           numero andava a capo a metà cifra. Sotto i 480px il banner del
+           solo portafoglio paper passa da "3 numeri impilati" (ciascuno con
+           l'etichetta sopra, molto spazio verticale morto) a una mini lista
+           di conto: etichetta a sinistra, valore a destra, righe separate
+           da un filo sottile — più compatto, e un formato già familiare per
+           un riepilogo di saldo. La dashboard principale (3 colonne corte,
+           nessun problema di spazio) resta invariata. */
         @media (max-width: 480px) {
             #page-paper .summary-banner {
                 grid-template-columns: 1fr;
-                gap: 14px;
+                gap: 0;
+                padding: 6px 16px;
+            }
+            #page-paper .stat-box {
+                flex-direction: row;
+                align-items: baseline;
+                justify-content: space-between;
+                gap: 10px;
+                padding: 12px 0;
+                border-bottom: 1px solid var(--card-border);
+                min-width: 0;
+            }
+            #page-paper .stat-box:last-child { border-bottom: none; }
+            #page-paper .stat-label {
+                min-height: 0;
+                text-align: left;
+                white-space: nowrap;
+            }
+            #page-paper .stat-value {
+                margin-top: 0;
+                font-size: 1.05rem;
             }
         }
 
@@ -486,6 +507,63 @@
 
         .table-wrapper {
             overflow-x: auto;
+        }
+
+        /* Le tabelle di "Portafoglio Paper" (5-6 colonne: Titolo, Quantità,
+           Prezzo medio, Prezzo attuale, P&L / Inviato, Titolo, Lato,
+           Quantità, Stato, Prezzo fill) non entrano in uno schermo stretto
+           senza o scorrere lateralmente o rimpicciolire il testo fino a
+           renderlo illeggibile — nessuna delle due va bene. Sotto i 700px
+           ogni riga diventa una piccola card verticale: l'intestazione di
+           colonna (nascosta visivamente) riappare come etichetta a sinistra
+           di ogni valore tramite data-label sui <td> (impostato dal JS),
+           stesso principio dell'etichetta-a-sinistra del banner qui sopra.
+           Scoped a #page-paper: le tabelle previsioni/esiti della scheda
+           Tech hanno meno colonne, stanno già bene con lo scroll laterale
+           esistente e restano invariate. */
+        @media (max-width: 700px) {
+            #page-paper table, #page-paper tbody, #page-paper tr, #page-paper td {
+                display: block;
+                width: auto;
+            }
+            #page-paper thead { display: none; }
+            #page-paper .table-wrapper { overflow-x: visible; }
+            #page-paper tbody tr {
+                background: var(--bg-color-2);
+                border: 1px solid var(--card-border);
+                border-radius: var(--radius-md);
+                padding: 4px 12px;
+                margin-bottom: 10px;
+            }
+            #page-paper tbody tr:last-child { margin-bottom: 0; }
+            #page-paper td {
+                display: flex;
+                align-items: baseline;
+                justify-content: space-between;
+                gap: 12px;
+                padding: 8px 0;
+                border-bottom: 1px solid var(--card-border);
+            }
+            #page-paper td:last-child { border-bottom: none; }
+            #page-paper td::before {
+                content: attr(data-label);
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+                font-size: 0.78rem;
+                font-weight: 700;
+                color: var(--text-dim);
+                text-transform: uppercase;
+                letter-spacing: 0.04em;
+                flex-shrink: 0;
+            }
+            /* Riga di messaggio ("Nessuna posizione aperta.", errore, ecc.):
+               un solo td con colspan, nessuna etichetta a sinistra, resta
+               centrato come nel resto del sito. */
+            #page-paper td.table-message {
+                display: block;
+                text-align: center;
+                border-bottom: none;
+            }
+            #page-paper td.table-message::before { content: none; }
         }
 
         .table-show-all {
@@ -2102,11 +2180,11 @@
                     const plClass = Number.isNaN(pl) ? '' : (pl >= 0 ? 'pl-positive' : 'pl-negative');
                     return `
                         <tr>
-                            <td>${escapeHtml(p.symbol || '-')}</td>
-                            <td>${escapeHtml(p.qty ?? '-')}</td>
-                            <td>${formatMoney(p.avg_entry_price)}</td>
-                            <td>${formatMoney(p.current_price)}</td>
-                            <td class="${plClass}">${formatMoney(p.unrealized_pl)}</td>
+                            <td data-label="Titolo">${escapeHtml(p.symbol || '-')}</td>
+                            <td data-label="Quantità">${escapeHtml(p.qty ?? '-')}</td>
+                            <td data-label="Prezzo medio">${formatMoney(p.avg_entry_price)}</td>
+                            <td data-label="Prezzo attuale">${formatMoney(p.current_price)}</td>
+                            <td data-label="P&amp;L" class="${plClass}">${formatMoney(p.unrealized_pl)}</td>
                         </tr>
                     `;
                 }).join('');
@@ -2117,14 +2195,29 @@
                 ? tableMessageRow(6, ordersRes.ok ? 'Nessun ordine inviato ancora.' : 'Dati non raggiungibili al momento.', !ordersRes.ok)
                 : orders.map(o => `
                     <tr>
-                        <td>${(o.submitted_at || '').slice(0, 16).replace('T', ' ')}</td>
-                        <td>${escapeHtml(o.symbol || '-')}</td>
-                        <td>${escapeHtml((o.side || '-').toUpperCase())}</td>
-                        <td>${escapeHtml(o.qty ? String(o.qty) : (o.notional ? `$${o.notional}` : '-'))}</td>
-                        <td>${escapeHtml(o.status || '-')}</td>
-                        <td>${o.filled_avg_price ? formatMoney(o.filled_avg_price) : '—'}</td>
+                        <td data-label="Inviato">${(o.submitted_at || '').slice(0, 16).replace('T', ' ')}</td>
+                        <td data-label="Titolo">${escapeHtml(o.symbol || '-')}</td>
+                        <td data-label="Lato">${escapeHtml((o.side || '-').toUpperCase())}</td>
+                        <td data-label="Quantità">${escapeHtml(o.qty ? String(o.qty) : (o.notional ? `$${o.notional}` : '-'))}</td>
+                        <td data-label="Stato"><span class="badge ${orderStatusBadgeClass(o.status)}">${escapeHtml(o.status || '-')}</span></td>
+                        <td data-label="Prezzo fill">${o.filled_avg_price ? formatMoney(o.filled_avg_price) : '—'}</td>
                     </tr>
                 `).join('');
+        }
+
+        // Stati Alpaca raggruppati nello stesso linguaggio a pillola colorata
+        // già usato per i verdetti (RIALZISTA/FLAT/RIBASSISTA): verde per un
+        // ordine attivo/eseguito, giallo per uno ancora in corso, rosso per
+        // uno che non è andato a buon fine — non un elenco esaustivo di ogni
+        // stato possibile di Alpaca, solo una lettura immediata a colpo
+        // d'occhio; lo stato testuale esatto resta comunque visibile dentro
+        // la pillola.
+        function orderStatusBadgeClass(status) {
+            const DOWN = new Set(['canceled', 'rejected', 'expired']);
+            const UP = new Set(['filled', 'accepted', 'partially_filled']);
+            if (DOWN.has(status)) return 'badge-DOWN';
+            if (UP.has(status)) return 'badge-UP';
+            return 'badge-FLAT';
         }
 
         // Stessa logica di src/volatility.py:classify_change, riscritta qui
