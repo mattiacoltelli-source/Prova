@@ -25,6 +25,13 @@
         }
     </script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js"></script>
+    <!-- Solo per la pagina Trading AI (vedi #page-aitrader nel CSS sotto):
+         Outfit per i numeri/titoli in evidenza, Inter per il testo, JetBrains
+         Mono già usato altrove via --font-mono. Tech e Approfondimenti restano
+         sul font di sistema, non referenziano questi font. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
             /* Palette "strumento quant": sfondo neutro scuro, un solo
@@ -101,6 +108,13 @@
             max-width: 1040px;
             margin: 0 auto;
         }
+
+        /* Sfondo del body quando la tab attiva è Trading AI (vedi switchPage
+           e il class="bg-aitrader" statico sul body sotto): il colore della
+           pagina ri-tematizzata, non il --bg-color globale — altrimenti
+           resterebbe visibile un bordo del colore vecchio nel padding del
+           body attorno a #page-aitrader. */
+        body.bg-aitrader { background-color: #0a0d12; }
 
         canvas {
             max-width: 100%;
@@ -545,6 +559,81 @@
             flex-shrink: 0;
             align-self: flex-start;
             margin-top: 4px;
+        }
+
+        /* ===== Ri-tema la sola pagina Trading AI sui colori/font esatti
+           dell'artefatto approvato (richiesto dall'utente, 2026-11: il primo
+           giro aveva riusato l'accento ciano già esistente del sito invece
+           dei colori dell'artefatto — "lo voglio uguale"). Scoperto su
+           #page-aitrader: ridefinisce solo i token che i componenti
+           condivisi (asset-card, stat-value, horizon-filter-btn, badge
+           pl-positive/negative...) già leggono via var(--...), quindi si
+           ri-tematizzano da soli in cascata. Tech e Approfondimenti restano
+           sul ciano/font di sistema originali: non sono dentro questo id,
+           quindi questi override non li toccano. */
+        #page-aitrader {
+            --bg-color: #0a0d12;
+            --card-bg: #12161d;
+            --bg-color-2: #1a2029;
+            --card-border: rgba(255, 255, 255, 0.08);
+            --text-main: #f4f6f9;
+            --text-muted: #8b94a3;
+            --text-dim: #8b94a3;
+            --accent-green: #34d399;
+            --accent-red: #fb7185;
+            --accent-yellow: #fbbf24;
+            --accent-signal: #4f7cff;
+            --accent-momentum: #a78bfa;
+            --font-mono: 'JetBrains Mono', ui-monospace, "SF Mono", Menlo, monospace;
+            --shadow-card: none;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+        #page-aitrader .aitrader-hero__value .stat-value {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 800;
+            font-size: clamp(42px, 12vw, 56px);
+            letter-spacing: -0.02em;
+            line-height: 1.02;
+        }
+        #page-aitrader .asset-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: normal;
+        }
+        #page-aitrader .pos-row__sym, #page-aitrader .trade-row__sym, #page-aitrader .agent-card__title {
+            font-family: 'Outfit', sans-serif;
+        }
+        /* L'icona dell'agente usava un ciano fisso legato al vecchio accento:
+           con --accent-signal ora blu va aggiornata insieme, altrimenti lo
+           sfondo resterebbe ciano dietro un'icona blu. */
+        #page-aitrader .agent-card__icon { background: rgba(79, 124, 255, 0.13); }
+        /* Switch AI reale/Momentum come un'unica pillola con il bottone
+           attivo pieno (uguale all'artefatto), non due pillole separate
+           affiancate come le altre coppie di filtri del sito (Asset/
+           Orizzonte in Tech, invariate: questo override riguarda solo
+           #aitrader-strategy-filter). Tocco minimo 44px lasciato invariato
+           (fix di un audit precedente), solo l'aspetto cambia. */
+        #aitrader-strategy-filter {
+            display: inline-flex;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius-pill);
+            padding: 3px;
+            gap: 2px;
+            overflow: visible;
+        }
+        #aitrader-strategy-filter .horizon-filter-btn {
+            background: transparent;
+            border: none;
+            box-shadow: none;
+            color: var(--text-muted);
+        }
+        #aitrader-strategy-filter .horizon-filter-btn.active {
+            background: var(--accent-signal);
+            color: #fff;
+            border-color: transparent;
+            box-shadow: none;
         }
 
         .asset-title {
@@ -1266,7 +1355,7 @@
         .pred-detail-cell strong { color: var(--text-main); }
     </style>
 </head>
-<body>
+<body class="bg-aitrader">
 
     <div id="updateBanner" class="update-banner">
         <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>Nuova versione disponibile</span>
@@ -2137,6 +2226,11 @@
             document.getElementById('tab-btn-aitrader').classList.toggle('active', page === 'aitrader');
             document.getElementById('tab-btn-tech').classList.toggle('active', page === 'tech');
             document.getElementById('tab-btn-explore').classList.toggle('active', page === 'explore');
+            // Il body dipinge il proprio sfondo anche nel padding attorno a
+            // #page-aitrader (che da solo non lo coprirebbe): questa classe
+            // lo scurisce di un filo per allinearlo esattamente al --bg-color
+            // ri-tematizzato della pagina Trading AI (vedi CSS #page-aitrader).
+            document.body.classList.toggle('bg-aitrader', page === 'aitrader');
         }
 
         // Sotto-navigazione dentro "Approfondimenti" (Trend/Report/Scanner):
@@ -2917,8 +3011,8 @@
             const realDataset = {
                 label: 'AI reale',
                 data: equityData,
-                borderColor: '#38b6d9',
-                backgroundColor: primaryIsReal ? 'rgba(56, 182, 217, 0.12)' : 'transparent',
+                borderColor: '#4f7cff',
+                backgroundColor: primaryIsReal ? 'rgba(79, 124, 255, 0.12)' : 'transparent',
                 borderWidth: primaryIsReal ? 2.4 : 1.4,
                 borderDash: primaryIsReal ? [] : [4, 3],
                 fill: primaryIsReal,
@@ -2937,8 +3031,8 @@
                 datasets.push({
                     label: 'Momentum (regole fisse)',
                     data: momentumAligned,
-                    borderColor: '#b07cdb',
-                    backgroundColor: !primaryIsReal ? 'rgba(176, 124, 219, 0.12)' : 'transparent',
+                    borderColor: '#a78bfa',
+                    backgroundColor: !primaryIsReal ? 'rgba(167, 139, 250, 0.12)' : 'transparent',
                     borderWidth: !primaryIsReal ? 2.4 : 1.4,
                     borderDash: !primaryIsReal ? [] : [4, 3],
                     fill: !primaryIsReal,
@@ -2952,7 +3046,7 @@
             datasets.push({
                 label: 'Partenza',
                 data: labels.map(() => startEquity),
-                borderColor: '#8a94a8',
+                borderColor: '#8b94a3',
                 borderDash: [5, 5],
                 pointRadius: 0,
                 order: 3,
@@ -2966,11 +3060,11 @@
                     maintainAspectRatio: false,
                     interaction: { mode: 'index', intersect: false },
                     plugins: {
-                        legend: { display: true, labels: { color: '#8a94a8', font: { size: 10 } } }
+                        legend: { display: true, labels: { color: '#8b94a3', font: { size: 10 } } }
                     },
                     scales: {
-                        x: { ticks: { color: '#8a94a8', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.05)' } },
-                        y: { ticks: { color: '#8a94a8', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                        x: { ticks: { color: '#8b94a3', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                        y: { ticks: { color: '#8b94a3', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.05)' } }
                     }
                 }
             });
