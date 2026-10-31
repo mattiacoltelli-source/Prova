@@ -509,61 +509,109 @@
             overflow-x: auto;
         }
 
-        /* Le tabelle di "Portafoglio Paper" (5-6 colonne: Titolo, Quantità,
-           Prezzo medio, Prezzo attuale, P&L / Inviato, Titolo, Lato,
-           Quantità, Stato, Prezzo fill) non entrano in uno schermo stretto
-           senza o scorrere lateralmente o rimpicciolire il testo fino a
-           renderlo illeggibile — nessuna delle due va bene. Sotto i 700px
-           ogni riga diventa una piccola card verticale: l'intestazione di
-           colonna (nascosta visivamente) riappare come etichetta a sinistra
-           di ogni valore tramite data-label sui <td> (impostato dal JS),
-           stesso principio dell'etichetta-a-sinistra del banner qui sopra.
-           Scoped a #page-paper: le tabelle previsioni/esiti della scheda
-           Tech hanno meno colonne, stanno già bene con lo scroll laterale
-           esistente e restano invariate. */
+        /* Le tabelle di "Portafoglio Paper" (5-6 colonne) non entrano in uno
+           schermo stretto senza scorrere lateralmente o rimpicciolire il
+           testo — ma impilare ogni riga come card sempre aperta (prima
+           versione) non scala: con tante posizioni diventa una scrollata
+           lunghissima, l'opposto di "vedere tutto a colpo d'occhio" chiesto
+           dall'utente. Sotto i 700px la tabella lascia il posto a una lista
+           di righe compatte — <details>/<summary> nativi, nessun JS per
+           aprire/chiudere — ciascuna su una riga sola (titolo + il dato che
+           conta di più: P&L o stato), con tap per espandere gli altri
+           campi. Stesso pattern "tocca per i dettagli" già usato nella
+           scheda Tech (toggleDetail), qui con l'elemento nativo invece di
+           un toggle scritto a mano perché i dati non condividono la stessa
+           struttura. Da 700px in su resta la tabella classica (il
+           .desktop-only/.mobile-only sotto fa lo switch), c'è già spazio
+           per tutte le colonne. Scoped a #page-paper: le tabelle
+           previsioni/esiti della scheda Tech restano invariate. */
+        .mobile-only { display: none; }
         @media (max-width: 700px) {
-            #page-paper table, #page-paper tbody, #page-paper tr, #page-paper td {
-                display: block;
-                width: auto;
-            }
-            #page-paper thead { display: none; }
-            #page-paper .table-wrapper { overflow-x: visible; }
-            #page-paper tbody tr {
-                background: var(--bg-color-2);
-                border: 1px solid var(--card-border);
-                border-radius: var(--radius-md);
-                padding: 4px 12px;
-                margin-bottom: 10px;
-            }
-            #page-paper tbody tr:last-child { margin-bottom: 0; }
-            #page-paper td {
-                display: flex;
-                align-items: baseline;
-                justify-content: space-between;
-                gap: 12px;
-                padding: 8px 0;
-                border-bottom: 1px solid var(--card-border);
-            }
-            #page-paper td:last-child { border-bottom: none; }
-            #page-paper td::before {
-                content: attr(data-label);
-                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-                font-size: 0.78rem;
-                font-weight: 700;
-                color: var(--text-dim);
-                text-transform: uppercase;
-                letter-spacing: 0.04em;
-                flex-shrink: 0;
-            }
-            /* Riga di messaggio ("Nessuna posizione aperta.", errore, ecc.):
-               un solo td con colspan, nessuna etichetta a sinistra, resta
-               centrato come nel resto del sito. */
-            #page-paper td.table-message {
-                display: block;
-                text-align: center;
-                border-bottom: none;
-            }
-            #page-paper td.table-message::before { content: none; }
+            #page-paper .desktop-only { display: none; }
+            #page-paper .mobile-only { display: block; }
+        }
+
+        .paper-item-list .table-message {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 14px 6px;
+        }
+        .paper-item-list .table-message.is-error { color: var(--accent-yellow); }
+
+        .paper-item {
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius-md);
+            background: var(--bg-color-2);
+            margin-bottom: 8px;
+        }
+        .paper-item:last-child { margin-bottom: 0; }
+
+        .paper-item-summary {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 12px 14px;
+            cursor: pointer;
+            list-style: none;
+        }
+        .paper-item-summary::-webkit-details-marker { display: none; }
+
+        .paper-item-heading {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            min-width: 0;
+        }
+        .paper-item-title {
+            font-weight: 700;
+            font-family: var(--font-mono);
+        }
+        .paper-item-sub {
+            font-size: 0.78rem;
+            color: var(--text-dim);
+        }
+        .paper-item-headline {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+        .paper-item-value {
+            font-family: var(--font-mono);
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+        }
+        .paper-item .chevron-icon {
+            font-size: 0.7rem;
+            color: var(--text-dim);
+        }
+        .paper-item[open] .chevron-icon { transform: rotate(180deg); }
+
+        .paper-item-detail {
+            padding: 2px 14px 12px;
+            border-top: 1px solid var(--card-border);
+        }
+        .paper-item-detail-row {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--card-border);
+            font-size: 0.85rem;
+        }
+        .paper-item-detail-row:last-child { border-bottom: none; }
+        .paper-item-detail-row span:first-child {
+            color: var(--text-dim);
+            font-size: 0.78rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .paper-item-detail-row span:last-child {
+            font-family: var(--font-mono);
+            font-variant-numeric: tabular-nums;
         }
 
         .table-show-all {
@@ -1182,7 +1230,7 @@
             <div class="asset-header">
                 <span class="asset-title">Posizioni aperte</span>
             </div>
-            <div class="table-wrapper">
+            <div class="table-wrapper desktop-only">
                 <table>
                     <thead>
                         <tr><th>Titolo</th><th>Quantità</th><th>Prezzo medio</th><th>Prezzo attuale</th><th>P&amp;L</th></tr>
@@ -1190,13 +1238,14 @@
                     <tbody id="paper-positions-body"></tbody>
                 </table>
             </div>
+            <div class="paper-item-list mobile-only" id="paper-positions-list"></div>
         </div>
 
         <div class="asset-card" style="margin-top:16px;">
             <div class="asset-header">
                 <span class="asset-title">Storico ordini</span>
             </div>
-            <div class="table-wrapper">
+            <div class="table-wrapper desktop-only">
                 <table>
                     <thead>
                         <tr><th>Inviato</th><th>Titolo</th><th>Lato</th><th>Quantità</th><th>Stato</th><th>Prezzo fill</th></tr>
@@ -1204,6 +1253,7 @@
                     <tbody id="paper-orders-body"></tbody>
                 </table>
             </div>
+            <div class="paper-item-list mobile-only" id="paper-orders-list"></div>
         </div>
 
     </div><!-- /page-paper -->
@@ -2172,12 +2222,14 @@
             document.getElementById('paper-stat-buying-power').innerText = account ? formatMoney(account.buying_power) : '—';
 
             const positionsBody = document.getElementById('paper-positions-body');
+            const positionsList = document.getElementById('paper-positions-list');
             const positions = (account && account.positions) || [];
-            positionsBody.innerHTML = positions.length === 0
-                ? tableMessageRow(5, 'Nessuna posizione aperta.', false)
-                : positions.map(p => {
-                    const pl = parseFloat(p.unrealized_pl);
-                    const plClass = Number.isNaN(pl) ? '' : (pl >= 0 ? 'pl-positive' : 'pl-negative');
+            if (positions.length === 0) {
+                positionsBody.innerHTML = tableMessageRow(5, 'Nessuna posizione aperta.', false);
+                positionsList.innerHTML = paperListMessage('Nessuna posizione aperta.', false);
+            } else {
+                positionsBody.innerHTML = positions.map(p => {
+                    const plClass = paperPlClass(p.unrealized_pl);
                     return `
                         <tr>
                             <td data-label="Titolo">${escapeHtml(p.symbol || '-')}</td>
@@ -2188,12 +2240,39 @@
                         </tr>
                     `;
                 }).join('');
+                // Riga sommario = simbolo + il dato che conta di più a colpo
+                // d'occhio su molte posizioni (il P&L, non la quantità o il
+                // prezzo medio): gli altri campi restano a un tap, vedi
+                // commento su .paper-item-list più sopra nel CSS.
+                positionsList.innerHTML = positions.map(p => `
+                    <details class="paper-item">
+                        <summary class="paper-item-summary">
+                            <span class="paper-item-heading">
+                                <span class="paper-item-title">${escapeHtml(p.symbol || '-')}</span>
+                                <span class="paper-item-sub">${escapeHtml(p.qty ?? '-')} unità</span>
+                            </span>
+                            <span class="paper-item-headline">
+                                <span class="paper-item-value ${paperPlClass(p.unrealized_pl)}">${formatMoney(p.unrealized_pl)}</span>
+                                <span class="chevron-icon">▼</span>
+                            </span>
+                        </summary>
+                        <div class="paper-item-detail">
+                            <div class="paper-item-detail-row"><span>Prezzo medio</span><span>${formatMoney(p.avg_entry_price)}</span></div>
+                            <div class="paper-item-detail-row"><span>Prezzo attuale</span><span>${formatMoney(p.current_price)}</span></div>
+                        </div>
+                    </details>
+                `).join('');
+            }
 
             const ordersBody = document.getElementById('paper-orders-body');
+            const ordersList = document.getElementById('paper-orders-list');
             const orders = [...ordersRes.data].sort((a, b) => (b.submitted_at || '').localeCompare(a.submitted_at || ''));
-            ordersBody.innerHTML = orders.length === 0
-                ? tableMessageRow(6, ordersRes.ok ? 'Nessun ordine inviato ancora.' : 'Dati non raggiungibili al momento.', !ordersRes.ok)
-                : orders.map(o => `
+            if (orders.length === 0) {
+                const msg = ordersRes.ok ? 'Nessun ordine inviato ancora.' : 'Dati non raggiungibili al momento.';
+                ordersBody.innerHTML = tableMessageRow(6, msg, !ordersRes.ok);
+                ordersList.innerHTML = paperListMessage(msg, !ordersRes.ok);
+            } else {
+                ordersBody.innerHTML = orders.map(o => `
                     <tr>
                         <td data-label="Inviato">${(o.submitted_at || '').slice(0, 16).replace('T', ' ')}</td>
                         <td data-label="Titolo">${escapeHtml(o.symbol || '-')}</td>
@@ -2203,6 +2282,39 @@
                         <td data-label="Prezzo fill">${o.filled_avg_price ? formatMoney(o.filled_avg_price) : '—'}</td>
                     </tr>
                 `).join('');
+                // Riga sommario = simbolo + lato + stato (pillola): è quello
+                // che si vuole controllare al volo su uno storico lungo.
+                // Data/quantità/prezzo fill restano a un tap.
+                ordersList.innerHTML = orders.map(o => `
+                    <details class="paper-item">
+                        <summary class="paper-item-summary">
+                            <span class="paper-item-heading">
+                                <span class="paper-item-title">${escapeHtml(o.symbol || '-')}</span>
+                                <span class="paper-item-sub">${escapeHtml((o.side || '-').toUpperCase())}</span>
+                            </span>
+                            <span class="paper-item-headline">
+                                <span class="badge ${orderStatusBadgeClass(o.status)}">${escapeHtml(o.status || '-')}</span>
+                                <span class="chevron-icon">▼</span>
+                            </span>
+                        </summary>
+                        <div class="paper-item-detail">
+                            <div class="paper-item-detail-row"><span>Inviato</span><span>${(o.submitted_at || '').slice(0, 16).replace('T', ' ')}</span></div>
+                            <div class="paper-item-detail-row"><span>Quantità</span><span>${escapeHtml(o.qty ? String(o.qty) : (o.notional ? `$${o.notional}` : '-'))}</span></div>
+                            <div class="paper-item-detail-row"><span>Prezzo fill</span><span>${o.filled_avg_price ? formatMoney(o.filled_avg_price) : '—'}</span></div>
+                        </div>
+                    </details>
+                `).join('');
+            }
+        }
+
+        function paperPlClass(value) {
+            const pl = parseFloat(value);
+            return Number.isNaN(pl) ? '' : (pl >= 0 ? 'pl-positive' : 'pl-negative');
+        }
+
+        function paperListMessage(message, isError) {
+            const icon = isError ? `<span class="icon">${ICON_WARNING}</span>` : '';
+            return `<div class="table-message${isError ? ' is-error' : ''}">${icon}${escapeHtml(message)}</div>`;
         }
 
         // Stati Alpaca raggruppati nello stesso linguaggio a pillola colorata
