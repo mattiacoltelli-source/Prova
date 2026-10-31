@@ -803,51 +803,51 @@
         .badge-FLAT { background-color: rgba(245, 185, 66, 0.2); color: var(--accent-yellow); }
 
         /* Trading AI è la parte core dell'app (richiesto dall'utente il
-           2026-11-02): un solo pulsante a piena larghezza, ben più grande
-           delle due voci secondarie sotto — non tre schede alla pari come
-           prima. Tech e Approfondimenti restano raggiungibili con un tocco,
-           ma visivamente defilate: chi apre l'app capisce subito qual è la
-           cosa principale. */
+           2026-11-02): un pulsante grande che occupa la maggior parte della
+           riga, con Tech e Approfondimenti come due link piccoli accanto —
+           non tre schede alla pari come prima, ma nemmeno una riga in più
+           (richiesto il 2026-11-02 poco dopo: il primo tentativo, con
+           Tech/Approfondimenti su una riga separata sotto, allungava la
+           pagina). Tutti e tre restano raggiungibili con un tocco, un
+           solo rigo come prima del cambio. */
         .page-tabs-primary {
-            margin-bottom: 8px;
+            display: flex;
+            align-items: stretch;
+            gap: 6px;
+            margin-bottom: 18px;
         }
 
         .page-tab-primary {
-            width: 100%;
-            padding: 14px 8px;
+            flex: 1;
+            min-width: 0;
+            padding: 11px 8px;
             border-radius: var(--radius-md);
             border: 1px solid var(--accent-signal);
             background-color: rgba(56, 182, 217, 0.15);
             color: var(--accent-signal);
             font-weight: 800;
-            font-size: 1rem;
+            font-size: 0.95rem;
             cursor: pointer;
             text-align: center;
-            min-height: 48px;
+            min-height: 44px;
             display: flex;
             align-items: center;
             justify-content: center;
             transition: all var(--transition-fast);
         }
 
-        .page-tabs-secondary {
-            display: flex;
-            gap: 6px;
-            margin-bottom: 18px;
-        }
-
         .page-tab-secondary {
             flex: 0 0 auto;
-            padding: 8px 14px;
+            padding: 6px 12px;
             border-radius: var(--radius-pill);
             border: 1px solid transparent;
             background-color: transparent;
             color: var(--text-muted);
             font-weight: 600;
-            font-size: 0.78rem;
+            font-size: 0.72rem;
             cursor: pointer;
             text-align: center;
-            min-height: 38px;
+            align-self: center;
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -1118,8 +1118,6 @@
 
     <div class="page-tabs-primary">
         <button class="page-tab-primary active" id="tab-btn-aitrader" onclick="switchPage('aitrader')">Trading AI</button>
-    </div>
-    <div class="page-tabs-secondary">
         <button class="page-tab-secondary" id="tab-btn-tech" onclick="switchPage('tech')">Tech</button>
         <button class="page-tab-secondary" id="tab-btn-explore" onclick="switchPage('explore')">Approfondimenti</button>
     </div>
