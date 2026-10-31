@@ -1168,13 +1168,17 @@
         </div>
 
         <p style="font-size:11px;color:var(--text-dim);margin:16px 0 8px;">
-            Operazioni di entrambe le strategie: quando sono entrate/uscite, a che prezzo, quanto
-            hanno guadagnato o perso. "Momentum" è solo un confronto — regole fisse senza AI, stessi
+            Operazioni della strategia selezionata: quando è entrata/uscita, a che prezzo, quanto
+            ha guadagnato o perso. "Momentum" è solo un confronto — regole fisse senza AI, stessi
             titoli e stesso capitale dell'esperimento reale, nessun ordine vero, nessun costo (vedi
             "Come funziona questa pagina?" sopra).
         </p>
-        <div class="grid-two-assets">
-            <div class="asset-card" id="aitrader-real-trades-card">
+        <div class="horizon-filter" id="aitrader-strategy-filter">
+            <button class="horizon-filter-btn active" data-strategy="real" onclick="setTradeStrategyFilter('real')">AI reale</button>
+            <button class="horizon-filter-btn" data-strategy="momentum" onclick="setTradeStrategyFilter('momentum')">Momentum</button>
+        </div>
+        <div>
+            <div class="asset-card" id="aitrader-real-trades-card" data-strategy="real">
                 <div class="asset-header">
                     <span class="asset-title">AI reale</span>
                 </div>
@@ -1183,7 +1187,7 @@
                 <div class="aitrader-trades-subhead">Operazioni chiuse</div>
                 <div class="paper-item-list" id="aitrader-real-closed"></div>
             </div>
-            <div class="asset-card" id="aitrader-momentum-trades-card">
+            <div class="asset-card" id="aitrader-momentum-trades-card" data-strategy="momentum" style="display:none;">
                 <div class="asset-header">
                     <span class="asset-title">Momentum (regole fisse)</span>
                 </div>
@@ -2746,6 +2750,28 @@
             `;
         }
 
+        // Switch tra le due dashboard (richiesto dall'utente: la pagina era
+        // troppo lunga con entrambe sempre visibili una sotto l'altra).
+        // Stesso pattern di setAssetFilter/applyAssetFilter già usato per i
+        // filtri Asset/Orizzonte: un pulsante .horizon-filter-btn alla
+        // volta "active", le card corrispondenti mostrate/nascoste con
+        // display, nessun nuovo framework o libreria.
+        let currentTradeStrategyFilter = 'real';
+
+        function setTradeStrategyFilter(strategy) {
+            currentTradeStrategyFilter = strategy;
+            document.querySelectorAll('#aitrader-strategy-filter .horizon-filter-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.strategy === strategy);
+            });
+            applyTradeStrategyFilter();
+        }
+
+        function applyTradeStrategyFilter() {
+            document.querySelectorAll('#aitrader-real-trades-card, #aitrader-momentum-trades-card').forEach(card => {
+                card.style.display = card.dataset.strategy === currentTradeStrategyFilter ? '' : 'none';
+            });
+        }
+
         function renderTradeDashboards(realTrades, momentumTrades) {
             const real = realTrades || { open: [], closed: [] };
             const momentum = momentumTrades || { open: [], closed: [] };
@@ -2768,6 +2794,8 @@
             momClosedEl.innerHTML = (momentum.closed || []).length === 0
                 ? paperListMessage('Nessuna operazione chiusa ancora.', false)
                 : momentum.closed.slice(0, 30).map(t => _closedTradeRow(t, false)).join('');
+
+            applyTradeStrategyFilter();
         }
 
         async function fetchPaperAccount() {
