@@ -479,6 +479,32 @@ hash append-only di predictions/outcomes), e lo stato del conto
 (`data/paper/account.json`) viene riscritto dopo ogni ordine — entrambi
 letti in sola lettura dalla dashboard, tab "Portafoglio Paper".
 
+## Scanner di mercato
+
+Modulo separato e indipendente dal motore predittivo (nessuna previsione,
+nessuna chiamata AI): `src/market_scanner.py` scansiona una watchlist di 50
+azioni + 3 crypto (`config.SCANNER_STOCKS`/`SCANNER_CRYPTO`, assemblata
+insieme all'utente il 2026-10-31) e calcola 3 segnali puramente
+quantitativi su dati pubblici di oggi — **volume anomalo** (rispetto alla
+media di ~1 mese), **gap** in apertura rispetto alla chiusura precedente, e
+**vicinanza al massimo** dell'ultimo mese (un vero breakout: prezzo attuale
+al massimo del lookback o sopra, non solo "vicino"). Un titolo è
+"segnalato" se almeno uno dei tre supera la soglia configurata — non un
+voto, solo per far emergere a colpo d'occhio le righe più interessanti su
+una watchlist di 53 nomi.
+
+Fonte dati: Yahoo Finance (stessa fonte primaria di
+`src/data_sources/prices.py`), nessuna chiave richiesta — unica fonte
+gratuita verificata con copertura sia USA sia Tokyo (6481.T, 6324.T) sia
+crypto in una sola chiamata per simbolo.
+
+[Actions → "Scanner di mercato"](https://github.com/mattiacoltelli-source/Prova/actions/workflows/market_scanner.yml):
+3 volte al giorno in orario di mercato (stessa cadenza di
+"Istantanea prezzi"), più `workflow_dispatch` manuale per un recupero.
+Risultato in `data/scanner/results.json` (istantanea sovrascritta ad ogni
+run, non uno storico), letto in sola lettura dalla dashboard, tab
+"Scanner".
+
 ## Tetto di spesa AI
 
 Oltre al limite impostato manualmente in console.anthropic.com, il codice

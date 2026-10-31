@@ -544,12 +544,15 @@
            un toggle scritto a mano perché i dati non condividono la stessa
            struttura. Da 700px in su resta la tabella classica (il
            .desktop-only/.mobile-only sotto fa lo switch), c'è già spazio
-           per tutte le colonne. Scoped a #page-paper: le tabelle
-           previsioni/esiti della scheda Tech restano invariate. */
+           per tutte le colonne. .desktop-only/.mobile-only non sono scoped
+           a una pagina: generiche, riusate tali e quali dalla scheda
+           Scanner (le tabelle previsioni/esiti della scheda Tech hanno
+           meno colonne e non le usano, restano col solo scroll laterale
+           di .table-wrapper). */
         .mobile-only { display: none; }
         @media (max-width: 700px) {
-            #page-paper .desktop-only { display: none; }
-            #page-paper .mobile-only { display: block; }
+            .desktop-only { display: none; }
+            .mobile-only { display: block; }
         }
 
         .paper-item-list .table-message {
@@ -999,6 +1002,7 @@
         <button class="page-tab" id="tab-btn-robotics" onclick="switchPage('robotics')"><span class="tab-label-long">Trend strutturali</span><span class="tab-label-short">Trend</span></button>
         <button class="page-tab" id="tab-btn-report" onclick="switchPage('report')">Report</button>
         <button class="page-tab" id="tab-btn-paper" onclick="switchPage('paper')"><span class="tab-label-long">Portafoglio Paper</span><span class="tab-label-short">Paper</span></button>
+        <button class="page-tab" id="tab-btn-scanner" onclick="switchPage('scanner')">Scanner</button>
     </div>
 
     <div id="page-tech">
@@ -1278,6 +1282,45 @@
         </div>
 
     </div><!-- /page-paper -->
+
+    <div id="page-scanner" style="display:none">
+
+        <details class="info-panel">
+            <summary><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-2px;margin-right:5px"><circle cx="12" cy="12" r="9"/><line x1="12" y1="11" x2="12" y2="16"/><circle cx="12" cy="7.4" r="0.6" fill="currentColor" stroke="none"/></svg>Come funziona questa pagina?</summary>
+            <div class="info-panel-body">
+                Scanner quantitativo su una watchlist di 50 azioni + 3 crypto — non è una previsione
+                e non usa l'AI: solo 3 segnali calcolati sui dati pubblici di oggi. <strong>Volume</strong>
+                (rispetto alla media di circa un mese), <strong>gap</strong> in apertura rispetto alla
+                chiusura precedente, e <strong>distanza dal massimo</strong> dell'ultimo mese. Un titolo è
+                "segnalato" quando almeno uno dei tre supera una soglia fissa — non un voto, solo per
+                mettere in cima i risultati più interessanti. Aggiornato 3 volte al giorno in orario di
+                mercato.
+            </div>
+        </details>
+
+        <div class="horizon-filter" id="scanner-filter">
+            <span class="horizon-filter-label">Mostra:</span>
+            <button class="horizon-filter-btn active" data-filter="flagged" onclick="setScannerFilter('flagged')">Segnalati</button>
+            <button class="horizon-filter-btn" data-filter="all" onclick="setScannerFilter('all')">Tutti</button>
+        </div>
+
+        <div class="asset-card">
+            <div class="asset-header">
+                <span class="asset-title">Scanner di mercato</span>
+                <span class="asset-price" id="scanner-generated-at"></span>
+            </div>
+            <div class="table-wrapper desktop-only">
+                <table>
+                    <thead>
+                        <tr><th>Titolo</th><th>Prezzo</th><th>Var.</th><th>Volume</th><th>Gap</th><th>Da massimo</th></tr>
+                    </thead>
+                    <tbody id="scanner-table-body"></tbody>
+                </table>
+            </div>
+            <div class="paper-item-list mobile-only" id="scanner-list"></div>
+        </div>
+
+    </div><!-- /page-scanner -->
 
     <script>
         // Unico punto da modificare quando cambia il paniere di asset seguiti.
@@ -1682,13 +1725,17 @@
             document.getElementById('page-robotics').style.display = page === 'robotics' ? '' : 'none';
             document.getElementById('page-report').style.display = page === 'report' ? '' : 'none';
             document.getElementById('page-paper').style.display = page === 'paper' ? '' : 'none';
+            document.getElementById('page-scanner').style.display = page === 'scanner' ? '' : 'none';
             document.getElementById('tab-btn-tech').classList.toggle('active', page === 'tech');
             document.getElementById('tab-btn-robotics').classList.toggle('active', page === 'robotics');
             document.getElementById('tab-btn-report').classList.toggle('active', page === 'report');
             document.getElementById('tab-btn-paper').classList.toggle('active', page === 'paper');
-            // I dati della pagina Paper non cambiano con i filtri asset/orizzonte
-            // delle altre pagine: basta caricarli la prima volta che si apre.
+            document.getElementById('tab-btn-scanner').classList.toggle('active', page === 'scanner');
+            // I dati delle pagine Paper/Scanner non cambiano con i filtri
+            // asset/orizzonte delle altre pagine: basta caricarli la prima
+            // volta che si aprono.
             if (page === 'paper' && !paperDataLoaded) loadPaperData();
+            if (page === 'scanner' && !scannerDataLoaded) loadScannerData();
         }
 
         function formatPct(value, digits = 1) {
@@ -2336,6 +2383,115 @@
         function paperListMessage(message, isError) {
             const icon = isError ? `<span class="icon">${ICON_WARNING}</span>` : '';
             return `<div class="table-message${isError ? ' is-error' : ''}">${icon}${escapeHtml(message)}</div>`;
+        }
+
+        // Pagina "Scanner": caricata una volta sola alla prima apertura del
+        // tab, stesso principio di loadPaperData — non è un dato filtrato
+        // dalle altre pagine, aggiornato solo da un run del workflow.
+        let scannerDataLoaded = false;
+        let scannerData = null;
+        let scannerShowAll = false;
+
+        async function fetchScannerData() {
+            try {
+                const res = await fetch('data/scanner/results.json', { cache: 'no-store' });
+                if (!res.ok) return null;
+                return await res.json();
+            } catch (err) {
+                return null;
+            }
+        }
+
+        // Nessuna valuta fissa come formatMoney() (lì ogni asset è sempre
+        // USD): la watchlist dello scanner mescola USD e JPY (6481.T,
+        // 6324.T), il simbolo giusto viene da row.currency.
+        const CURRENCY_SYMBOL = { USD: '$', JPY: '¥', EUR: '€', GBP: '£' };
+        function formatScannerPrice(value, currency) {
+            const n = parseFloat(value);
+            if (Number.isNaN(n)) return '—';
+            const symbol = CURRENCY_SYMBOL[currency] || (currency ? currency + ' ' : '$');
+            return symbol + n.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function pctClass(value) {
+            if (value === null || value === undefined || Number.isNaN(value)) return '';
+            return value >= 0 ? 'pl-positive' : 'pl-negative';
+        }
+
+        function setScannerFilter(filter) {
+            scannerShowAll = filter === 'all';
+            document.querySelectorAll('#scanner-filter .horizon-filter-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.filter === filter);
+            });
+            renderScannerResults();
+        }
+
+        async function loadScannerData() {
+            scannerDataLoaded = true;
+            scannerData = await fetchScannerData();
+            renderScannerResults();
+        }
+
+        function renderScannerResults() {
+            const tableBody = document.getElementById('scanner-table-body');
+            const list = document.getElementById('scanner-list');
+            const generatedAtEl = document.getElementById('scanner-generated-at');
+
+            if (!scannerData) {
+                const msg = 'Dati non raggiungibili al momento.';
+                tableBody.innerHTML = tableMessageRow(6, msg, true);
+                list.innerHTML = paperListMessage(msg, true);
+                generatedAtEl.textContent = '';
+                return;
+            }
+
+            const generatedDate = new Date(scannerData.generated_at);
+            generatedAtEl.textContent = 'Aggiornato ' + generatedDate.toLocaleString('it-IT', {
+                day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+            });
+
+            const rows = scannerShowAll ? scannerData.results : scannerData.results.filter(r => r.flagged);
+
+            if (rows.length === 0) {
+                const msg = scannerShowAll
+                    ? 'Nessun dato disponibile.'
+                    : 'Nessun titolo segnalato al momento — prova "Tutti".';
+                tableBody.innerHTML = tableMessageRow(6, msg, false);
+                list.innerHTML = paperListMessage(msg, false);
+                return;
+            }
+
+            tableBody.innerHTML = rows.map(r => `
+                <tr>
+                    <td data-label="Titolo"><strong>${escapeHtml(r.symbol)}</strong></td>
+                    <td data-label="Prezzo">${formatScannerPrice(r.price, r.currency)}</td>
+                    <td data-label="Var." class="${pctClass(r.change_pct)}">${formatPct(r.change_pct)}</td>
+                    <td data-label="Volume">${r.volume_ratio != null ? r.volume_ratio + 'x' : '—'}</td>
+                    <td data-label="Gap" class="${pctClass(r.gap_pct)}">${formatPct(r.gap_pct)}</td>
+                    <td data-label="Da massimo" class="${pctClass(r.breakout_pct)}">${formatPct(r.breakout_pct)}</td>
+                </tr>
+            `).join('');
+
+            list.innerHTML = rows.map(r => `
+                <details class="paper-item">
+                    <summary class="paper-item-summary">
+                        <span class="paper-item-heading">
+                            <span class="paper-item-title">${escapeHtml(r.symbol)}</span>
+                            <span class="paper-item-sub">${formatScannerPrice(r.price, r.currency)}</span>
+                        </span>
+                        <span class="paper-item-headline">
+                            ${scannerShowAll && r.flagged ? '<span class="badge badge-UP">segnalato</span>' : ''}
+                            <span class="chevron-icon">▼</span>
+                        </span>
+                    </summary>
+                    <div class="paper-item-detail">
+                        <div class="paper-item-detail-row"><span>Variazione</span><span class="${pctClass(r.change_pct)}">${formatPct(r.change_pct)}</span></div>
+                        <div class="paper-item-detail-row"><span>Volume vs media</span><span>${r.volume_ratio != null ? r.volume_ratio + 'x' : '—'}</span></div>
+                        <div class="paper-item-detail-row"><span>Gap apertura</span><span class="${pctClass(r.gap_pct)}">${formatPct(r.gap_pct)}</span></div>
+                        <div class="paper-item-detail-row"><span>Da massimo recente</span><span class="${pctClass(r.breakout_pct)}">${formatPct(r.breakout_pct)}</span></div>
+                    </div>
+                </details>
+            `).join('');
         }
 
         // Stati Alpaca raggruppati nello stesso linguaggio a pillola colorata

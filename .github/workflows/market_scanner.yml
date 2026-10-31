@@ -1,0 +1,87 @@
+name: Scanner di mercato
+
+# Segnali quantitativi (volume anomalo, gap, vicinanza al massimo recente)
+# su una watchlist di 50 azioni + 3 crypto (config.SCANNER_STOCKS/
+# SCANNER_CRYPTO) — modulo indipendente dal motore predittivo, nessuna
+# previsione, nessuna chiamata AI, nessuna chiave richiesta (solo Yahoo
+# Finance, stessa fonte primaria già usata da src/data_sources/prices.py).
+#
+# Stessa cadenza di snapshot.yml (3 volte/giorno in orario di mercato,
+# minuti scelti apposta per non essere i minuti di punta ":00" di GitHub
+# Actions), spostata di 5 minuti per non far scattare i due workflow nello
+# stesso istante.
+on:
+  schedule:
+    - cron: "40 14 * * 1-5"
+    - cron: "10 17 * * 1-5"
+    - cron: "40 19 * * 1-5"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Esegue lo scanner senza scrivere su data/ (test sicuro)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: market-scanner-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - run: pip install -r requirements.txt
+
+      - name: Determina modalità run
+        id: mode
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "dry_run=${{ github.event.inputs.dry_run }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "dry_run=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Esegue lo scanner
+        run: |
+          ARGS=""
+          if [ "${{ steps.mode.outputs.dry_run }}" = "true" ]; then ARGS="--dry-run"; fi
+          python -m src.scanner_run $ARGS
+
+      # Stesso pattern di retry-con-rebase di snapshot.yml/predict.yml: più
+      # workflow scrivono su data/ in modo indipendente, senza retry un
+      # push respinto per un run concorrente andrebbe perso silenziosamente.
+      - name: Commit e push
+        if: steps.mode.outputs.dry_run != 'true'
+        run: |
+          git config user.name "predictive-agent-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/scanner/
+          if git diff --cached --quiet; then
+            echo "Nessuna modifica da committare."
+            exit 0
+          fi
+          git commit -m "Scanner di mercato $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          for i in 1 2 3 4 5; do
+            if git push; then
+              exit 0
+            fi
+            echo "Push rifiutato (probabile push concorrente di un altro workflow), tentativo $i/5: fetch + rebase e riprovo..."
+            git fetch origin "$GITHUB_REF_NAME"
+            if ! git rebase "origin/$GITHUB_REF_NAME"; then
+              echo "::error::Rebase fallito: conflitto reale con un commit concorrente, serve intervento manuale."
+              git rebase --abort
+              exit 1
+            fi
+            sleep $((i * 3))
+          done
+          echo "::error::Push fallito dopo 5 tentativi di rebase."
+          exit 1

@@ -47,7 +47,7 @@ on:
       - "data/**"
       - "REPORT.md"
   workflow_run:
-    workflows: ["Genera previsioni", "Valuta previsioni scadute", "Istantanea prezzi", "Analisi trend strutturali", "Ordine paper trading (Alpaca)"]
+    workflows: ["Genera previsioni", "Valuta previsioni scadute", "Istantanea prezzi", "Analisi trend strutturali", "Ordine paper trading (Alpaca)", "Scanner di mercato"]
     types: [completed]
   workflow_dispatch: {}
 

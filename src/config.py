@@ -530,6 +530,60 @@ def chronos_outcomes_file(asset: str) -> str:
 PAPER_ORDERS_FILE = "data/paper/orders.jsonl"
 PAPER_ACCOUNT_FILE = "data/paper/account.json"
 
+# --- Scanner di mercato (src/market_scanner.py) ------------------------------
+# Modulo separato dal motore predittivo, stesso principio di paper_trading.py:
+# nessuna previsione, nessuna chiamata AI — solo 3 segnali quantitativi
+# (volume anomalo, gap in apertura, vicinanza al massimo di un mese) su una
+# watchlist più ampia di ASSETS/ROBOTICS_ASSETS, per far emergere a colpo
+# d'occhio i titoli con movimento fuori norma. Watchlist assemblata insieme
+# all'utente il 2026-10-31: la sua lista "Warren Buffett" (25, perlopiù
+# blue chip/value) + la sua "La mia Watchlist" (6, già in ASSETS/
+# ROBOTICS_ASSETS sopra) + 19 scelti da Claude su richiesta esplicita
+# dell'utente ("aggiungi titoli tu per arrivare a 50"), con un taglio più
+# speculativo/alta volatilità — il tipo di titolo per cui un segnale di
+# volume/gap anomalo è davvero utile, a differenza di un blue chip stabile.
+SCANNER_STOCKS = [
+    # Watchlist "Warren Buffett" dell'utente
+    "ABNB", "V", "BAC", "AXP", "MA", "WMT", "CAT", "NVO", "NKE", "SPCX",
+    "AVGO", "AMD", "UBER", "LLY", "KO", "PYPL", "NFLX", "NVDA", "AMZN",
+    "MSFT", "TSLA", "AAPL", "GOOGL", "GOOG", "META",
+    # "La mia Watchlist" dell'utente — ticker Yahoo diretti (non tramite
+    # ROBOTICS_TICKER/asset_dir: lo scanner è un sistema indipendente,
+    # non importa trend_analysis.py né le previsioni di quel paniere)
+    "6481.T", "6324.T", "TER", "VRT", "NVT", "MU",
+    # Aggiunti da Claude
+    "RIVN", "SOFI", "PLTR", "MARA", "RIOT", "IONQ", "SMCI", "PLUG", "COIN",
+    "GME", "AMC", "CVNA", "UPST", "LCID", "ARM", "INTC", "MSTR", "CRWD", "NIO",
+]
+
+# Ticker Yahoo Finance per le crypto: formato con trattino (BTC-USD), non lo
+# slash usato da Alpaca (BTC/USD) — fonti diverse, convenzioni diverse.
+SCANNER_CRYPTO = ["BTC-USD", "ETH-USD", "SOL-USD"]
+
+# Soglie di segnalazione: non filtrano i risultati (lo scanner mostra sempre
+# tutto), servono solo a marcare "flagged" le righe più interessanti così il
+# frontend può metterle in cima. Punti di partenza ragionevoli, non validati
+# statisticamente — l'utente può chiedere di tararli diversamente osservando
+# i risultati reali nel tempo.
+SCANNER_VOLUME_RATIO_FLAG = 2.0  # volume odierno >= 2x la media del lookback
+SCANNER_GAP_PCT_FLAG = 4.0  # |gap apertura vs chiusura precedente| >= 4%
+# >= 0.0 = prezzo attuale al massimo del lookback o sopra (breakout vero).
+# Provato -2.0 ("vicino" al massimo) su dati reali del 30/10/2026: segnalava
+# anche titoli stabili come WMT/NKE/V solo per normale oscillazione intorno
+# al proprio massimo di 20 giorni (finestra corta, il massimo è spesso
+# recente anche senza nulla di notevole) — 28 titoli su 53 segnalati,
+# nessuna selezione reale. 0.0 richiede che il prezzo sia DAVVERO al
+# massimo o sopra, non "vicino".
+SCANNER_BREAKOUT_PCT_FLAG = 0.0
+
+# ~1 mese di borsa: abbastanza per una media volume/massimo recente
+# ragionevoli, abbastanza corto da restare "breakout recente" e non
+# confondersi con il massimo delle 52 settimane (già coperto da
+# trend_analysis.py per il paniere ROBOTICS_ASSETS).
+SCANNER_LOOKBACK_DAYS = 20
+
+SCANNER_FILE = "data/scanner/results.json"
+
 
 def snapshot_file(asset: str) -> str:
     return f"{asset_dir(asset)}/snapshot.json"
