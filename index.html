@@ -91,6 +91,15 @@
             color: var(--text-main);
             padding: 16px;
             padding-bottom: 80px;
+            /* Audit UI 2026-11-02 (UI-01): senza un limite, su un monitor
+               largo il contenuto si allargava a riempire tutta la finestra
+               — tabelle con colonne larghissime, metà schermo vuoto. Un
+               max-width centrato lo impedisce; .update-banner (position:
+               fixed, sopra) resta a piena larghezza perché è ancorato al
+               viewport, non al body, quindi non viene toccato da questo
+               cambio. */
+            max-width: 1040px;
+            margin: 0 auto;
         }
 
         canvas {
@@ -247,14 +256,19 @@
             border-left: 1px solid var(--card-border);
         }
 
-        /* Etichette un filo più strette solo qui (0.72rem/0.03em invece di
+        /* Etichette un filo più strette solo qui (0.75rem/0 invece di
            0.78rem/0.06em della regola base): sono la parte più larga di
            ogni colonna ("ACCURATEZZA"), quindi la leva più efficace per far
            stare le 3 in linea senza scorrere su un telefono reale. I numeri
-           (.stat-value) restano alla dimensione normale, leggibili. */
+           (.stat-value) restano alla dimensione normale, leggibili.
+           0.75rem = 12px esatti (prima 0.72rem = 11,5px, sotto la soglia di
+           leggibilità comune — audit UI 2026-11-02, UI-04): per non perdere
+           lo spazio riguadagnato la spaziatura tra le lettere scende a 0
+           invece di restare a 0.03em, verificato dal vivo che non torni lo
+           scroll orizzontale su telefono. */
         .stat-banner-merged .stat-label {
-            font-size: 0.72rem;
-            letter-spacing: 0.03em;
+            font-size: 0.75rem;
+            letter-spacing: 0;
         }
 
         .pl-positive { color: var(--accent-green); }
@@ -621,6 +635,27 @@
         }
         .aitrader-trades-subhead:first-of-type { margin-top: 2px; }
 
+        /* Scanner (UX-06, audit 2026-11-02): separatore visivo tra "titoli
+           segnalati" e il resto — mai un filtro, l'utente aveva chiesto
+           esplicitamente di vedere sempre tutta la lista (vedi commento su
+           renderScannerResults). Stessa etichetta di .aitrader-trades-subhead
+           sopra per coerenza, ma dentro la lista/tabella invece che come
+           intestazione di sezione a parte. */
+        .scanner-group-divider {
+            font-size: 0.78rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            font-weight: 600;
+            margin: 16px 0 8px;
+            padding-top: 12px;
+            border-top: 1px solid var(--card-border);
+        }
+        td.scanner-group-divider, tr.scanner-group-divider td {
+            border-top: 1px solid var(--card-border);
+            padding-top: 16px;
+        }
+
         .paper-item-list .table-message {
             text-align: center;
             color: var(--text-muted);
@@ -838,16 +873,24 @@
 
         .page-tab-secondary {
             flex: 0 0 auto;
-            padding: 6px 12px;
+            padding: 6px 14px;
             border-radius: var(--radius-pill);
             border: 1px solid transparent;
             background-color: transparent;
             color: var(--text-muted);
             font-weight: 600;
-            font-size: 0.72rem;
+            font-size: 0.78rem;
             cursor: pointer;
             text-align: center;
-            align-self: center;
+            /* Audit UX 2026-11-02 (UX-05): persa nel farli stare sulla
+               stessa riga di "Trading AI" — misurata a 53x28px e 120x28px,
+               sotto il bersaglio minimo di tocco di 44px consigliato per un
+               dito su mobile (stesso principio di .page-tab-primary sopra
+               e di .horizon-filter-btn). Non allunga la riga: l'altezza
+               della riga è già 44px per via del pulsante primario accanto,
+               questo la riempie invece di restare centrato più piccolo. */
+            min-height: 44px;
+            align-self: stretch;
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -1188,14 +1231,14 @@
             <div class="chart-container">
                 <canvas id="aitrader-equity-chart"></canvas>
             </div>
-            <p style="font-size:11px;color:var(--text-dim);margin:8px 0 0;">
+            <p style="font-size:12px;color:var(--text-dim);margin:8px 0 0;">
                 La riga sottile "Momentum" è un confronto, non un'altra strategia reale in corso: regole
                 fisse senza AI, stessi titoli e stesso capitale dell'esperimento. Tocca il suo nome in
                 legenda per nasconderla — le operazioni vere di entrambe sono nella dashboard sotto.
             </p>
         </div>
 
-        <p style="font-size:11px;color:var(--text-dim);margin:16px 0 8px;">
+        <p style="font-size:12px;color:var(--text-dim);margin:16px 0 8px;">
             Operazioni della strategia selezionata (switch in cima alla pagina): quando è
             entrata/uscita, a che prezzo, quanto ha guadagnato o perso.
         </p>
@@ -1798,7 +1841,7 @@
                 return `
                     <li style="margin-bottom: 6px;">
                         ${titleHtml}
-                        <span style="opacity:0.6; font-size: 11px;"> — ${escapeHtml(h.provider || '')}, ${escapeHtml(h.published || '')}</span>
+                        <span style="opacity:0.6; font-size: 12px;"> — ${escapeHtml(h.provider || '')}, ${escapeHtml(h.published || '')}</span>
                     </li>
                 `;
             }).join('');
@@ -1848,7 +1891,7 @@
                 ${renderNextEarnings(a.next_earnings)}
                 ${renderRecentDividend(a.recent_dividend)}
                 ${renderRecentNews(a.recent_news)}
-                <div style="font-size: 11px; opacity: 0.6; margin-top: 6px;">
+                <div style="font-size: 12px; opacity: 0.6; margin-top: 6px;">
                     Fonte: ${TV_FUNDAMENTALS.source}, snapshot del ${asOf}. Non si aggiorna in
                     automatico: è una fotografia datata, non un feed.
                 </div>
@@ -2084,7 +2127,7 @@
                     <span style="opacity:0.6; font-size: 12px; margin-left: 8px;">${dateStr}</span>
                     ${sectorHtml}
                     ${crossSectorHtml}
-                    <div style="font-size: 11px; opacity: 0.6; margin-top: 8px;">
+                    <div style="font-size: 12px; opacity: 0.6; margin-top: 8px;">
                         Basato sulle ultime letture disponibili di: ${assetsList || '—'}
                     </div>
                 `;
@@ -2226,7 +2269,7 @@
                 return `<tr>
                     <td>${rDate}</td>
                     <td><span class="badge ${rBadge}">${r.trend_direction || '—'}</span></td>
-                    <td><span class="cycle-badge cycle-${rp}" style="font-size:0.68rem; padding:3px 8px;">${CYCLE_PHASE_LABEL[rp] || rp}</span></td>
+                    <td><span class="cycle-badge cycle-${rp}" style="font-size:0.75rem; padding:3px 8px;">${CYCLE_PHASE_LABEL[rp] || rp}</span></td>
                     <td>${r.confidence != null ? r.confidence + '%' : '—'}</td>
                 </tr>`;
             }).join('');
@@ -3071,7 +3114,18 @@
                 return;
             }
 
-            tableBody.innerHTML = rows.map(r => `
+            // Sempre tutti i titoli, mai filtrati (vedi commento sopra) — qui
+            // solo un'intestazione visiva nel punto in cui la lista passa
+            // dai segnalati agli altri, così i 20-30 titoli "normali" non
+            // sembrano un'appendice indistinta dei pochi segnalati in cima
+            // (audit UX 2026-11-02, UX-06). flaggedCount conta quanti sono
+            // in cima: se sono tutti segnalati o nessuno lo è, niente
+            // intestazione da inserire, non ci sono due gruppi da separare.
+            const flaggedCount = rows.filter(r => r.flagged).length;
+            const needsDivider = flaggedCount > 0 && flaggedCount < rows.length;
+
+            tableBody.innerHTML = rows.map((r, i) => `
+                ${needsDivider && i === flaggedCount ? `<tr class="scanner-group-divider"><td colspan="6">Altri titoli (non segnalati)</td></tr>` : ''}
                 <tr>
                     <td data-label="Titolo"><strong>${escapeHtml(r.symbol)}</strong></td>
                     <td data-label="Prezzo">${formatScannerPrice(r.price, r.currency)}</td>
@@ -3082,7 +3136,8 @@
                 </tr>
             `).join('');
 
-            list.innerHTML = rows.map(r => `
+            list.innerHTML = rows.map((r, i) => `
+                ${needsDivider && i === flaggedCount ? `<div class="scanner-group-divider">Altri titoli (non segnalati)</div>` : ''}
                 <details class="paper-item">
                     <summary class="paper-item-summary">
                         <span class="paper-item-heading">
