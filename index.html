@@ -502,9 +502,10 @@
             font-size: 0.74rem;
             color: var(--text-dim);
             margin-top: 1px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            /* Mai troncato con "...": su "Vendite recenti" nasconderebbe il
+               prezzo di uscita (segnalato dall'utente, 2026-11) — va bene
+               che vada a capo su schermi stretti, min-width:0 sul genitore
+               (.pos-row__main/.trade-row__main sopra) lo permette. */
         }
         .pos-row__end, .trade-row__end { text-align: right; flex-shrink: 0; }
         .pos-row__top-label {
@@ -635,6 +636,27 @@
             border-color: transparent;
             box-shadow: none;
         }
+        /* Legenda a pallini del grafico equity, al posto di quella nativa
+           di Chart.js (vedi _renderAiTraderChartLegend) — stesso aspetto
+           dell'artefatto approvato. */
+        .aitrader-chart-legend {
+            display: flex;
+            gap: 14px;
+            margin: 2px 0 10px;
+        }
+        .aitrader-chart-legend__item {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-dim);
+            cursor: pointer;
+            user-select: none;
+        }
+        .aitrader-chart-legend__item.active { color: var(--text-main); }
+        .aitrader-chart-legend__item--hidden { opacity: 0.4; text-decoration: line-through; }
+        .aitrader-chart-legend__dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 
         .asset-title {
             font-size: 1.25rem;
@@ -1431,6 +1453,7 @@
             <div class="asset-header">
                 <span class="asset-title">Andamento equity</span>
             </div>
+            <div class="aitrader-chart-legend" id="aitrader-chart-legend"></div>
             <div class="chart-container">
                 <canvas id="aitrader-equity-chart"></canvas>
             </div>
@@ -3025,8 +3048,8 @@
             // Riga di confronto, volutamente poco invasiva quando non è
             // quella selezionata (richiesto dall'utente): "se invece avessi
             // fatto..." — non decisioni reali, nessun ordine, nessun costo
-            // AI (vedi src/benchmark.py). Cliccando il suo nome in legenda
-            // si nasconde/mostra (comportamento nativo di Chart.js).
+            // AI (vedi src/benchmark.py). Nascondibile dalla legenda sotto
+            // (nostra, non quella nativa di Chart.js — vedi _renderAiTraderChartLegend).
             if (momentumAligned) {
                 datasets.push({
                     label: 'Momentum (regole fisse)',
@@ -3052,6 +3075,14 @@
                 order: 3,
             });
 
+            // Niente assi/griglia/legenda nativa (richiesto dall'utente,
+            // 2026-11: "l'artefatto è un sacco più curato" — il grafico
+            // vero aveva numeri sugli assi e la legenda a rettangolini di
+            // Chart.js, l'artefatto approvato no, solo le due linee). I
+            // valori esatti restano disponibili al tocco/passaggio del
+            // mouse (tooltip, interaction.mode:'index' sotto); la legenda è
+            // quella nostra a pallini fuori dal canvas, vedi
+            // _renderAiTraderChartLegend.
             chartInstances[canvasId] = new Chart(ctx, {
                 type: 'line',
                 data: { labels: labels, datasets: datasets },
@@ -3060,13 +3091,46 @@
                     maintainAspectRatio: false,
                     interaction: { mode: 'index', intersect: false },
                     plugins: {
-                        legend: { display: true, labels: { color: '#8b94a3', font: { size: 10 } } }
+                        legend: { display: false }
                     },
                     scales: {
-                        x: { ticks: { color: '#8b94a3', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.05)' } },
-                        y: { ticks: { color: '#8b94a3', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                        x: { display: false },
+                        y: { display: false }
                     }
                 }
+            });
+
+            _renderAiTraderChartLegend(chartInstances[canvasId], primaryIsReal, !!momentumAligned);
+        }
+
+        // Legenda a pallini sopra il grafico (stesso linguaggio
+        // dell'artefatto approvato) al posto di quella nativa di Chart.js:
+        // il pallino di ciascuna strategia resta sempre del suo colore
+        // (identità fissa, come le linee), il testo di quella selezionata è
+        // in evidenza, e toccare un nome nasconde/mostra la sua riga —
+        // stessa funzione che offriva la legenda nativa prima, non persa.
+        function _renderAiTraderChartLegend(chart, primaryIsReal, hasMomentum) {
+            const el = document.getElementById('aitrader-chart-legend');
+            if (!el) return;
+            const items = [
+                { label: 'AI reale', color: '#4f7cff', datasetIndex: 0, active: primaryIsReal },
+            ];
+            if (hasMomentum) {
+                items.push({ label: 'Momentum', color: '#a78bfa', datasetIndex: 1, active: !primaryIsReal });
+            }
+            el.innerHTML = items.map(it => `
+                <span class="aitrader-chart-legend__item${it.active ? ' active' : ''}" data-dataset-index="${it.datasetIndex}">
+                    <span class="aitrader-chart-legend__dot" style="background:${it.color}"></span>${escapeHtml(it.label)}
+                </span>
+            `).join('');
+            el.querySelectorAll('.aitrader-chart-legend__item').forEach(span => {
+                span.addEventListener('click', () => {
+                    const idx = Number(span.dataset.datasetIndex);
+                    const visible = chart.isDatasetVisible(idx);
+                    chart.setDatasetVisibility(idx, !visible);
+                    chart.update();
+                    span.classList.toggle('aitrader-chart-legend__item--hidden', visible);
+                });
             });
         }
 
@@ -3140,12 +3204,17 @@
         function _closedTradeRow(t, showUsd) {
             const entryTxt = t.entry_price != null ? `$${Number(t.entry_price).toFixed(2)}` : '—';
             const exitTxt = t.exit_price != null ? `$${Number(t.exit_price).toFixed(2)}` : '—';
+            // Date raggruppate, poi prezzi raggruppati ("25 ott → 30 ott ·
+            // $505.00 → $521.90"), come nell'artefatto approvato — non più
+            // "data prezzo → data prezzo" di prima, più facile da leggere a
+            // colpo d'occhio e più corto (si tronca/va a capo meno spesso).
+            const sub = `${escapeHtml(t.entry_date || '-')} → ${escapeHtml(t.exit_date || '-')} · ${entryTxt} → ${exitTxt}${_qtyTxt(t.qty)}`;
             return `
                 <div class="trade-row">
                     <div class="trade-row__icon">${escapeHtml((t.symbol || '--').slice(0, 2))}</div>
                     <div class="trade-row__main">
                         <div class="trade-row__sym">${escapeHtml(t.symbol || '-')}</div>
-                        <div class="trade-row__sub">${escapeHtml(t.entry_date || '-')} ${entryTxt}${_qtyTxt(t.qty)} → ${escapeHtml(t.exit_date || '-')} ${exitTxt}</div>
+                        <div class="trade-row__sub">${sub}</div>
                     </div>
                     <div class="trade-row__end">
                         ${_plStackHtml(t.pl_pct ?? t.return_pct, showUsd ? t.pl_usd : null)}
