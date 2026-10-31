@@ -163,53 +163,6 @@
             box-shadow: var(--shadow-card);
         }
 
-        /* Il banner del portafoglio paper mostra importi in valuta
-           ("$370.802,67"), molto più lunghi dei valori brevi della
-           dashboard principale ("41.5%", "205") che questo stesso
-           componente mostra altrove: a 3 colonne su schermi stretti il
-           numero andava a capo a metà cifra. Sotto i 480px il banner del
-           solo portafoglio paper passa da "3 numeri impilati" (ciascuno con
-           l'etichetta sopra, molto spazio verticale morto) a una mini lista
-           di conto: etichetta a sinistra, valore a destra, righe separate
-           da un filo sottile — più compatto, e un formato già familiare per
-           un riepilogo di saldo. La dashboard principale (3 colonne corte,
-           nessun problema di spazio) resta invariata. */
-        @media (max-width: 480px) {
-            #page-paper .summary-banner {
-                grid-template-columns: 1fr;
-                justify-content: stretch;
-                /* width:fit-content/max-width del banner base (qui sopra)
-                   è pensato per il gruppo orizzontale di 3 numeri della
-                   dashboard principale — qui invece ogni riga usa tutta la
-                   larghezza per mettere etichetta a sinistra e valore a
-                   destra (vedi .stat-box sotto): senza riportarlo a piena
-                   larghezza, fit-content la restringerebbe al contenuto più
-                   corto e romperebbe lo spazio tra etichetta e valore. */
-                width: 100%;
-                gap: 0;
-                padding: 6px 16px;
-            }
-            #page-paper .stat-box {
-                flex-direction: row;
-                align-items: baseline;
-                justify-content: space-between;
-                gap: 10px;
-                padding: 12px 0;
-                border-bottom: 1px solid var(--card-border);
-                min-width: 0;
-            }
-            #page-paper .stat-box:last-child { border-bottom: none; }
-            #page-paper .stat-label {
-                min-height: 0;
-                text-align: left;
-                white-space: nowrap;
-            }
-            #page-paper .stat-value {
-                margin-top: 0;
-                font-size: 1.05rem;
-            }
-        }
-
         .stat-box {
             display: flex;
             flex-direction: column;
@@ -265,6 +218,73 @@
 
         .pl-positive { color: var(--accent-green); }
         .pl-negative { color: var(--accent-red); }
+
+        /* Sotto i 480px OGNI .summary-banner (dashboard principale inclusa,
+           non solo il portafoglio paper) passa da "numeri affiancati" a una
+           mini lista di conto: etichetta a sinistra, valore a destra, righe
+           separate da un filo sottile.
+
+           Non è solo un vezzo estetico: con testo di sistema ingrandito
+           (impostazione di accessibilità comune su Android, ~130%) 3
+           colonne affiancate non ci stanno più senza andare a capo — grid
+           "auto" non può restringersi sotto il proprio contenuto, quindi il
+           banner torna a tutta larghezza esattamente come PRIMA del fix di
+           questa stessa sessione (bug segnalato dall'utente, riprodotto dal
+           vivo contro il sito pubblico forzando lo zoom testo al 130% su
+           Chrome: il riquadro tornava edge-to-edge). Impilato verticalmente
+           invece non ha questo limite: ogni riga usa tutta la larghezza
+           per sé, quindi un'etichetta più larga per via del testo
+           ingrandito ha sempre spazio a sufficienza. Era già così per il
+           portafoglio paper (dove i VALORI sono lunghi, es. "$370.802,67");
+           ora vale anche per la dashboard principale (dove sono le
+           ETICHETTE a poter diventare troppo larghe con testo ingrandito).
+           Da 480px in su resta il gruppo compatto centrato (nessun problema
+           di spazio lì).
+
+           Questo blocco DEVE stare dopo .stat-box/.stat-label/.stat-value
+           sopra, non prima: stessa specificità (una sola classe), quindi a
+           parità di specificità vince l'ultima regola nel file, media query
+           o no — bug reale appena trovato (il blocco stava prima: a
+           qualunque larghezza/zoom .stat-box{flex-direction:column} di
+           quella base vinceva comunque sul flex-direction:row qui sotto,
+           quindi "etichetta sopra, valore sotto" invece di "etichetta a
+           sinistra, valore a destra" anche dentro gli 480px). */
+        @media (max-width: 480px) {
+            .summary-banner {
+                grid-template-columns: 1fr;
+                justify-content: stretch;
+                /* width:fit-content/max-width del banner base (qui sopra) è
+                   pensato per il gruppo orizzontale di 3 numeri a riposo —
+                   qui invece ogni riga usa tutta la larghezza per mettere
+                   etichetta a sinistra e valore a destra (vedi .stat-box
+                   sotto): senza riportarlo a piena larghezza, fit-content la
+                   restringerebbe al contenuto più corto e romperebbe lo
+                   spazio tra etichetta e valore. */
+                width: 100%;
+                gap: 0;
+                padding: 6px 16px;
+            }
+            .stat-box {
+                flex-direction: row;
+                align-items: baseline;
+                justify-content: space-between;
+                gap: 10px;
+                padding: 12px 0;
+                border-bottom: 1px solid var(--card-border);
+                min-width: 0;
+            }
+            .stat-box:last-child { border-bottom: none; }
+            .stat-label {
+                min-height: 0;
+                text-align: left;
+                white-space: normal;
+            }
+            .stat-value {
+                margin-top: 0;
+                font-size: 1.05rem;
+            }
+            #stat-accuracy { font-size: 1.15rem; }
+        }
 
         .horizon-filter {
             display: flex;
