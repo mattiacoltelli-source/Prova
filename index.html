@@ -1147,6 +1147,9 @@
             </div>
         </details>
 
+        <p id="aitrader-stats-label" style="font-size:0.78rem;color:var(--text-dim);font-weight:600;margin:0 0 6px;">
+            Numeri di: AI reale
+        </p>
         <div class="summary-banner">
             <div class="stat-box">
                 <span class="stat-label">Equity attuale</span>
@@ -2562,14 +2565,25 @@
             const latestEquity = history.length > 0
                 ? history[history.length - 1].equity_usd
                 : (experiment.final_equity_usd ?? startEquity);
-            const pl = latestEquity - startEquity;
-            const plPct = startEquity ? (pl / startEquity * 100) : 0;
 
-            document.getElementById('aitrader-stat-equity').innerText = formatMoney(latestEquity);
-            const plEl = document.getElementById('aitrader-stat-pl');
-            const plSign = pl >= 0 ? '+' : '-';
-            plEl.innerText = `${plSign}${formatMoney(Math.abs(pl))} (${formatPct(plPct)})`;
-            plEl.className = `stat-value ${pl >= 0 ? 'pl-positive' : 'pl-negative'}`;
+            const momentumHistory = momentumRes.data;
+            const latestMomentumEquity = momentumHistory.length > 0
+                ? momentumHistory[momentumHistory.length - 1].equity_usd
+                : startEquity;
+
+            // I box in alto (Equity attuale/Guadagno-perdita) cambiano
+            // insieme allo switch sotto (richiesto dall'utente il
+            // 2026-11-02: prima mostravano sempre e solo l'AI reale,
+            // indipendentemente da quale dashboard operazioni era
+            // selezionata — confusione reale, l'utente si aspettava che
+            // cambiassero insieme). "Giorni rimasti" invece resta uguale
+            // per entrambe: stessa finestra temporale dell'esperimento,
+            // non ha un equivalente "per strategia".
+            aiTraderStatsByStrategy = {
+                real: _computeAiTraderStats(latestEquity, startEquity),
+                momentum: _computeAiTraderStats(latestMomentumEquity, startEquity),
+            };
+            _renderAiTraderStatBoxes(aiTraderStatsByStrategy[currentTradeStrategyFilter]);
 
             const daysEl = document.getElementById('aitrader-stat-days');
             if (experiment.status === 'running') {
@@ -2772,7 +2786,30 @@
         // filtri Asset/Orizzonte: un pulsante .horizon-filter-btn alla
         // volta "active", le card corrispondenti mostrate/nascoste con
         // display, nessun nuovo framework o libreria.
+        //
+        // I box "Equity attuale"/"Guadagno-perdita" in cima alla pagina
+        // seguono lo stesso switch (richiesto subito dopo dall'utente:
+        // mostravano sempre e solo l'AI reale, confondendo con la
+        // dashboard sotto che invece cambiava) — aiTraderStatsByStrategy
+        // viene popolato una volta sola in _loadAiTraderExperimentAndDecisions,
+        // qui si legge solo quale dei due mostrare.
         let currentTradeStrategyFilter = 'real';
+        let aiTraderStatsByStrategy = { real: null, momentum: null };
+
+        function _computeAiTraderStats(latestEquity, startEquity) {
+            const pl = latestEquity - startEquity;
+            const plPct = startEquity ? (pl / startEquity * 100) : 0;
+            return { equity: latestEquity, pl, plPct };
+        }
+
+        function _renderAiTraderStatBoxes(stats) {
+            if (!stats) return;
+            document.getElementById('aitrader-stat-equity').innerText = formatMoney(stats.equity);
+            const plEl = document.getElementById('aitrader-stat-pl');
+            const plSign = stats.pl >= 0 ? '+' : '-';
+            plEl.innerText = `${plSign}${formatMoney(Math.abs(stats.pl))} (${formatPct(stats.plPct)})`;
+            plEl.className = `stat-value ${stats.pl >= 0 ? 'pl-positive' : 'pl-negative'}`;
+        }
 
         function setTradeStrategyFilter(strategy) {
             currentTradeStrategyFilter = strategy;
@@ -2786,6 +2823,9 @@
             document.querySelectorAll('#aitrader-real-trades-card, #aitrader-momentum-trades-card').forEach(card => {
                 card.style.display = card.dataset.strategy === currentTradeStrategyFilter ? '' : 'none';
             });
+            document.getElementById('aitrader-stats-label').innerText =
+                `Numeri di: ${currentTradeStrategyFilter === 'real' ? 'AI reale' : 'Momentum'}`;
+            _renderAiTraderStatBoxes(aiTraderStatsByStrategy[currentTradeStrategyFilter]);
         }
 
         function renderTradeDashboards(realTrades, momentumTrades) {
