@@ -138,12 +138,12 @@
             gap: 9px;
         }
 
-        /* Logo e pulsante Aggiorna: blu come il resto dell'app ri-tematizzata
-           (richiesto dall'utente, 2026-11), scritto diretto invece che via
-           var(--accent-signal) — quel token resta ciano per .page-tab-primary
-           appena sotto, che ha anche uno sfondo rgba ciano scritto a mano
-           (non toccato): cambiare il token avrebbe sfasato bordo/testo del
-           tab dal suo stesso sfondo. */
+        /* Logo, pulsante Aggiorna e voce attiva del menu pagine: blu come il
+           resto dell'app ri-tematizzata (richiesto dall'utente, 2026-11),
+           scritti diretti invece che via var(--accent-signal) — l'header è
+           fuori da #page-aitrader/#page-tech/#page-explore, quindi quel
+           token lì resta il ciano globale (vedi :root sopra), non il blu
+           scoped alle pagine. */
         h1 .icon-brand { color: #4f7cff; display: inline-flex; flex-shrink: 0; }
 
         .refresh-btn {
@@ -166,6 +166,63 @@
 
         .refresh-btn:hover { filter: brightness(1.1); }
         .refresh-btn:active { transform: scale(0.96); }
+
+        .header-actions { display: flex; align-items: center; gap: 8px; }
+
+        .page-menu { position: relative; }
+        .page-menu-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: var(--radius-sm);
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            color: var(--text-muted);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: color var(--transition-fast), border-color var(--transition-fast);
+        }
+        .page-menu-btn:hover, .page-menu-btn[aria-expanded="true"] {
+            color: var(--text-main);
+            border-color: var(--text-dim);
+        }
+        .page-menu-dropdown {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            z-index: 30;
+            min-width: 180px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-card), 0 8px 24px rgba(0, 0, 0, 0.35);
+            padding: 6px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        /* display:flex sopra vince sempre su [hidden] (stile base del
+           browser, priorità più bassa di una qualsiasi regola d'autore a
+           parità di specificità) — senza questa riga la tendina resterebbe
+           sempre visibile anche con l'attributo hidden impostato da JS. */
+        .page-menu-dropdown[hidden] {
+            display: none;
+        }
+        .page-menu-item {
+            background: none;
+            border: none;
+            text-align: left;
+            padding: 11px 12px;
+            border-radius: var(--radius-sm);
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            cursor: pointer;
+            min-height: 44px;
+        }
+        .page-menu-item:hover { background: var(--bg-color-2); color: var(--text-main); }
+        .page-menu-item.active { color: #4f7cff; background: rgba(79, 124, 255, 0.1); }
 
         /* 3 riquadri singoli ("box fatto su misura" — richiesta esplicita
            dell'utente dopo le due versioni precedenti), etichetta sopra il
@@ -1106,79 +1163,6 @@
         .badge-DOWN { background-color: rgba(251, 113, 133, 0.2); color: var(--accent-red); }
         .badge-FLAT { background-color: rgba(251, 191, 36, 0.2); color: var(--accent-yellow); }
 
-        /* Trading AI è la parte core dell'app (richiesto dall'utente il
-           2026-11-02): un pulsante grande che occupa la maggior parte della
-           riga, con Tech e Approfondimenti come due link piccoli accanto —
-           non tre schede alla pari come prima, ma nemmeno una riga in più
-           (richiesto il 2026-11-02 poco dopo: il primo tentativo, con
-           Tech/Approfondimenti su una riga separata sotto, allungava la
-           pagina). Tutti e tre restano raggiungibili con un tocco, un
-           solo rigo come prima del cambio. */
-        .page-tabs-primary {
-            display: flex;
-            align-items: stretch;
-            gap: 6px;
-            margin-bottom: 18px;
-        }
-
-        .page-tab-primary {
-            flex: 1;
-            min-width: 0;
-            padding: 11px 8px;
-            border-radius: var(--radius-md);
-            border: 1px solid var(--accent-signal);
-            background-color: rgba(56, 182, 217, 0.15);
-            color: var(--accent-signal);
-            font-weight: 800;
-            font-size: 0.95rem;
-            cursor: pointer;
-            text-align: center;
-            min-height: 44px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all var(--transition-fast);
-        }
-
-        .page-tab-secondary {
-            flex: 0 0 auto;
-            padding: 6px 14px;
-            border-radius: var(--radius-pill);
-            border: 1px solid transparent;
-            background-color: transparent;
-            color: var(--text-muted);
-            font-weight: 600;
-            font-size: 0.78rem;
-            cursor: pointer;
-            text-align: center;
-            /* Audit UX 2026-11-02 (UX-05): persa nel farli stare sulla
-               stessa riga di "Trading AI" — misurata a 53x28px e 120x28px,
-               sotto il bersaglio minimo di tocco di 44px consigliato per un
-               dito su mobile (stesso principio di .page-tab-primary sopra
-               e di .horizon-filter-btn). Non allunga la riga: l'altezza
-               della riga è già 44px per via del pulsante primario accanto,
-               questo la riempie invece di restare centrato più piccolo. */
-            min-height: 44px;
-            align-self: stretch;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            transition: all var(--transition-fast);
-        }
-
-        .page-tab-secondary.active {
-            background-color: var(--card-bg);
-            border-color: var(--card-border);
-            color: var(--text-color);
-        }
-
-        /* La sotto-navigazione di "Approfondimenti" (Trend/Report/Scanner)
-           e quella di Tech (Asset/Orizzonte) usano .horizon-filter-btn, non
-           questa classe — il primo livello in cima alla pagina (Trading AI/
-           Tech/Approfondimenti) è .page-tab-primary/.page-tab-secondary
-           sopra, non più .page-tabs/.page-tab (rimosse il 2026-11-02 insieme
-           all'ultimo punto che le usava ancora). */
-
         /* Badge fase del ciclo (trend_analysis.classify_cycle_phase):
            rosso = estesa (rischio mean-reversion), giallo = neutrale,
            verde = compressa (storicamente punto di ingresso migliore) —
@@ -1425,14 +1409,28 @@
 
     <header>
         <h1><span class="icon-brand"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 6"/><polyline points="15 6 21 6 21 12"/></svg></span> AI Predictor</h1>
-        <button class="refresh-btn" onclick="location.reload()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>Aggiorna</button>
+        <div class="header-actions">
+            <!-- Trading AI è la pagina di apertura, pulita, senza le altre due
+                 schede subito in vista (richiesto dall'utente, 2026-11: "non
+                 li voglio in mezzo, in vista, in alto... devono essere
+                 nascosti"; messi dentro il pannello "Come funziona questa
+                 pagina?" non avrebbe senso, nessuno lo aprirebbe per cercare
+                 altre pagine — qui invece un piccolo pulsante dedicato, un
+                 menu a tendina compatto, nulla di visibile finché non lo si
+                 tocca). -->
+            <div class="page-menu" id="page-menu">
+                <button class="page-menu-btn" id="page-menu-btn" onclick="togglePageMenu()" aria-haspopup="true" aria-expanded="false" aria-label="Altre pagine">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="19" cy="12" r="2.2"/></svg>
+                </button>
+                <div class="page-menu-dropdown" id="page-menu-dropdown" hidden>
+                    <button class="page-menu-item active" id="tab-btn-aitrader" onclick="switchPage('aitrader')">Trading AI</button>
+                    <button class="page-menu-item" id="tab-btn-tech" onclick="switchPage('tech')">Tech</button>
+                    <button class="page-menu-item" id="tab-btn-explore" onclick="switchPage('explore')">Approfondimenti</button>
+                </div>
+            </div>
+            <button class="refresh-btn" onclick="location.reload()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>Aggiorna</button>
+        </div>
     </header>
-
-    <div class="page-tabs-primary">
-        <button class="page-tab-primary active" id="tab-btn-aitrader" onclick="switchPage('aitrader')">Trading AI</button>
-        <button class="page-tab-secondary" id="tab-btn-tech" onclick="switchPage('tech')">Tech</button>
-        <button class="page-tab-secondary" id="tab-btn-explore" onclick="switchPage('explore')">Approfondimenti</button>
-    </div>
 
     <div id="page-aitrader">
 
@@ -2281,7 +2279,37 @@
             // lo scurisce di un filo per allinearlo esattamente al --bg-color
             // ri-tematizzato della pagina Trading AI (vedi CSS #page-aitrader).
             document.body.classList.toggle('bg-aitrader', page === 'aitrader');
+            closePageMenu();
         }
+
+        // Menu "altre pagine" nell'header (richiesto dall'utente, 2026-11:
+        // Tech/Approfondimenti non devono stare sempre in vista come prima
+        // — un piccolo pulsante apre questo menu a tendina, si chiude scegliendo
+        // una voce, cliccando fuori o con Esc. Stessi #tab-btn-* di sempre
+        // dentro, switchPage() continua a leggerli/scriverli senza modifiche.
+        function togglePageMenu() {
+            const btn = document.getElementById('page-menu-btn');
+            const dropdown = document.getElementById('page-menu-dropdown');
+            const isOpen = !dropdown.hidden;
+            if (isOpen) { closePageMenu(); return; }
+            dropdown.hidden = false;
+            btn.setAttribute('aria-expanded', 'true');
+        }
+
+        function closePageMenu() {
+            const btn = document.getElementById('page-menu-btn');
+            const dropdown = document.getElementById('page-menu-dropdown');
+            dropdown.hidden = true;
+            btn.setAttribute('aria-expanded', 'false');
+        }
+
+        document.addEventListener('click', (e) => {
+            const menu = document.getElementById('page-menu');
+            if (menu && !menu.contains(e.target)) closePageMenu();
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closePageMenu();
+        });
 
         // Sotto-navigazione dentro "Approfondimenti" (Trend/Report/Scanner):
         // stesso pattern di switchPage ma un livello più dentro, sugli stessi
