@@ -1034,14 +1034,77 @@
     </header>
 
     <div class="page-tabs">
-        <button class="page-tab active" id="tab-btn-tech" onclick="switchPage('tech')"><span class="tab-label-long">Tech (breve termine)</span><span class="tab-label-short">Tech</span></button>
+        <button class="page-tab active" id="tab-btn-aitrader" onclick="switchPage('aitrader')"><span class="tab-label-long">Trading AI</span><span class="tab-label-short">Trading AI</span></button>
+        <button class="page-tab" id="tab-btn-tech" onclick="switchPage('tech')"><span class="tab-label-long">Tech (breve termine)</span><span class="tab-label-short">Tech</span></button>
         <button class="page-tab" id="tab-btn-robotics" onclick="switchPage('robotics')"><span class="tab-label-long">Trend strutturali</span><span class="tab-label-short">Trend</span></button>
         <button class="page-tab" id="tab-btn-report" onclick="switchPage('report')">Report</button>
         <button class="page-tab" id="tab-btn-paper" onclick="switchPage('paper')"><span class="tab-label-long">Portafoglio Paper</span><span class="tab-label-short">Paper</span></button>
         <button class="page-tab" id="tab-btn-scanner" onclick="switchPage('scanner')">Scanner</button>
     </div>
 
-    <div id="page-tech">
+    <div id="page-aitrader">
+
+        <details class="info-panel">
+            <summary><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-2px;margin-right:5px"><circle cx="12" cy="12" r="9"/><line x1="12" y1="11" x2="12" y2="16"/><circle cx="12" cy="7.4" r="0.6" fill="currentColor" stroke="none"/></svg>Come funziona questa pagina?</summary>
+            <div class="info-panel-body">
+                Esperimento di 6 mesi: trading <strong>completamente automatico</strong> (nessuna
+                approvazione per singolo ordine) su un conto paper Alpaca — denaro finto, nessuna
+                operazione reale è mai possibile da qui. Ogni giorno di mercato il sistema decide da
+                solo se comprare o vendere su ~48 titoli (lo stesso universo della scheda Scanner).<br><br>
+                <strong>Segnale ibrido:</strong> per NVDA/AAPL/AMD/MU usa le previsioni AI 1 giorno già
+                generate ogni mattina nella scheda Tech (costo zero aggiuntivo). Per gli altri titoli,
+                un giudizio AI dedicato ogni giorno: più accurato (Claude Sonnet 5.5) sui titoli che lo
+                Scanner segnala come anomali quel giorno, più economico (Claude Haiku 5.5) su tutti gli
+                altri — dentro un tetto di spesa fisso al mese, calcolato sui token reali usati.<br><br>
+                <strong>Sicurezza:</strong> ogni posizione viene chiusa comunque se perde più
+                dell'8%, indipendentemente dal giudizio AI del giorno.<br><br>
+                Dettaglio posizioni aperte e storico completo degli ordini (stesso conto) nella scheda
+                <strong>Portafoglio Paper</strong>.
+            </div>
+        </details>
+
+        <div class="summary-banner">
+            <div class="stat-box">
+                <span class="stat-label">Equity attuale</span>
+                <span class="stat-value" id="aitrader-stat-equity">—</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-label">Guadagno/perdita</span>
+                <span class="stat-value" id="aitrader-stat-pl">—</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-label">Giorni rimasti</span>
+                <span class="stat-value accent" id="aitrader-stat-days">—</span>
+            </div>
+        </div>
+
+        <div class="asset-card" id="aitrader-not-started" style="display:none">
+            <div class="info-panel-body">
+                Esperimento non ancora avviato: in attesa del primo run di setup (chiusura posizioni
+                manuali esistenti e avvio del conteggio dei 6 mesi).
+            </div>
+        </div>
+
+        <div class="asset-card" id="aitrader-chart-card">
+            <div class="asset-header">
+                <span class="asset-title">Andamento equity</span>
+            </div>
+            <div class="chart-container">
+                <canvas id="aitrader-equity-chart"></canvas>
+            </div>
+        </div>
+
+        <div class="asset-card" style="margin-top:16px;">
+            <div class="asset-header">
+                <span class="asset-title">Ultime decisioni AI</span>
+                <span class="badge-accuracy" id="aitrader-budget-badge">—</span>
+            </div>
+            <div class="paper-item-list" id="aitrader-decisions-list" style="display:block;"></div>
+        </div>
+
+    </div><!-- /page-aitrader -->
+
+    <div id="page-tech" style="display:none">
 
     <details class="info-panel">
         <summary><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-2px;margin-right:5px"><circle cx="12" cy="12" r="9"/><line x1="12" y1="11" x2="12" y2="16"/><circle cx="12" cy="7.4" r="0.6" fill="currentColor" stroke="none"/></svg>Che dati analizza l'AI?</summary>
@@ -1751,19 +1814,22 @@
         }
 
         function switchPage(page) {
+            document.getElementById('page-aitrader').style.display = page === 'aitrader' ? '' : 'none';
             document.getElementById('page-tech').style.display = page === 'tech' ? '' : 'none';
             document.getElementById('page-robotics').style.display = page === 'robotics' ? '' : 'none';
             document.getElementById('page-report').style.display = page === 'report' ? '' : 'none';
             document.getElementById('page-paper').style.display = page === 'paper' ? '' : 'none';
             document.getElementById('page-scanner').style.display = page === 'scanner' ? '' : 'none';
+            document.getElementById('tab-btn-aitrader').classList.toggle('active', page === 'aitrader');
             document.getElementById('tab-btn-tech').classList.toggle('active', page === 'tech');
             document.getElementById('tab-btn-robotics').classList.toggle('active', page === 'robotics');
             document.getElementById('tab-btn-report').classList.toggle('active', page === 'report');
             document.getElementById('tab-btn-paper').classList.toggle('active', page === 'paper');
             document.getElementById('tab-btn-scanner').classList.toggle('active', page === 'scanner');
-            // I dati delle pagine Paper/Scanner non cambiano con i filtri
-            // asset/orizzonte delle altre pagine: basta caricarli la prima
-            // volta che si aprono.
+            // I dati delle pagine Trading AI/Paper/Scanner non cambiano con i
+            // filtri asset/orizzonte delle altre pagine: basta caricarli la
+            // prima volta che si aprono.
+            if (page === 'aitrader' && !aiTraderDataLoaded) loadAiTraderData();
             if (page === 'paper' && !paperDataLoaded) loadPaperData();
             if (page === 'scanner' && !scannerDataLoaded) loadScannerData();
         }
@@ -2284,6 +2350,172 @@
             } catch (err) {
                 return null;
             }
+        }
+
+        // Pagina "Trading AI": a differenza di Paper/Scanner è la pagina di
+        // default (prima tab), quindi i suoi dati vengono caricati subito
+        // all'avvio (vedi fondo dello script) e non al primo switchPage —
+        // il flag serve solo a evitare un doppio caricamento se l'utente
+        // esce e rientra nel tab.
+        let aiTraderDataLoaded = false;
+
+        // Tetto di spesa mensile, mantenuto manualmente in sync con
+        // config.AI_TRADER_MONTHLY_BUDGET_USD (stessa pagina statica senza
+        // build step condiviso col backend, vedi PREDICTION_SLOTS_ET sopra).
+        const AI_TRADER_MONTHLY_BUDGET_USD = 3.5;
+
+        async function fetchJsonNoStore(url) {
+            try {
+                const res = await fetch(url, { cache: 'no-store' });
+                if (!res.ok) return null;
+                return await res.json();
+            } catch (err) {
+                return null;
+            }
+        }
+
+        function decisionBadgeClass(decision) {
+            if (decision === 'BUY') return 'badge-UP';
+            if (decision === 'SELL') return 'badge-DOWN';
+            return 'badge-FLAT';
+        }
+
+        async function loadAiTraderData() {
+            aiTraderDataLoaded = true;
+            const now = new Date();
+            const budgetFile = `data/_state/ai_trader_budget_${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}.json`;
+            const [experiment, equityRes, decisionsRes, budgetState] = await Promise.all([
+                fetchJsonNoStore('data/ai_trader/experiment.json'),
+                parseJsonl('data/ai_trader/equity_history.jsonl'),
+                parseJsonl('data/ai_trader/decisions.jsonl'),
+                fetchJsonNoStore(budgetFile),
+            ]);
+
+            const notStartedCard = document.getElementById('aitrader-not-started');
+            const chartCard = document.getElementById('aitrader-chart-card');
+            const budgetBadge = document.getElementById('aitrader-budget-badge');
+            const spentUsd = budgetState ? (budgetState.spent_usd || 0) : 0;
+            budgetBadge.innerText = `Budget AI: $${spentUsd.toFixed(2)} / $${AI_TRADER_MONTHLY_BUDGET_USD.toFixed(2)}`;
+
+            if (!experiment) {
+                notStartedCard.style.display = '';
+                chartCard.style.display = 'none';
+                document.getElementById('aitrader-stat-equity').innerText = '—';
+                document.getElementById('aitrader-stat-pl').innerText = '—';
+                document.getElementById('aitrader-stat-days').innerText = '—';
+                document.getElementById('aitrader-decisions-list').innerHTML =
+                    paperListMessage('Esperimento non ancora avviato.', false);
+                return;
+            }
+            notStartedCard.style.display = 'none';
+            chartCard.style.display = '';
+
+            const history = equityRes.data;
+            const startEquity = experiment.start_equity_usd;
+            const latestEquity = history.length > 0
+                ? history[history.length - 1].equity_usd
+                : (experiment.final_equity_usd ?? startEquity);
+            const pl = latestEquity - startEquity;
+            const plPct = startEquity ? (pl / startEquity * 100) : 0;
+
+            document.getElementById('aitrader-stat-equity').innerText = formatMoney(latestEquity);
+            const plEl = document.getElementById('aitrader-stat-pl');
+            const plSign = pl >= 0 ? '+' : '-';
+            plEl.innerText = `${plSign}${formatMoney(Math.abs(pl))} (${formatPct(plPct)})`;
+            plEl.className = `stat-value ${pl >= 0 ? 'pl-positive' : 'pl-negative'}`;
+
+            const daysEl = document.getElementById('aitrader-stat-days');
+            if (experiment.status === 'running') {
+                const endDate = new Date(experiment.end_date + 'T00:00:00Z');
+                const daysRemaining = Math.max(0, Math.ceil((endDate - new Date()) / 86400000));
+                daysEl.innerText = `${daysRemaining} gg`;
+            } else {
+                daysEl.innerText = 'Concluso';
+            }
+
+            renderAiTraderEquityChart(history, experiment);
+
+            const decisionsList = document.getElementById('aitrader-decisions-list');
+            const decisions = [...decisionsRes.data]
+                .sort((a, b) => (b.date || '').localeCompare(a.date || ''))
+                .slice(0, 30);
+            if (decisions.length === 0) {
+                decisionsList.innerHTML = paperListMessage('Nessuna decisione registrata ancora.', false);
+            } else {
+                decisionsList.innerHTML = decisions.map(d => `
+                    <details class="paper-item">
+                        <summary class="paper-item-summary">
+                            <span class="paper-item-heading">
+                                <span class="paper-item-title">${escapeHtml(d.symbol || '-')}</span>
+                                <span class="paper-item-sub">${escapeHtml(d.date || '-')} · ${escapeHtml(d.model_used || '-')}</span>
+                            </span>
+                            <span class="paper-item-headline">
+                                <span class="badge ${decisionBadgeClass(d.decision)}">${escapeHtml(d.decision || '-')}</span>
+                                <span class="chevron-icon">▼</span>
+                            </span>
+                        </summary>
+                        <div class="paper-item-detail">
+                            <div class="scanner-detail-row">
+                                <div class="paper-item-detail-desc">${escapeHtml(d.reasoning_short || '-')}</div>
+                            </div>
+                        </div>
+                    </details>
+                `).join('');
+            }
+        }
+
+        function renderAiTraderEquityChart(history, experiment) {
+            const canvasId = 'aitrader-equity-chart';
+            if (history.length === 0) {
+                showEmptyChart(canvasId, 'Ancora nessun punto registrato.');
+                return;
+            }
+            const canvasEl = document.getElementById(canvasId);
+            if (!canvasEl) return;
+            const ctx = canvasEl.getContext('2d');
+            const labels = history.map(p => p.date);
+            const equityData = history.map(p => p.equity_usd);
+            const startEquity = experiment.start_equity_usd;
+
+            if (chartInstances[canvasId]) {
+                chartInstances[canvasId].destroy();
+            }
+
+            chartInstances[canvasId] = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Equity',
+                            data: equityData,
+                            borderColor: '#38b6d9',
+                            backgroundColor: 'rgba(56, 182, 217, 0.1)',
+                            fill: true,
+                            tension: 0.1,
+                            pointRadius: 2
+                        },
+                        {
+                            label: 'Partenza',
+                            data: labels.map(() => startEquity),
+                            borderColor: '#8a94a8',
+                            borderDash: [5, 5],
+                            pointRadius: 0
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: true, labels: { color: '#8a94a8', font: { size: 10 } } }
+                    },
+                    scales: {
+                        x: { ticks: { color: '#8a94a8', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                        y: { ticks: { color: '#8a94a8', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                    }
+                }
+            });
         }
 
         // Pagina "Portafoglio Paper": caricata una volta sola alla prima
@@ -3390,6 +3622,8 @@
                 .map(([h, m]) => convertTodayWallTime(h, m, 'America/New_York', 'Europe/Rome'))
                 .join(', ');
         }
+
+        loadAiTraderData();
 
         renderAssetCards();
         renderAssetFilter();
