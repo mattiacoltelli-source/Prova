@@ -208,6 +208,55 @@
         .stat-value.green { color: var(--accent-green); }
         .stat-value.accent { color: var(--accent-signal); }
 
+        /* Banner Accuratezza/Valutati/In attesa (tab Tech): un'unica scatola
+           invece di 3 .stat-box separate. 3 box singoli (sopra) sommano 3
+           bordi + 3 padding + 2 gap — con un valore reale di telefono
+           quell'overhead basta a far scorrere la riga anche con contenuto
+           breve (41.5%/205/32), segnalato dal vivo dall'utente nonostante
+           la verifica Playwright precedente (quella misurava il contenuto,
+           non l'overhead delle 3 scatole). Una scatola sola toglie 2 bordi e
+           2 padding: stesso contenuto "in linea" come richiesto, molto più
+           margine per restare dentro lo schermo. overflow-x:auto resta
+           comunque come rete di sicurezza, mai rimossa (stesso principio di
+           .summary-banner sopra). */
+        .stat-banner-merged {
+            display: flex;
+            flex-wrap: nowrap;
+            justify-content: center;
+            align-items: stretch;
+            gap: 0;
+            overflow-x: auto;
+            padding: 8px 4px;
+            margin: 0 auto 20px;
+            background: linear-gradient(160deg, var(--card-bg) 0%, var(--bg-color-2) 100%);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-card);
+        }
+
+        .stat-banner-merged .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            flex-shrink: 0;
+            padding: 0 9px;
+        }
+
+        .stat-banner-merged .stat-item:not(:first-child) {
+            border-left: 1px solid var(--card-border);
+        }
+
+        /* Etichette un filo più strette solo qui (0.72rem/0.03em invece di
+           0.78rem/0.06em della regola base): sono la parte più larga di
+           ogni colonna ("ACCURATEZZA"), quindi la leva più efficace per far
+           stare le 3 in linea senza scorrere su un telefono reale. I numeri
+           (.stat-value) restano alla dimensione normale, leggibili. */
+        .stat-banner-merged .stat-label {
+            font-size: 0.72rem;
+            letter-spacing: 0.03em;
+        }
+
         .pl-positive { color: var(--accent-green); }
         .pl-negative { color: var(--accent-red); }
 
@@ -1201,16 +1250,16 @@
         </div>
     </details>
 
-    <div class="summary-banner">
-        <div class="stat-box">
+    <div class="stat-banner-merged">
+        <div class="stat-item">
             <span class="stat-label">Accuratezza</span>
             <span class="stat-value green" id="stat-accuracy">0.0%</span>
         </div>
-        <div class="stat-box">
+        <div class="stat-item">
             <span class="stat-label">Valutati</span>
             <span class="stat-value" id="stat-outcomes">0</span>
         </div>
-        <div class="stat-box">
+        <div class="stat-item">
             <span class="stat-label">In Attesa</span>
             <span class="stat-value accent" id="stat-pending">0</span>
         </div>
