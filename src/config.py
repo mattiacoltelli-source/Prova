@@ -585,6 +585,100 @@ SCANNER_LOOKBACK_DAYS = 20
 SCANNER_FILE = "data/scanner/results.json"
 
 
+# --- Esperimento di trading automatico AI (src/ai_trader.py) ---------------
+# Richiesto dall'utente il 2026-10-31: un esperimento di 6 mesi, trading
+# completamente automatico (nessuna approvazione per singolo ordine) sul
+# conto paper Alpaca già esistente, partendo "pulito" (posizioni manuali
+# precedenti chiuse) e misurando il risultato da lì. A differenza di
+# paper_order.yml (che invia UN ordine scelto a mano dall'utente), questo
+# modulo decide e invia ordini da solo, ogni giorno.
+#
+# Segnale ibrido, per restare dentro il tetto di spesa mensile pur
+# coprendo un universo più ampio dei soli 4 ASSETS:
+#  - NVDA/AAPL/AMD/MU (ASSETS sopra): usa la previsione AI 1g già generata
+#    da predict.yml — costo zero aggiuntivo, lavoro già pagato.
+#  - Gli altri titoli di SCANNER_STOCKS segnalati ("flagged") oggi dallo
+#    scanner: giudizio con un modello più capace (AI_TRADER_SONNET_MODEL),
+#    perché sono i segnali più "importanti" della giornata.
+#  - Tutti gli altri titoli di SCANNER_STOCKS: giudizio con un modello
+#    molto economico (AI_TRADER_HAIKU_MODEL), per avere comunque una
+#    copertura quotidiana di base senza pesare sul budget.
+#
+# Universo tradabile: SCANNER_STOCKS meno i ticker non tradabili su Alpaca
+# (broker USA — THK/Harmonic Drive sono Tokyo Stock Exchange, stesso
+# limite già noto per ROBOTICS_ASSETS). Le crypto di SCANNER_CRYPTO
+# restano fuori per ora (formato ticker diverso tra Yahoo e Alpaca).
+AI_TRADER_EXCLUDED_TICKERS = ["6481.T", "6324.T"]
+
+# Quanto investire per ogni nuova posizione aperta (dollari nozionali
+# inviati ad Alpaca come "notional", non quantità di azioni — così funziona
+# anche sui titoli più costosi senza dover calcolare quote frazionarie a
+# mano). Scelto per restare diversificati su un universo di ~48 titoli
+# partendo da 100.000$: con AI_TRADER_MAX_POSITIONS sotto, il capitale
+# massimo impegnato in un colpo resta sempre sotto il totale del conto.
+AI_TRADER_POSITION_NOTIONAL_USD = 7000.0
+AI_TRADER_MAX_POSITIONS = 14
+
+# Vendita di sicurezza indipendente dal giudizio AI del giorno: una
+# posizione che perde più di questa percentuale (unrealized_plpc di
+# Alpaca) viene chiusa comunque, anche se il modello quel giorno direbbe
+# HOLD — rete di sicurezza esplicita per i titoli più speculativi/volatili
+# dell'universo scanner (vedi commento SCANNER_STOCKS in config.py).
+AI_TRADER_STOP_LOSS_PCT = -8.0
+
+# Durata fissa dell'esperimento, in giorni di calendario (~6 mesi). Non
+# ricalcolata da ASSET_CADENCE_MONTHS o simili: è una finestra temporale
+# fissa decisa con l'utente, non legata alla cadenza di nessun altro
+# sistema di questo progetto.
+AI_TRADER_DURATION_DAYS = 182
+
+# Modelli Anthropic per il giudizio sui titoli non-ASSETS. Claude Haiku 5.5
+# e Claude Sonnet 5.5, non le versioni precedenti (4.5 usata da
+# ANTHROPIC_MODEL sopra): Haiku 5.5 costa 1/10 di Haiku 4.5 a parità di
+# token, e con un universo di ~48 titoli/giorno il tetto di spesa mensile
+# sotto sarebbe impossibile da rispettare con i prezzi di Haiku 4.5.
+AI_TRADER_HAIKU_MODEL = "claude-haiku-5-5"
+AI_TRADER_SONNET_MODEL = "claude-sonnet-5-5"
+AI_TRADER_MAX_TOKENS = 300
+
+# Tetto massimo di chiamate al modello più caro (Sonnet) in un solo giorno,
+# indipendente dal tetto di spesa mensile in dollari sotto: una giornata di
+# mercato eccezionalmente volatile potrebbe segnalare molti più titoli del
+# normale (vedi commento SCANNER_BREAKOUT_PCT_FLAG su 28/53 titoli
+# segnalati in un giorno anomalo) — questo tetto impedisce che un solo
+# giorno simile consumi da solo gran parte del budget mensile. Se segnalati
+# di più, si tengono solo i primi N nell'ordine già usato dallo scanner
+# (flagged-first, vedi market_scanner.scan()).
+AI_TRADER_MAX_SONNET_CALLS_PER_DAY = 15
+
+# Tetto di spesa mensile in dollari (budget.py), enforcement lato codice
+# sui token REALI restituiti da Anthropic (response.usage), non su una
+# stima. Richiesto dall'utente: "costo massimo di 2 euro al mese", alzato
+# a 3,5 per usare Sonnet 5.5 sui titoli più importanti — vedi calcolo nella
+# conversazione (stimato <1$/mese nel caso tipico, ampio margine
+# deliberato). Trattato 1:1 come dollari (nessuna conversione EUR/USD: il
+# conto Alpaca è in dollari, e la differenza è comunque più piccola del
+# margine di sicurezza già incluso nella cifra).
+AI_TRADER_MONTHLY_BUDGET_USD = 3.5
+
+# Prezzo per milione di token, usato da budget.py per calcolare il costo
+# reale di ogni chiamata dai token restituiti da Anthropic. Fonte: listino
+# pubblico Anthropic al 2026-10-31 (claude-haiku-5-5/claude-sonnet-5-5).
+AI_TRADER_PRICING_PER_MILLION_TOKENS = {
+    AI_TRADER_HAIKU_MODEL: {"input": 0.10, "output": 0.50},
+    AI_TRADER_SONNET_MODEL: {"input": 2.00, "output": 10.00},
+}
+
+AI_TRADER_DIR = "data/ai_trader"
+AI_TRADER_EXPERIMENT_FILE = f"{AI_TRADER_DIR}/experiment.json"
+AI_TRADER_DECISIONS_FILE = f"{AI_TRADER_DIR}/decisions.jsonl"
+# Storico append-only dell'equity nel tempo (un record per run, setup
+# incluso): account.json viene SOVRASCRITTO ad ogni run (vedi commento su
+# PAPER_ACCOUNT_FILE sopra), quindi senza questo file non ci sarebbe modo
+# di disegnare una curva dell'andamento dei 6 mesi, solo l'ultimo punto.
+AI_TRADER_EQUITY_HISTORY_FILE = f"{AI_TRADER_DIR}/equity_history.jsonl"
+
+
 def snapshot_file(asset: str) -> str:
     return f"{asset_dir(asset)}/snapshot.json"
 

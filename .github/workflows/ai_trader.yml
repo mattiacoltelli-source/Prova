@@ -1,0 +1,121 @@
+name: Trading automatico AI
+
+# Esperimento di 6 mesi richiesto dall'utente il 2026-10-31: trading
+# completamente automatico (nessuna approvazione per singolo ordine, a
+# differenza di paper_order.yml) sul conto paper Alpaca già esistente, su
+# un universo di ~48 titoli (config.SCANNER_STOCKS meno i 2 di Tokyo non
+# tradabili su Alpaca). Segnale ibrido: previsioni 1g già esistenti per
+# NVDA/AAPL/AMD/MU, giudizio Sonnet 5.5 sui titoli segnalati dallo scanner
+# quel giorno, giudizio Haiku 5.5 su tutti gli altri — vedi src/ai_trader.py
+# per il dettaglio e config.py per le soglie/il tetto di spesa mensile.
+#
+# Due modalità (mode, solo su workflow_dispatch — lo schedule gira sempre
+# in "daily", il setup è un passo deliberato fatto una volta a mano):
+#  - setup: chiude le posizioni manuali esistenti e fissa la data di
+#    inizio/fine dell'esperimento. Idempotente (vedi ai_trader_run.py).
+#  - daily: stop-loss + decisioni + ordini + istantanea conto.
+#
+# Orario: 20:15 UTC nei giorni di mercato, dopo l'ultimo tick dello scanner
+# (19:40 UTC, vedi market_scanner.yml) e dopo la chiusura USA, così le
+# decisioni del giorno usano segnali scanner già freschi. Minuto 15 (non
+# :00) per lo stesso motivo di snapshot.yml/market_scanner.yml: evitare il
+# picco di carico di GitHub Actions a inizio ora.
+on:
+  schedule:
+    - cron: "15 20 * * 1-5"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "setup (una tantum, chiude posizioni manuali e avvia l'esperimento) o daily (run quotidiano)"
+        type: choice
+        options: [daily, setup]
+        default: daily
+      dry_run:
+        description: "Esegue senza inviare ordini né chiamare i modelli AI (test sicuro)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ai-trader-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  trade:
+    runs-on: ubuntu-latest
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+      ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - run: pip install -r requirements.txt
+
+      - name: Determina modalità run
+        id: mode
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "mode=${{ github.event.inputs.mode }}" >> "$GITHUB_OUTPUT"
+            echo "dry_run=${{ github.event.inputs.dry_run }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "mode=daily" >> "$GITHUB_OUTPUT"
+            echo "dry_run=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Esegue il trading automatico
+        run: |
+          ARGS="--mode ${{ steps.mode.outputs.mode }}"
+          if [ "${{ steps.mode.outputs.dry_run }}" = "true" ]; then ARGS="$ARGS --dry-run"; fi
+          python -m src.ai_trader_run $ARGS
+
+      # Stesso pattern retry-con-rebase di predict.yml/market_scanner.yml.
+      - name: Commit e push
+        if: steps.mode.outputs.dry_run != 'true'
+        run: |
+          git config user.name "predictive-agent-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/ai_trader/ data/paper/ data/_state/
+          if git diff --cached --quiet; then
+            echo "Nessuna modifica da committare."
+            exit 0
+          fi
+          git commit -m "Trading automatico AI $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          for i in 1 2 3 4 5; do
+            if git push; then
+              exit 0
+            fi
+            echo "Push rifiutato (probabile push concorrente di un altro workflow), tentativo $i/5: fetch + rebase e riprovo..."
+            git fetch origin "$GITHUB_REF_NAME"
+            if ! git rebase "origin/$GITHUB_REF_NAME"; then
+              echo "::error::Rebase fallito: conflitto reale con un commit concorrente, serve intervento manuale."
+              git rebase --abort
+              exit 1
+            fi
+            sleep $((i * 3))
+          done
+          echo "::error::Push fallito dopo 5 tentativi di rebase."
+          exit 1
+
+      - name: Notifica Telegram in caso di fallimento
+        if: failure()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ]; then
+            echo "TELEGRAM_BOT_TOKEN/TELEGRAM_CHAT_ID non configurati nei secret del repo: notifica saltata."
+            exit 0
+          fi
+          MESSAGE=$'⚠️ <b>Trading automatico AI fallito</b>\nRun: '"${RUN_URL}"
+          curl -sS -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "parse_mode=HTML" \
+            --data-urlencode "text=${MESSAGE}"

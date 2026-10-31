@@ -24,6 +24,9 @@ name: Pubblica GitHub Pages
 # mai per i push fatti da un altro workflow con il GITHUB_TOKEN di
 # default.
 #
+# "Trading automatico AI" aggiunto qui subito alla creazione del workflow
+# (2026-10-31), proprio per non ripetere lo stesso bug una quarta volta.
+#
 # BUG SCOPERTO IL 2026-09-02 (dashboard senza le previsioni del giorno
 # nonostante un "Genera previsioni" concluso con successo poco prima):
 # `github.event.workflow_run.head_sha` NON è il commit che predict.yml/
@@ -47,7 +50,7 @@ on:
       - "data/**"
       - "REPORT.md"
   workflow_run:
-    workflows: ["Genera previsioni", "Valuta previsioni scadute", "Istantanea prezzi", "Analisi trend strutturali", "Ordine paper trading (Alpaca)", "Scanner di mercato"]
+    workflows: ["Genera previsioni", "Valuta previsioni scadute", "Istantanea prezzi", "Analisi trend strutturali", "Ordine paper trading (Alpaca)", "Scanner di mercato", "Trading automatico AI"]
     types: [completed]
   workflow_dispatch: {}
 

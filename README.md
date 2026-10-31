@@ -479,6 +479,48 @@ hash append-only di predictions/outcomes), e lo stato del conto
 (`data/paper/account.json`) viene riscritto dopo ogni ordine — entrambi
 letti in sola lettura dalla dashboard, tab "Portafoglio Paper".
 
+## Trading automatico AI (esperimento di 6 mesi)
+
+Modulo separato dal motore predittivo (`src/ai_trader.py` + `src/ai_trader_run.py`),
+richiesto dall'utente il 2026-10-31: un esperimento a termine di trading
+**completamente automatico** (nessuna approvazione per singolo ordine, a
+differenza del Portafoglio paper sopra) sullo stesso conto Alpaca paper, su
+un universo più ampio dei soli 4 ASSETS.
+
+**Universo**: `config.SCANNER_STOCKS` meno i 2 ticker di Tokyo (6481.T,
+6324.T — non tradabili su Alpaca, broker USA).
+
+**Segnale ibrido**, pensato per restare dentro un tetto di spesa fisso pur
+coprendo ~48 titoli/giorno:
+- NVDA/AAPL/AMD/MU: previsione AI 1 giorno già generata da "Genera
+  previsioni" — costo zero aggiuntivo.
+- Titoli che lo Scanner segnala come anomali quel giorno (fino a
+  `AI_TRADER_MAX_SONNET_CALLS_PER_DAY`): giudizio con **Claude Sonnet 5.5**.
+- Tutti gli altri: giudizio con **Claude Haiku 5.5** (copertura di base,
+  quasi gratuita).
+
+**Tetto di spesa**: `$3.5`/mese (`config.AI_TRADER_MONTHLY_BUDGET_USD`),
+enforcement lato codice (`budget.trader_has_budget()`/`record_trader_call_cost()`)
+sui token REALI restituiti da Anthropic, non su una stima — se il tetto
+viene raggiunto, i nuovi giudizi AI del mese tornano HOLD senza chiamare il
+modello.
+
+**Sicurezza**: ogni posizione con una perdita superiore a
+`AI_TRADER_STOP_LOSS_PCT` (-8%) viene chiusa comunque, indipendentemente dal
+giudizio AI del giorno.
+
+**Due modalità** di
+[Actions → "Trading automatico AI"](https://github.com/mattiacoltelli-source/Prova/actions/workflows/ai_trader.yml):
+`setup` (una tantum: chiude le posizioni manuali esistenti sul conto paper e
+fissa `data/ai_trader/experiment.json` con equity di partenza e durata fissa
+di `AI_TRADER_DURATION_DAYS` — ~6 mesi) e `daily` (schedulata nei giorni di
+mercato: stop-loss, decisioni, ordini, istantanea conto). Storico append-only
+hash-chained delle decisioni in `data/ai_trader/decisions.jsonl` e della
+curva equity nel tempo in `data/ai_trader/equity_history.jsonl` (a
+differenza di `account.json`, sovrascritto ad ogni run — serve per
+disegnare l'andamento dei 6 mesi, non solo l'ultimo punto). Tab dedicata
+"Trading AI", prima scheda della dashboard.
+
 ## Scanner di mercato
 
 Modulo separato e indipendente dal motore predittivo (nessuna previsione,
