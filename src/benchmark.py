@@ -150,9 +150,17 @@ def update_momentum(today: dt.date, experiment: dict) -> None:
     positive = [symbol for symbol, pct in momentum_rank if pct > 0][: config.AI_TRADER_MOMENTUM_TOP_N]
     new_holdings = {symbol: 1 / len(positive) for symbol in positive} if positive else {}
 
+    # Prezzi salvati per DUE scopi, non solo uno: quelli dei nuovi titoli
+    # servono domani per segnare a mercato (sopra), quelli dei titoli USCITI
+    # oggi (in previous_holdings ma non più in new_holdings) servono SOLO a
+    # mostrare "a quanto ha venduto" nella lista movimenti del frontend — se
+    # non li salvassimo qui, andrebbero persi per sempre (prices_today non
+    # sopravvive oltre questa chiamata).
+    exited_today = set(previous_holdings) - set(new_holdings)
+    relevant_symbols = set(new_holdings) | exited_today
     storage.append_record(config.AI_TRADER_MOMENTUM_FILE, {
         "date": today_str,
         "equity_usd": round(equity_usd, 2),
         "holdings": new_holdings,
-        "prices": {symbol: prices_today[symbol] for symbol in new_holdings},
+        "prices": {symbol: prices_today[symbol] for symbol in relevant_symbols if symbol in prices_today},
     })

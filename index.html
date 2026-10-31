@@ -2700,24 +2700,36 @@
                     '<strong>Momentum tiene oggi:</strong> tutta in contanti — nessun titolo ' +
                     'dell\'universo ha un rendimento a 20 giorni positivo.';
             } else {
-                const chips = symbols.map(s =>
-                    `<span class="badge badge-FLAT">${escapeHtml(s)} ${(holdings[s] * 100).toFixed(1)}%</span>`
-                ).join(' ');
+                const latestPrices = latest.prices || {};
+                const chips = symbols.map(s => {
+                    const price = latestPrices[s];
+                    const priceTxt = price != null ? ` · $${Number(price).toFixed(2)}` : '';
+                    return `<span class="badge badge-FLAT">${escapeHtml(s)} ${(holdings[s] * 100).toFixed(1)}%${priceTxt}</span>`;
+                }).join(' ');
                 holdingsEl.innerHTML =
-                    `<strong>Momentum tiene oggi</strong> (${symbols.length} titoli, equal-weight):` +
+                    `<strong>Momentum tiene oggi</strong> (${symbols.length} titoli, equal-weight,
+                    prezzo d'ingresso tra parentesi):` +
                     `<div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px;">${chips}</div>`;
             }
 
+            // Prezzo del movimento: per un BUY è il prezzo d'ingresso del
+            // titolo appena entrato nel paniere; per un SELL è il prezzo di
+            // uscita del titolo appena uscito — entrambi salvati nello
+            // stesso campo "prices" del record di QUEL giorno (vedi
+            // src/benchmark.py: exited_today viene incluso apposta, non solo
+            // i nuovi titoli, altrimenti il prezzo di vendita andrebbe
+            // perso per sempre).
             const moves = [];
             for (let i = 1; i < momentumHistory.length; i++) {
                 const prevHoldings = momentumHistory[i - 1].holdings || {};
                 const currHoldings = momentumHistory[i].holdings || {};
+                const dayPrices = momentumHistory[i].prices || {};
                 const date = momentumHistory[i].date;
                 for (const symbol of Object.keys(currHoldings)) {
-                    if (!(symbol in prevHoldings)) moves.push({ date, symbol, action: 'BUY' });
+                    if (!(symbol in prevHoldings)) moves.push({ date, symbol, action: 'BUY', price: dayPrices[symbol] });
                 }
                 for (const symbol of Object.keys(prevHoldings)) {
-                    if (!(symbol in currHoldings)) moves.push({ date, symbol, action: 'SELL' });
+                    if (!(symbol in currHoldings)) moves.push({ date, symbol, action: 'SELL', price: dayPrices[symbol] });
                 }
             }
             moves.reverse();
@@ -2733,7 +2745,7 @@
                         <div class="paper-item-summary" style="cursor:default;">
                             <span class="paper-item-heading">
                                 <span class="paper-item-title">${escapeHtml(m.symbol)}</span>
-                                <span class="paper-item-sub">${escapeHtml(m.date)}</span>
+                                <span class="paper-item-sub">${escapeHtml(m.date)}${m.price != null ? ' · $' + Number(m.price).toFixed(2) : ''}</span>
                             </span>
                             <span class="paper-item-headline">
                                 <span class="badge ${decisionBadgeClass(m.action)}">${m.action}</span>

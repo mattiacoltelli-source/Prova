@@ -150,6 +150,33 @@ def test_momentum_secondo_giorno_segna_a_mercato_il_paniere_di_ieri(tmp_path, mo
     assert rec["holdings"] == {"AAA": 0.5, "CCC": 0.5}
 
 
+def test_momentum_salva_il_prezzo_di_uscita_di_un_titolo_venduto(tmp_path, monkeypatch):
+    """Il prezzo di vendita di un titolo che esce dal paniere deve essere
+    salvato nello stesso giorno in cui esce, non solo quello dei titoli
+    appena entrati — altrimenti il frontend non potrebbe mai mostrare 'a
+    quanto ha venduto' (richiesto dall'utente)."""
+    _isolate(tmp_path, monkeypatch)
+    storage.append_record(config.AI_TRADER_MOMENTUM_FILE, {
+        "date": "2026-10-31",
+        "equity_usd": 100000.0,
+        "holdings": {"AAA": 0.5, "BBB": 0.5},
+        "prices": {"AAA": 100.0, "BBB": 100.0},
+    })
+    closes_by_symbol = {
+        "AAA": [100.0, 110.0, 121.0],  # momentum +21%, resta
+        "BBB": [100.0, 50.0, 40.0],    # momentum -60%, esce dal paniere
+        "CCC": [100.0, 100.0, 110.0],  # momentum +10%, entra nel paniere
+    }
+    with patch("src.benchmark.http.get", side_effect=_momentum_fake_get(closes_by_symbol)):
+        benchmark.update_momentum(dt.date(2026, 11, 1), _EXPERIMENT)
+
+    rec = storage.read_all(config.AI_TRADER_MOMENTUM_FILE)[1]
+    assert rec["holdings"] == {"AAA": 0.5, "CCC": 0.5}  # BBB non c'è più
+    assert rec["prices"]["BBB"] == 40.0  # ma il prezzo a cui è uscita sì
+    assert rec["prices"]["AAA"] == 121.0
+    assert rec["prices"]["CCC"] == 110.0
+
+
 def test_momentum_nessun_titolo_con_momentum_positivo_va_tutto_in_contanti(tmp_path, monkeypatch):
     _isolate(tmp_path, monkeypatch)
     closes_by_symbol = {
