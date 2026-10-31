@@ -46,6 +46,11 @@
             --accent-red: #f87171;
             --accent-yellow: #f5b942;
             --accent-signal: #38b6d9;
+            /* Colore della riga di confronto "Momentum" nel grafico equity
+               (vedi renderAiTraderEquityChart): era già usato inline lì,
+               tokenizzato qui per riusarlo anche nella legenda e nelle
+               nuove card Trading AI senza duplicare l'esadecimale. */
+            --accent-momentum: #b07cdb;
             --radius-lg: 18px;
             --radius-md: 12px;
             --radius-sm: 8px;
@@ -416,6 +421,144 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 12px;
+        }
+
+        /* ===== Trading AI: hero equity + card rischio + liste posizioni/
+           vendite + card agente (2026-11). Riusa solo i token esistenti
+           sopra (--card-bg, --accent-signal, --radius-lg, ecc.) — nessuna
+           nuova palette, stessa identità del resto del sito. Gli elementi
+           con id (aitrader-stat-equity, aitrader-stat-pl, aitrader-stat-
+           days) restano quelli già scritti da JS: qui solo aspetto, mai
+           struttura logica o testo. */
+        .aitrader-hero { margin: 4px 0 20px; }
+        .aitrader-hero__label {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            font-weight: 600;
+            margin: 14px 0 2px;
+        }
+        .aitrader-hero__value .stat-value {
+            font-size: clamp(2.1rem, 9vw, 2.6rem);
+            font-weight: 700;
+            letter-spacing: -0.01em;
+        }
+        .aitrader-hero__delta {
+            display: inline-flex;
+            margin-top: 8px;
+            padding: 5px 12px;
+            border-radius: var(--radius-pill);
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+        }
+        .aitrader-hero__delta .stat-value { font-size: 0.95rem; }
+        .aitrader-chart-legend {
+            display: flex;
+            gap: 14px;
+            margin: 10px 0 2px;
+            font-size: 0.78rem;
+            color: var(--text-dim);
+        }
+        .aitrader-chart-legend span { display: inline-flex; align-items: center; gap: 5px; }
+        .aitrader-chart-legend .dot { width: 8px; height: 8px; border-radius: 50%; }
+
+        .risk-row { margin-bottom: 14px; }
+        .risk-row:last-child { margin-bottom: 0; }
+        .risk-row__top {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+        .risk-row__top span:last-child { font-weight: 700; color: var(--text-main); font-variant-numeric: tabular-nums; }
+        .risk-track { height: 6px; border-radius: 3px; background: var(--bg-color-2); overflow: hidden; }
+        .risk-fill { height: 100%; border-radius: 3px; background: var(--accent-signal); transition: width var(--transition-fast); }
+
+        .pos-list, .trade-list { display: flex; flex-direction: column; }
+        .pos-row, .trade-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--card-border);
+        }
+        .pos-row:last-child, .trade-row:last-child { border-bottom: none; }
+        .pos-row__icon, .trade-row__icon {
+            width: 34px;
+            height: 34px;
+            border-radius: var(--radius-sm);
+            background: var(--bg-color-2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.68rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            flex-shrink: 0;
+        }
+        .pos-row__main, .trade-row__main { flex: 1; min-width: 0; }
+        .pos-row__sym, .trade-row__sym { font-weight: 700; font-size: 0.92rem; }
+        .pos-row__sub, .trade-row__sub {
+            font-size: 0.74rem;
+            color: var(--text-dim);
+            margin-top: 1px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .pos-row__end, .trade-row__end { text-align: right; flex-shrink: 0; }
+        .pos-row__top-label {
+            font-size: 0.66rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            font-weight: 600;
+        }
+        .pos-row__val, .trade-row__val {
+            font-weight: 700;
+            font-size: 0.86rem;
+            font-variant-numeric: tabular-nums;
+        }
+        .pos-row__pct, .trade-row__pct {
+            font-size: 0.78rem;
+            font-weight: 700;
+            margin-top: 1px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .agent-card { display: flex; gap: 13px; align-items: center; }
+        .agent-card__icon {
+            width: 42px;
+            height: 42px;
+            border-radius: var(--radius-md);
+            background: rgba(56, 182, 217, 0.12);
+            color: var(--accent-signal);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .agent-card__main { flex: 1; min-width: 0; }
+        .agent-card__title { font-weight: 700; font-size: 0.88rem; }
+        .agent-card__sub { font-size: 0.76rem; color: var(--text-dim); margin-top: 2px; }
+        .agent-card__budget { margin-top: 9px; }
+        .agent-card__budget-top {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            margin-bottom: 4px;
+        }
+        .agent-card__budget-track { height: 4px; border-radius: 2px; background: var(--bg-color-2); overflow: hidden; }
+        .agent-card__budget-fill { height: 100%; border-radius: 2px; background: var(--accent-signal); transition: width var(--transition-fast); }
+        .agent-card__pulse {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-green);
+            flex-shrink: 0;
+            align-self: flex-start;
+            margin-top: 4px;
         }
 
         .asset-title {
@@ -1194,27 +1337,22 @@
              box numerici sia la dashboard operazioni più in basso. Nessuna
              didascalia sopra: tolta su richiesta dell'utente il
              2026-11-02, "si capisce" — i due pulsanti parlano da soli. -->
-        <div class="horizon-filter" id="aitrader-strategy-filter">
-            <button class="horizon-filter-btn active" data-strategy="real" onclick="setTradeStrategyFilter('real')">AI reale</button>
-            <button class="horizon-filter-btn" data-strategy="momentum" onclick="setTradeStrategyFilter('momentum')">Momentum</button>
-        </div>
+        <div class="aitrader-hero">
+            <div class="horizon-filter" id="aitrader-strategy-filter">
+                <button class="horizon-filter-btn active" data-strategy="real" onclick="setTradeStrategyFilter('real')">AI reale</button>
+                <button class="horizon-filter-btn" data-strategy="momentum" onclick="setTradeStrategyFilter('momentum')">Momentum</button>
+            </div>
 
-        <p id="aitrader-stats-label" style="font-size:0.78rem;color:var(--text-dim);font-weight:600;margin:0 0 6px;">
-            Numeri di: AI reale
-        </p>
-        <div class="summary-banner">
-            <div class="stat-box">
-                <span class="stat-label">Equity attuale</span>
-                <span class="stat-value" id="aitrader-stat-equity">—</span>
-            </div>
-            <div class="stat-box">
-                <span class="stat-label">Guadagno/perdita</span>
-                <span class="stat-value" id="aitrader-stat-pl">—</span>
-            </div>
-            <div class="stat-box">
-                <span class="stat-label">Giorni rimasti</span>
-                <span class="stat-value accent" id="aitrader-stat-days">—</span>
-            </div>
+            <!-- Testo tenuto in vita per compatibilità con applyTradeStrategyFilter()
+                 (che continua a scriverci dentro), ma nascosto: il numero enorme
+                 sotto più la pillola attiva sopra bastano, "si capisce" (stessa
+                 ragione per cui la vecchia didascalia sopra lo switch fu tolta
+                 il 2026-11-02). -->
+            <p id="aitrader-stats-label" style="display:none;">Numeri di: AI reale</p>
+
+            <div class="aitrader-hero__label">Equity attuale</div>
+            <div class="aitrader-hero__value"><span class="stat-value" id="aitrader-stat-equity">—</span></div>
+            <div class="aitrader-hero__delta"><span class="stat-value" id="aitrader-stat-pl">—</span></div>
         </div>
 
         <div class="asset-card" id="aitrader-not-started" style="display:none">
@@ -1224,7 +1362,7 @@
             </div>
         </div>
 
-        <div class="asset-card" id="aitrader-chart-card">
+        <div class="asset-card" id="aitrader-chart-card" style="margin-bottom:16px;">
             <div class="asset-header">
                 <span class="asset-title">Andamento equity</span>
             </div>
@@ -1232,34 +1370,57 @@
                 <canvas id="aitrader-equity-chart"></canvas>
             </div>
             <p style="font-size:12px;color:var(--text-dim);margin:8px 0 0;">
-                La riga sottile "Momentum" è un confronto, non un'altra strategia reale in corso: regole
-                fisse senza AI, stessi titoli e stesso capitale dell'esperimento. Tocca il suo nome in
-                legenda per nasconderla — le operazioni vere di entrambe sono nella dashboard sotto.
+                La linea piena è la strategia selezionata in cima, quella sottile tratteggiata è l'altra,
+                per confronto. "Momentum" non è un'altra strategia reale in corso: regole fisse senza AI,
+                stessi titoli e stesso capitale dell'esperimento. Tocca un nome in legenda per
+                nasconderlo — le operazioni vere di entrambe sono nella dashboard sotto.
             </p>
         </div>
 
-        <p style="font-size:12px;color:var(--text-dim);margin:16px 0 8px;">
-            Operazioni della strategia selezionata (switch in cima alla pagina): quando è
-            entrata/uscita, a che prezzo, quanto ha guadagnato o perso.
+        <div class="asset-card risk-card" style="margin-bottom:16px;">
+            <div class="asset-header">
+                <span class="asset-title">Esposizione &amp; rischio</span>
+            </div>
+            <div class="risk-row">
+                <div class="risk-row__top"><span>Capitale impiegato</span><span id="aitrader-risk-deployed-val">—</span></div>
+                <div class="risk-track"><div class="risk-fill" id="aitrader-risk-deployed-fill" style="width:0%"></div></div>
+            </div>
+            <div class="risk-row">
+                <div class="risk-row__top"><span>Posizioni aperte</span><span id="aitrader-risk-positions-val">—</span></div>
+                <div class="risk-track"><div class="risk-fill" id="aitrader-risk-positions-fill" style="width:0%"></div></div>
+            </div>
+            <div class="risk-row">
+                <div class="risk-row__top"><span>Stop-loss per posizione</span><span id="aitrader-risk-stoploss-val">—</span></div>
+            </div>
+            <div class="risk-row">
+                <div class="risk-row__top"><span>Giorni rimasti</span><span class="stat-value accent" id="aitrader-stat-days" style="font-size:0.82rem;">—</span></div>
+            </div>
+        </div>
+
+        <p style="font-size:12px;color:var(--text-dim);margin:0 0 8px;">
+            Posizioni e vendite della strategia selezionata (switch in cima alla pagina): quanto è
+            costata, a che prezzo è uscita, quanto ha guadagnato o perso.
         </p>
         <div>
-            <div class="asset-card" id="aitrader-real-trades-card" data-strategy="real">
-                <div class="asset-header">
-                    <span class="asset-title">AI reale</span>
+            <div id="aitrader-real-trades-card" data-strategy="real">
+                <div class="asset-card" style="margin-bottom:16px;">
+                    <div class="asset-header"><span class="asset-title">Posizioni</span></div>
+                    <div class="pos-list" id="aitrader-real-open"></div>
                 </div>
-                <div class="aitrader-trades-subhead">Posizioni aperte</div>
-                <div class="paper-item-list" id="aitrader-real-open"></div>
-                <div class="aitrader-trades-subhead">Operazioni chiuse</div>
-                <div class="paper-item-list" id="aitrader-real-closed"></div>
+                <div class="asset-card" style="margin-bottom:16px;">
+                    <div class="asset-header"><span class="asset-title">Vendite recenti</span></div>
+                    <div class="trade-list" id="aitrader-real-closed"></div>
+                </div>
             </div>
-            <div class="asset-card" id="aitrader-momentum-trades-card" data-strategy="momentum" style="display:none;">
-                <div class="asset-header">
-                    <span class="asset-title">Momentum (regole fisse)</span>
+            <div id="aitrader-momentum-trades-card" data-strategy="momentum" style="display:none;">
+                <div class="asset-card" style="margin-bottom:16px;">
+                    <div class="asset-header"><span class="asset-title">Posizioni</span></div>
+                    <div class="pos-list" id="aitrader-momentum-open"></div>
                 </div>
-                <div class="aitrader-trades-subhead">Posizioni aperte</div>
-                <div class="paper-item-list" id="aitrader-momentum-open"></div>
-                <div class="aitrader-trades-subhead">Operazioni chiuse</div>
-                <div class="paper-item-list" id="aitrader-momentum-closed"></div>
+                <div class="asset-card" style="margin-bottom:16px;">
+                    <div class="asset-header"><span class="asset-title">Vendite recenti</span></div>
+                    <div class="trade-list" id="aitrader-momentum-closed"></div>
+                </div>
             </div>
         </div>
 
@@ -1296,9 +1457,23 @@
         <div class="asset-card" style="margin-top:16px;">
             <div class="asset-header">
                 <span class="asset-title">Ultime decisioni AI</span>
-                <span class="badge-accuracy" id="aitrader-budget-badge">—</span>
             </div>
             <div class="paper-item-list" id="aitrader-decisions-list" style="display:block;"></div>
+        </div>
+
+        <div class="asset-card agent-card" style="margin-top:16px;">
+            <div class="agent-card__icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a4 4 0 014 4v2a4 4 0 01-8 0V6a4 4 0 014-4zM6 21v-2a6 6 0 0112 0v2"/></svg>
+            </div>
+            <div class="agent-card__main">
+                <div class="agent-card__title" id="aitrader-agent-title">—</div>
+                <div class="agent-card__sub" id="aitrader-agent-sub">—</div>
+                <div class="agent-card__budget">
+                    <div class="agent-card__budget-top"><span>Budget mensile</span><span id="aitrader-agent-budget-text">—</span></div>
+                    <div class="agent-card__budget-track"><div class="agent-card__budget-fill" id="aitrader-agent-budget-fill" style="width:0%"></div></div>
+                </div>
+            </div>
+            <span class="agent-card__pulse" id="aitrader-agent-pulse"></span>
         </div>
 
     </div><!-- /page-aitrader -->
@@ -2535,6 +2710,22 @@
         // build step condiviso col backend, vedi PREDICTION_SLOTS_ET sopra).
         const AI_TRADER_MONTHLY_BUDGET_USD = 3.5;
 
+        // Stessa logica: mantenuti manualmente in sync con
+        // config.AI_TRADER_MAX_POSITIONS e config.AI_TRADER_STOP_LOSS_PCT,
+        // solo per la card "Esposizione & rischio" (2026-11) — sono numeri
+        // della policy, non dati di mercato, quindi va bene che siano
+        // statici qui invece di un'altra chiamata di rete.
+        const AI_TRADER_MAX_POSITIONS_FRONTEND = 14;
+        const AI_TRADER_STOP_LOSS_PCT_FRONTEND = -8.0;
+
+        // Stato condiviso tra loadAiTraderPositionsAndOrders/renderTradeDashboards
+        // (che lo popolano) e applyTradeStrategyFilter (che lo legge per
+        // ridisegnare card rischio + grafico equity a ogni cambio di switch,
+        // senza rifare le chiamate di rete).
+        let aiTraderAccountCache = null;
+        let aiTraderOpenCounts = { real: 0, momentum: 0 };
+        let aiTraderChartCache = null;
+
         async function fetchJsonNoStore(url) {
             try {
                 const res = await fetch(url, { cache: 'no-store' });
@@ -2568,6 +2759,32 @@
             return points.length > 0 ? points : null;
         }
 
+        // Card "Agente AI" in fondo pagina: stato/modello/budget, letti da
+        // dati già recuperati da _loadAiTraderExperimentAndDecisions (nessuna
+        // chiamata in più). "Ogni giorno feriale alle 20:15 UTC" è il cron
+        // reale del workflow (.github/workflows/ai_trader.yml: "15 20 * * 1-5"),
+        // non una previsione — stesso principio di AI_TRADER_MONTHLY_BUDGET_USD
+        // sopra: un fatto statico della configurazione, mantenuto a mano.
+        function _renderAiTraderAgentCard(experiment, budgetState, decisions) {
+            const spentUsd = budgetState ? (budgetState.spent_usd || 0) : 0;
+            const pct = Math.max(0, Math.min(100, (spentUsd / AI_TRADER_MONTHLY_BUDGET_USD) * 100));
+            document.getElementById('aitrader-agent-budget-text').innerText =
+                `$${spentUsd.toFixed(2)} / $${AI_TRADER_MONTHLY_BUDGET_USD.toFixed(2)}`;
+            document.getElementById('aitrader-agent-budget-fill').style.width = `${pct}%`;
+
+            const running = experiment && experiment.status === 'running';
+            document.getElementById('aitrader-agent-title').innerText =
+                (running ? 'Attivo' : 'In pausa') + ' · Haiku 5.5 + Sonnet 5.5';
+            document.getElementById('aitrader-agent-pulse').style.background =
+                running ? 'var(--accent-green)' : 'var(--text-dim)';
+
+            const sorted = [...(decisions || [])].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+            const lastRun = sorted.length > 0 ? sorted[0].date : null;
+            document.getElementById('aitrader-agent-sub').innerText = lastRun
+                ? `Ultimo giro ${lastRun} · ogni giorno feriale alle 20:15 UTC`
+                : 'In attesa del primo giro · ogni giorno feriale alle 20:15 UTC';
+        }
+
         async function _loadAiTraderExperimentAndDecisions() {
             const now = new Date();
             const budgetFile = `data/_state/ai_trader_budget_${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}.json`;
@@ -2584,9 +2801,7 @@
 
             const notStartedCard = document.getElementById('aitrader-not-started');
             const chartCard = document.getElementById('aitrader-chart-card');
-            const budgetBadge = document.getElementById('aitrader-budget-badge');
-            const spentUsd = budgetState ? (budgetState.spent_usd || 0) : 0;
-            budgetBadge.innerText = `Budget AI: $${spentUsd.toFixed(2)} / $${AI_TRADER_MONTHLY_BUDGET_USD.toFixed(2)}`;
+            _renderAiTraderAgentCard(experiment, budgetState, decisionsRes.data);
 
             if (!experiment) {
                 notStartedCard.style.display = '';
@@ -2640,6 +2855,7 @@
                 daysEl.innerText = 'Concluso';
             }
 
+            aiTraderChartCache = { history, experiment, momentumHistory: momentumRes.data };
             renderAiTraderEquityChart(history, experiment, momentumRes.data);
             renderTradeDashboards(realTrades, momentumTrades);
 
@@ -2708,42 +2924,60 @@
                 chartInstances[canvasId].destroy();
             }
 
-            const datasets = [
-                {
-                    label: 'Equity',
-                    data: equityData,
-                    borderColor: '#38b6d9',
-                    backgroundColor: 'rgba(56, 182, 217, 0.1)',
-                    fill: true,
-                    tension: 0.1,
-                    pointRadius: 2
-                },
-                {
-                    label: 'Partenza',
-                    data: labels.map(() => startEquity),
-                    borderColor: '#8a94a8',
-                    borderDash: [5, 5],
-                    pointRadius: 0
-                }
-            ];
+            // Quale delle due è "a fuoco" (piena, spessa, con area colorata)
+            // segue lo switch in cima alla pagina, non è fisso su "AI reale"
+            // come prima (richiesto dall'utente, 2026-11): il colore di
+            // ciascuna riga resta però legato alla sua identità (AI reale
+            // sempre ciano, Momentum sempre viola, stessa convenzione della
+            // legenda) — solo spessore/riempimento/tratteggio cambiano con
+            // la selezione, mai il colore, altrimenti la legenda mentirebbe.
+            const primaryIsReal = currentTradeStrategyFilter === 'real';
+            const momentumAligned = (momentumHistory && momentumHistory.length > 0)
+                ? _alignEquityToLabels(momentumHistory, labels) : null;
 
-            // Riga di confronto sottile, volutamente poco invasiva
-            // (richiesto dall'utente): "se invece avessi fatto..." — non
-            // decisioni reali, nessun ordine, nessun costo AI (vedi
-            // src/benchmark.py). Cliccando il suo nome in legenda si
-            // nasconde/mostra (comportamento già nativo di Chart.js,
-            // nessun controllo in più da aggiungere).
-            if (momentumHistory && momentumHistory.length > 0) {
+            const realDataset = {
+                label: 'AI reale',
+                data: equityData,
+                borderColor: '#38b6d9',
+                backgroundColor: primaryIsReal ? 'rgba(56, 182, 217, 0.12)' : 'transparent',
+                borderWidth: primaryIsReal ? 2.4 : 1.4,
+                borderDash: primaryIsReal ? [] : [4, 3],
+                fill: primaryIsReal,
+                tension: 0.15,
+                pointRadius: 0,
+                order: primaryIsReal ? 1 : 2,
+            };
+            const datasets = [realDataset];
+
+            // Riga di confronto, volutamente poco invasiva quando non è
+            // quella selezionata (richiesto dall'utente): "se invece avessi
+            // fatto..." — non decisioni reali, nessun ordine, nessun costo
+            // AI (vedi src/benchmark.py). Cliccando il suo nome in legenda
+            // si nasconde/mostra (comportamento nativo di Chart.js).
+            if (momentumAligned) {
                 datasets.push({
                     label: 'Momentum (regole fisse)',
-                    data: _alignEquityToLabels(momentumHistory, labels),
+                    data: momentumAligned,
                     borderColor: '#b07cdb',
-                    borderWidth: 1,
+                    backgroundColor: !primaryIsReal ? 'rgba(176, 124, 219, 0.12)' : 'transparent',
+                    borderWidth: !primaryIsReal ? 2.4 : 1.4,
+                    borderDash: !primaryIsReal ? [] : [4, 3],
+                    fill: !primaryIsReal,
+                    tension: 0.15,
                     pointRadius: 0,
-                    tension: 0.1,
+                    order: !primaryIsReal ? 1 : 2,
                     spanGaps: true
                 });
             }
+
+            datasets.push({
+                label: 'Partenza',
+                data: labels.map(() => startEquity),
+                borderColor: '#8a94a8',
+                borderDash: [5, 5],
+                pointRadius: 0,
+                order: 3,
+            });
 
             chartInstances[canvasId] = new Chart(ctx, {
                 type: 'line',
@@ -2751,6 +2985,7 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
                     plugins: {
                         legend: { display: true, labels: { color: '#8a94a8', font: { size: 10 } } }
                     },
@@ -2774,13 +3009,26 @@
         // ogni titolo cambia ogni volta che il paniere si restringe o si
         // allarga (vedi commento su update_momentum in src/benchmark.py) —
         // showUsd distingue i due casi riga per riga.
-        function _plBadgeHtml(pct, usd) {
-            if (pct == null) return '<span class="badge badge-FLAT">—</span>';
-            const cls = pct >= 0 ? 'badge-UP' : 'badge-DOWN';
-            const pctTxt = `${pct >= 0 ? '+' : ''}${Number(pct).toFixed(2)}%`;
-            const usdTxt = usd != null
-                ? ` (${usd >= 0 ? '+' : '-'}$${Math.abs(Number(usd)).toFixed(2)})` : '';
-            return `<span class="badge ${cls}">${pctTxt}${usdTxt}</span>`;
+        // Valore + percentuale impilati a destra della riga (lista Posizioni/
+        // Vendite recenti, 2026-11) — sostituisce la vecchia badge inline
+        // (_plBadgeHtml), stesso significato dei due numeri: "mostra il $ solo
+        // se showUsd" resta per lo stesso motivo di prima (il peso di ogni
+        // titolo Momentum cambia ogni volta che il paniere si restringe o si
+        // allarga, vedi update_momentum in src/benchmark.py — un $ lì
+        // sarebbe fuorviante).
+        function _plClass(pct) {
+            if (pct == null) return '';
+            return pct >= 0 ? 'pl-positive' : 'pl-negative';
+        }
+
+        function _plStackHtml(pct, usd) {
+            const cls = _plClass(pct);
+            const pctTxt = pct != null ? `${pct >= 0 ? '+' : ''}${Number(pct).toFixed(2)}%` : '—';
+            if (usd != null) {
+                const usdTxt = `${usd >= 0 ? '+' : '-'}$${Math.abs(Number(usd)).toFixed(2)}`;
+                return `<div class="pos-row__val trade-row__val ${cls}">${usdTxt}</div><div class="pos-row__pct trade-row__pct ${cls}">${pctTxt}</div>`;
+            }
+            return `<div class="pos-row__val trade-row__val ${cls}">${pctTxt}</div>`;
         }
 
         function _qtyTxt(qty) {
@@ -2791,18 +3039,22 @@
 
         function _openTradeRow(t, showUsd) {
             const entryTxt = t.entry_price != null ? `$${Number(t.entry_price).toFixed(2)}` : '—';
-            const markTxt = (t.mark_price ?? t.entry_price) != null
-                ? `$${Number(t.mark_price ?? t.entry_price).toFixed(2)}` : '—';
             return `
-                <div class="paper-item">
-                    <div class="paper-item-summary" style="cursor:default;">
-                        <span class="paper-item-heading">
-                            <span class="paper-item-title">${escapeHtml(t.symbol || '-')}</span>
-                            <span class="paper-item-sub">dal ${escapeHtml(t.entry_date || '-')}${_qtyTxt(t.qty)} · ${entryTxt} → ${markTxt}</span>
-                        </span>
-                        <span class="paper-item-headline">
-                            ${_plBadgeHtml(t.pl_pct ?? t.return_pct, showUsd ? t.pl_usd : null)}
-                        </span>
+                <div class="pos-row">
+                    <div class="pos-row__icon">${escapeHtml((t.symbol || '--').slice(0, 2))}</div>
+                    <div class="pos-row__main">
+                        <div class="pos-row__sym">${escapeHtml(t.symbol || '-')}</div>
+                        <div class="pos-row__sub">dal ${escapeHtml(t.entry_date || '-')}${_qtyTxt(t.qty)}</div>
+                    </div>
+                    <div class="pos-row__end">
+                        <div class="pos-row__top-label">Acquisto</div>
+                        <div class="pos-row__val">${entryTxt}</div>
+                        ${(() => {
+                            const pct = t.pl_pct ?? t.return_pct;
+                            const cls = _plClass(pct);
+                            const pctTxt = pct != null ? `${pct >= 0 ? '+' : ''}${Number(pct).toFixed(2)}%` : '—';
+                            return `<div class="pos-row__pct ${cls}">${pctTxt}</div>`;
+                        })()}
                     </div>
                 </div>
             `;
@@ -2812,15 +3064,14 @@
             const entryTxt = t.entry_price != null ? `$${Number(t.entry_price).toFixed(2)}` : '—';
             const exitTxt = t.exit_price != null ? `$${Number(t.exit_price).toFixed(2)}` : '—';
             return `
-                <div class="paper-item">
-                    <div class="paper-item-summary" style="cursor:default;">
-                        <span class="paper-item-heading">
-                            <span class="paper-item-title">${escapeHtml(t.symbol || '-')}</span>
-                            <span class="paper-item-sub">${escapeHtml(t.entry_date || '-')} ${entryTxt}${_qtyTxt(t.qty)} → ${escapeHtml(t.exit_date || '-')} ${exitTxt}</span>
-                        </span>
-                        <span class="paper-item-headline">
-                            ${_plBadgeHtml(t.pl_pct ?? t.return_pct, showUsd ? t.pl_usd : null)}
-                        </span>
+                <div class="trade-row">
+                    <div class="trade-row__icon">${escapeHtml((t.symbol || '--').slice(0, 2))}</div>
+                    <div class="trade-row__main">
+                        <div class="trade-row__sym">${escapeHtml(t.symbol || '-')}</div>
+                        <div class="trade-row__sub">${escapeHtml(t.entry_date || '-')} ${entryTxt}${_qtyTxt(t.qty)} → ${escapeHtml(t.exit_date || '-')} ${exitTxt}</div>
+                    </div>
+                    <div class="trade-row__end">
+                        ${_plStackHtml(t.pl_pct ?? t.return_pct, showUsd ? t.pl_usd : null)}
                     </div>
                 </div>
             `;
@@ -2865,6 +3116,43 @@
             applyTradeStrategyFilter();
         }
 
+        // Card "Esposizione & rischio": capitale impiegato per "AI reale"
+        // viene dal conto Alpaca vero (cash/equity in aiTraderAccountCache,
+        // popolato da loadAiTraderPositionsAndOrders); per "Momentum" non
+        // esiste un conto/cash, è una strategia sintetica sempre investita
+        // per costruzione su tutto il paniere (vedi update_momentum in
+        // src/benchmark.py) — quindi 100% appena ha posizioni aperte, 0%
+        // altrimenti. Lo stop-loss indipendente esiste solo per "AI reale"
+        // (src/ai_trader.py), Momentum segue solo regole fisse di
+        // ribilanciamento: qui lo si dice invece di mostrare un numero che
+        // non si applica.
+        function _renderAiTraderRiskCard() {
+            const strategy = currentTradeStrategyFilter;
+            const openCount = aiTraderOpenCounts[strategy] || 0;
+
+            let deployedPct = 0;
+            if (strategy === 'real' && aiTraderAccountCache) {
+                const equity = parseFloat(aiTraderAccountCache.equity);
+                const cash = parseFloat(aiTraderAccountCache.cash);
+                if (equity > 0 && !Number.isNaN(cash)) {
+                    deployedPct = Math.max(0, Math.min(100, ((equity - cash) / equity) * 100));
+                }
+            } else if (strategy === 'momentum') {
+                deployedPct = openCount > 0 ? 100 : 0;
+            }
+            document.getElementById('aitrader-risk-deployed-val').innerText = `${deployedPct.toFixed(0)}%`;
+            document.getElementById('aitrader-risk-deployed-fill').style.width = `${deployedPct}%`;
+
+            const positionsPct = Math.max(0, Math.min(100, (openCount / AI_TRADER_MAX_POSITIONS_FRONTEND) * 100));
+            document.getElementById('aitrader-risk-positions-val').innerText =
+                `${openCount} di ${AI_TRADER_MAX_POSITIONS_FRONTEND} max`;
+            document.getElementById('aitrader-risk-positions-fill').style.width = `${positionsPct}%`;
+
+            document.getElementById('aitrader-risk-stoploss-val').innerText = strategy === 'real'
+                ? `${AI_TRADER_STOP_LOSS_PCT_FRONTEND.toFixed(1)}%`
+                : '— (regole fisse)';
+        }
+
         function applyTradeStrategyFilter() {
             document.querySelectorAll('#aitrader-real-trades-card, #aitrader-momentum-trades-card').forEach(card => {
                 card.style.display = card.dataset.strategy === currentTradeStrategyFilter ? '' : 'none';
@@ -2872,6 +3160,10 @@
             document.getElementById('aitrader-stats-label').innerText =
                 `Numeri di: ${currentTradeStrategyFilter === 'real' ? 'AI reale' : 'Momentum'}`;
             _renderAiTraderStatBoxes(aiTraderStatsByStrategy[currentTradeStrategyFilter]);
+            _renderAiTraderRiskCard();
+            if (aiTraderChartCache) {
+                renderAiTraderEquityChart(aiTraderChartCache.history, aiTraderChartCache.experiment, aiTraderChartCache.momentumHistory);
+            }
         }
 
         function renderTradeDashboards(realTrades, momentumTrades) {
@@ -2897,6 +3189,7 @@
                 ? paperListMessage('Nessuna operazione chiusa ancora.', false)
                 : momentum.closed.slice(0, 30).map(t => _closedTradeRow(t, false)).join('');
 
+            aiTraderOpenCounts = { real: (real.open || []).length, momentum: (momentum.open || []).length };
             applyTradeStrategyFilter();
         }
 
@@ -2929,6 +3222,9 @@
                 fetchPaperAccount(),
                 parseJsonl('data/paper/orders.jsonl'),
             ]);
+            // Letto dalla card "Esposizione & rischio" (vedi _renderAiTraderRiskCard):
+            // cash/equity del vero conto Alpaca, nessuna chiamata in più.
+            aiTraderAccountCache = account;
 
             const positionsBody = document.getElementById('paper-positions-body');
             const positionsList = document.getElementById('paper-positions-list');
