@@ -370,3 +370,46 @@ def test_get_portfolio_history_errore_http_solleva_alpaca_error(monkeypatch):
     with patch("src.paper_trading.requests.get", return_value=fake_resp):
         with pytest.raises(paper_trading.AlpacaError, match="bad request"):
             paper_trading.get_portfolio_history(start="2026-10-31")
+
+
+# ─── get_activities (fill reali, fonte autorevole del prezzo) ──────────────
+
+
+def test_get_activities_una_sola_pagina(monkeypatch):
+    monkeypatch.setenv("ALPACA_API_KEY", "x")
+    monkeypatch.setenv("ALPACA_SECRET_KEY", "y")
+    fills = [{"id": "a1", "symbol": "NVDA", "side": "buy", "price": "123.45", "qty": "10"}]
+    with patch("src.paper_trading.requests.get", return_value=FakeResponse(200, fills)) as mock_get:
+        result = paper_trading.get_activities(after="2026-10-31")
+    assert result == fills
+    _, kwargs = mock_get.call_args
+    assert kwargs["params"]["activity_types"] == "FILL"
+    assert kwargs["params"]["after"] == "2026-10-31"
+    assert "page_token" not in kwargs["params"]
+
+
+def test_get_activities_segue_la_paginazione(monkeypatch):
+    """Una pagina piena (page_size=100) deve far ripartire una seconda
+    richiesta con page_token = id dell'ultima attività — senza questo, le
+    attività oltre la prima pagina andrebbero perse silenziosamente."""
+    monkeypatch.setenv("ALPACA_API_KEY", "x")
+    monkeypatch.setenv("ALPACA_SECRET_KEY", "y")
+    page_1 = [{"id": f"a{i}", "symbol": "NVDA"} for i in range(100)]
+    page_2 = [{"id": "a100", "symbol": "AAPL"}]
+
+    responses = [FakeResponse(200, page_1), FakeResponse(200, page_2)]
+    with patch("src.paper_trading.requests.get", side_effect=responses) as mock_get:
+        result = paper_trading.get_activities(after="2026-10-31")
+
+    assert len(result) == 101
+    assert mock_get.call_count == 2
+    second_call_params = mock_get.call_args_list[1].kwargs["params"]
+    assert second_call_params["page_token"] == "a99"
+
+
+def test_get_activities_errore_http_solleva_alpaca_error(monkeypatch):
+    monkeypatch.setenv("ALPACA_API_KEY", "x")
+    monkeypatch.setenv("ALPACA_SECRET_KEY", "y")
+    with patch("src.paper_trading.requests.get", return_value=FakeResponse(500, text="boom")):
+        with pytest.raises(paper_trading.AlpacaError, match="boom"):
+            paper_trading.get_activities(after="2026-10-31")

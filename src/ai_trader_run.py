@@ -37,11 +37,16 @@ si limitasse a non scrivere su disco): un giudizio AI costa soldi reali nel
 momento stesso in cui viene fatto, non quando il risultato viene salvato —
 "test sicuro" deve significare zero chiamate, non solo zero file scritti.
 
-Dopo ogni setup/daily (_update_benchmarks), aggiorna anche le due righe di
-confronto del grafico Trading AI (src/benchmark.py: Buy & Hold SPY e una
-strategia Momentum a regole fisse, senza AI) — a parte, in try/except
-indipendenti dal resto: un loro fallimento non deve mai bloccare un ordine
-vero.
+Dopo ogni setup/daily aggiorna anche, in try/except indipendenti dal resto
+(un loro fallimento non deve mai bloccare un ordine vero):
+- _update_benchmarks: la riga di confronto Momentum sul grafico (src/
+  benchmark.py, strategia a regole fisse senza AI).
+- _update_trade_dashboards: i due elenchi di operazioni (acquisto/vendita,
+  prezzo, guadagno/perdita) mostrati nella dashboard della pagina Trading
+  AI — quello reale dalle esecuzioni vere su Alpaca (src/trade_history.py,
+  MAI da data/paper/orders.jsonl: quel file salva l'ordine al momento
+  dell'invio, non il prezzo di fill effettivo), quello di Momentum dal suo
+  stesso storico giorno-per-giorno.
 """
 from __future__ import annotations
 
@@ -51,7 +56,7 @@ import json
 import os
 import sys
 
-from . import ai_trader, benchmark, budget, config, paper_trading, storage
+from . import ai_trader, benchmark, budget, config, paper_trading, storage, trade_history
 
 
 def _cancel_resting_orders(symbol: str) -> None:
@@ -145,19 +150,45 @@ def _save_portfolio_history_snapshot(start_date: str) -> None:
 
 
 def _update_benchmarks(today: dt.date, experiment: dict) -> None:
-    """Le due righe di confronto del grafico (src/benchmark.py): Buy & Hold
-    SPY e una strategia Momentum a regole fisse, senza AI. Ciascuna in un
-    try/except separato dall'altra e da tutto il resto di questo modulo —
-    sono un confronto indicativo mostrato sul grafico, mai devono poter
-    bloccare un ordine vero o l'aggiornamento della curva equity reale."""
-    try:
-        benchmark.update_buy_hold(today, experiment)
-    except Exception as exc:  # noqa: BLE001 - mai fatale per il trading reale
-        print(f"Benchmark Buy & Hold non aggiornato oggi (non bloccante): {exc}")
+    """La strategia di confronto Momentum a regole fisse, senza AI
+    (src/benchmark.py). In try/except separato da tutto il resto di questo
+    modulo — è un confronto indicativo mostrato sul grafico, mai deve poter
+    bloccare un ordine vero o l'aggiornamento della curva equity reale.
+    (Un secondo confronto, "Buy & Hold SPY", è stato tolto il 2026-11-02 su
+    richiesta dell'utente.)"""
     try:
         benchmark.update_momentum(today, experiment)
     except Exception as exc:  # noqa: BLE001 - mai fatale per il trading reale
         print(f"Benchmark Momentum non aggiornato oggi (non bloccante): {exc}")
+
+
+def _update_trade_dashboards(experiment: dict) -> None:
+    """Rigenera da zero (mai accumulato in modo incrementale — lo storico
+    completo vive già altrove: data/paper/ e Alpaca per quello reale,
+    benchmark_momentum.jsonl per Momentum) i due elenchi di operazioni
+    mostrati nella dashboard della pagina Trading AI. Due try/except
+    separati, uno per strategia: un fallimento su una non deve mai
+    impedire l'aggiornamento dell'altra, né bloccare un ordine vero."""
+    try:
+        fills = paper_trading.get_activities(after=experiment["start_date"])
+        positions = paper_trading.get_positions()
+        trades = trade_history.derive_real_trades(fills, positions)
+        os.makedirs(config.AI_TRADER_DIR, exist_ok=True)
+        with open(config.AI_TRADER_REAL_TRADES_FILE, "w", encoding="utf-8") as fh:
+            json.dump(trades, fh, indent=2, sort_keys=True)
+            fh.write("\n")
+    except Exception as exc:  # noqa: BLE001 - mai fatale per il trading reale
+        print(f"Elenco operazioni reali non aggiornato oggi (non bloccante): {exc}")
+
+    try:
+        history = storage.read_all(config.AI_TRADER_MOMENTUM_FILE)
+        trades = benchmark.derive_momentum_trades(history)
+        os.makedirs(config.AI_TRADER_DIR, exist_ok=True)
+        with open(config.AI_TRADER_MOMENTUM_TRADES_FILE, "w", encoding="utf-8") as fh:
+            json.dump(trades, fh, indent=2, sort_keys=True)
+            fh.write("\n")
+    except Exception as exc:  # noqa: BLE001 - mai fatale per il trading reale
+        print(f"Elenco operazioni Momentum non aggiornato oggi (non bloccante): {exc}")
 
 
 def load_experiment() -> dict | None:
@@ -218,6 +249,7 @@ def run_setup(dry_run: bool) -> None:
     _record_equity(experiment["start_date"], experiment["start_equity_usd"])
     _save_portfolio_history_snapshot(experiment["start_date"])
     _update_benchmarks(start_date, experiment)
+    _update_trade_dashboards(experiment)
     print(
         f"Esperimento avviato: {experiment['start_date']} -> {experiment['end_date']}, "
         f"equity di partenza ${experiment['start_equity_usd']:.2f}"
@@ -271,6 +303,7 @@ def run_daily(dry_run: bool) -> None:
         _save_experiment(experiment)
         _record_equity(today.isoformat(), experiment["final_equity_usd"])
         _update_benchmarks(today, experiment)
+        _update_trade_dashboards(experiment)
         print(
             f"Esperimento scaduto il {end_date.isoformat()}: nessun nuovo ordine, "
             f"equity finale ${experiment['final_equity_usd']:.2f}"
@@ -337,6 +370,7 @@ def run_daily(dry_run: bool) -> None:
     _record_equity(today.isoformat(), float(account["equity"]))
     _save_portfolio_history_snapshot(experiment["start_date"])
     _update_benchmarks(today, experiment)
+    _update_trade_dashboards(experiment)
     print(
         f"Run giornaliero completato: equity ${account['equity']}, {len(positions)} posizioni aperte, "
         f"spesa AI questo mese ${budget.get_trader_spent_usd():.4f} / ${config.AI_TRADER_MONTHLY_BUDGET_USD:.2f}"

@@ -1,5 +1,5 @@
-"""Test unitari per src/benchmark.py (le due righe di confronto del grafico
-Trading AI: Buy & Hold SPY e Momentum a regole fisse).
+"""Test unitari per src/benchmark.py (la strategia di confronto Momentum a
+regole fisse per la pagina Trading AI).
 
 Nessuna chiamata di rete reale: requests.get è sempre mockata (stesso
 spirito di FakeResponse in test_market_scanner.py per Yahoo Finance)."""
@@ -35,9 +35,7 @@ def _closes_payload(closes):
 
 
 def _isolate(tmp_path, monkeypatch):
-    monkeypatch.setattr(config, "AI_TRADER_BUYHOLD_FILE", str(tmp_path / "buyhold.jsonl"))
     monkeypatch.setattr(config, "AI_TRADER_MOMENTUM_FILE", str(tmp_path / "momentum.jsonl"))
-    monkeypatch.setattr(config, "AI_TRADER_BENCHMARK_SYMBOL", "SPY")
     monkeypatch.setattr(config, "AI_TRADER_MOMENTUM_LOOKBACK_DAYS", 2)
     monkeypatch.setattr(config, "AI_TRADER_MOMENTUM_TOP_N", 2)
     monkeypatch.setattr(config, "SCANNER_STOCKS", ["AAA", "BBB", "CCC"])
@@ -45,50 +43,6 @@ def _isolate(tmp_path, monkeypatch):
 
 
 _EXPERIMENT = {"start_equity_usd": 100000.0}
-
-
-# ─── update_buy_hold ────────────────────────────────────────────────────────
-
-
-def test_buy_hold_primo_giorno_usa_equity_di_partenza_come_ancora(tmp_path, monkeypatch):
-    _isolate(tmp_path, monkeypatch)
-    payload = _closes_payload([100.0, 100.0, 105.0])
-    with patch("src.benchmark.http.get", return_value=FakeResponse(json_data=payload)):
-        benchmark.update_buy_hold(dt.date(2026, 10, 31), _EXPERIMENT)
-
-    records = storage.read_all(config.AI_TRADER_BUYHOLD_FILE)
-    assert len(records) == 1
-    assert records[0]["anchor_price"] == 105.0
-    assert records[0]["equity_usd"] == 100000.0
-
-
-def test_buy_hold_secondo_giorno_scala_proporzionalmente_al_prezzo(tmp_path, monkeypatch):
-    _isolate(tmp_path, monkeypatch)
-    storage.append_record(config.AI_TRADER_BUYHOLD_FILE, {
-        "date": "2026-10-31", "anchor_price": 100.0, "equity_usd": 100000.0,
-    })
-    payload = _closes_payload([100.0, 105.0, 110.0])  # +10% rispetto all'ancora
-    with patch("src.benchmark.http.get", return_value=FakeResponse(json_data=payload)):
-        benchmark.update_buy_hold(dt.date(2026, 11, 1), _EXPERIMENT)
-
-    records = storage.read_all(config.AI_TRADER_BUYHOLD_FILE)
-    assert len(records) == 2
-    assert records[1]["equity_usd"] == 110000.0
-
-
-def test_buy_hold_stesso_giorno_e_idempotente_nessuna_chiamata_di_rete(tmp_path, monkeypatch):
-    _isolate(tmp_path, monkeypatch)
-    storage.append_record(config.AI_TRADER_BUYHOLD_FILE, {
-        "date": "2026-10-31", "anchor_price": 100.0, "equity_usd": 100000.0,
-    })
-
-    def boom(*a, **k):
-        raise AssertionError("non deve fare nessuna richiesta di rete: oggi è già registrato")
-
-    with patch("src.benchmark.http.get", side_effect=boom):
-        benchmark.update_buy_hold(dt.date(2026, 10, 31), _EXPERIMENT)
-
-    assert len(storage.read_all(config.AI_TRADER_BUYHOLD_FILE)) == 1
 
 
 # ─── update_momentum ────────────────────────────────────────────────────────
@@ -123,7 +77,9 @@ def test_momentum_primo_giorno_sceglie_i_migliori_top_n_senza_perdita_di_ieri(tm
     # Giorno 1: nessun paniere precedente da segnare a mercato, equity invariata.
     assert rec["equity_usd"] == 100000.0
     assert rec["holdings"] == {"AAA": 0.5, "CCC": 0.5}
-    assert rec["prices"] == {"AAA": 110.0, "CCC": 105.0}
+    assert rec["entry_prices"] == {"AAA": 110.0, "CCC": 105.0}
+    assert rec["mark_prices"] == {"AAA": 110.0, "CCC": 105.0}
+    assert rec["exit_prices"] == {}
 
 
 def test_momentum_secondo_giorno_segna_a_mercato_il_paniere_di_ieri(tmp_path, monkeypatch):
@@ -132,7 +88,9 @@ def test_momentum_secondo_giorno_segna_a_mercato_il_paniere_di_ieri(tmp_path, mo
         "date": "2026-10-31",
         "equity_usd": 100000.0,
         "holdings": {"AAA": 0.5, "CCC": 0.5},
-        "prices": {"AAA": 110.0, "CCC": 105.0},
+        "entry_prices": {"AAA": 110.0, "CCC": 105.0},
+        "mark_prices": {"AAA": 110.0, "CCC": 105.0},
+        "exit_prices": {},
     })
     closes_by_symbol = {
         "AAA": [100.0, 110.0, 121.0],  # +10% rispetto a ieri (110 -> 121)
@@ -148,19 +106,51 @@ def test_momentum_secondo_giorno_segna_a_mercato_il_paniere_di_ieri(tmp_path, mo
     # 0.5*(121/110-1) + 0.5*(105/105-1) = 0.05 -> 100000 * 1.05
     assert rec["equity_usd"] == 105000.0
     assert rec["holdings"] == {"AAA": 0.5, "CCC": 0.5}
+    # Nessuno dei due è entrato oggi: entry_prices resta quello originale di ieri.
+    assert rec["entry_prices"] == {"AAA": 110.0, "CCC": 105.0}
+    # mark_prices invece è sempre quello di OGGI.
+    assert rec["mark_prices"] == {"AAA": 121.0, "CCC": 105.0}
+
+
+def test_momentum_entry_price_resta_invariato_su_piu_giorni_di_possesso(tmp_path, monkeypatch):
+    """Bug reale corretto il 2026-11-02: un unico campo 'prices' veniva
+    sovrascritto ogni giorno, quindi per un titolo tenuto da più giorni non
+    c'era più modo di sapere a quanto era stato comprato all'origine."""
+    _isolate(tmp_path, monkeypatch)
+    storage.append_record(config.AI_TRADER_MOMENTUM_FILE, {
+        "date": "2026-10-31", "equity_usd": 100000.0,
+        "holdings": {"AAA": 1.0}, "entry_prices": {"AAA": 100.0},
+        "mark_prices": {"AAA": 100.0}, "exit_prices": {},
+    })
+    storage.append_record(config.AI_TRADER_MOMENTUM_FILE, {
+        "date": "2026-11-01", "equity_usd": 105000.0,
+        "holdings": {"AAA": 1.0}, "entry_prices": {"AAA": 100.0},
+        "mark_prices": {"AAA": 105.0}, "exit_prices": {},
+    })
+    # Terzo giorno: AAA ha ancora il momentum migliore, resta l'unica in portafoglio.
+    closes_by_symbol = {
+        "AAA": [100.0, 105.0, 112.0],
+        "BBB": [100.0, 90.0, 80.0],
+        "CCC": [100.0, 95.0, 90.0],
+    }
+    with patch("src.benchmark.http.get", side_effect=_momentum_fake_get(closes_by_symbol)):
+        benchmark.update_momentum(dt.date(2026, 11, 2), _EXPERIMENT)
+
+    rec = storage.read_all(config.AI_TRADER_MOMENTUM_FILE)[2]
+    assert rec["entry_prices"]["AAA"] == 100.0  # invariato dal giorno 1
+    assert rec["mark_prices"]["AAA"] == 112.0   # aggiornato a oggi
 
 
 def test_momentum_salva_il_prezzo_di_uscita_di_un_titolo_venduto(tmp_path, monkeypatch):
     """Il prezzo di vendita di un titolo che esce dal paniere deve essere
-    salvato nello stesso giorno in cui esce, non solo quello dei titoli
-    appena entrati — altrimenti il frontend non potrebbe mai mostrare 'a
-    quanto ha venduto' (richiesto dall'utente)."""
+    salvato nello stesso giorno in cui esce — altrimenti il frontend non
+    potrebbe mai mostrare 'a quanto ha venduto' (richiesto dall'utente)."""
     _isolate(tmp_path, monkeypatch)
     storage.append_record(config.AI_TRADER_MOMENTUM_FILE, {
-        "date": "2026-10-31",
-        "equity_usd": 100000.0,
+        "date": "2026-10-31", "equity_usd": 100000.0,
         "holdings": {"AAA": 0.5, "BBB": 0.5},
-        "prices": {"AAA": 100.0, "BBB": 100.0},
+        "entry_prices": {"AAA": 100.0, "BBB": 100.0},
+        "mark_prices": {"AAA": 100.0, "BBB": 100.0}, "exit_prices": {},
     })
     closes_by_symbol = {
         "AAA": [100.0, 110.0, 121.0],  # momentum +21%, resta
@@ -172,9 +162,8 @@ def test_momentum_salva_il_prezzo_di_uscita_di_un_titolo_venduto(tmp_path, monke
 
     rec = storage.read_all(config.AI_TRADER_MOMENTUM_FILE)[1]
     assert rec["holdings"] == {"AAA": 0.5, "CCC": 0.5}  # BBB non c'è più
-    assert rec["prices"]["BBB"] == 40.0  # ma il prezzo a cui è uscita sì
-    assert rec["prices"]["AAA"] == 121.0
-    assert rec["prices"]["CCC"] == 110.0
+    assert rec["exit_prices"] == {"BBB": 40.0}  # solo lei è uscita oggi
+    assert rec["entry_prices"]["CCC"] == 110.0  # appena entrata: ingresso = oggi
 
 
 def test_momentum_nessun_titolo_con_momentum_positivo_va_tutto_in_contanti(tmp_path, monkeypatch):
@@ -189,7 +178,7 @@ def test_momentum_nessun_titolo_con_momentum_positivo_va_tutto_in_contanti(tmp_p
 
     rec = storage.read_all(config.AI_TRADER_MOMENTUM_FILE)[0]
     assert rec["holdings"] == {}
-    assert rec["prices"] == {}
+    assert rec["entry_prices"] == {}
 
 
 def test_momentum_un_titolo_senza_dati_non_blocca_gli_altri(tmp_path, monkeypatch):
@@ -208,7 +197,8 @@ def test_momentum_un_titolo_senza_dati_non_blocca_gli_altri(tmp_path, monkeypatc
 def test_momentum_stesso_giorno_e_idempotente_nessuna_chiamata_di_rete(tmp_path, monkeypatch):
     _isolate(tmp_path, monkeypatch)
     storage.append_record(config.AI_TRADER_MOMENTUM_FILE, {
-        "date": "2026-10-31", "equity_usd": 100000.0, "holdings": {}, "prices": {},
+        "date": "2026-10-31", "equity_usd": 100000.0,
+        "holdings": {}, "entry_prices": {}, "mark_prices": {}, "exit_prices": {},
     })
 
     def boom(*a, **k):
@@ -218,3 +208,64 @@ def test_momentum_stesso_giorno_e_idempotente_nessuna_chiamata_di_rete(tmp_path,
         benchmark.update_momentum(dt.date(2026, 10, 31), _EXPERIMENT)
 
     assert len(storage.read_all(config.AI_TRADER_MOMENTUM_FILE)) == 1
+
+
+# ─── derive_momentum_trades ─────────────────────────────────────────────────
+
+
+def test_derive_momentum_trades_operazione_chiusa_ha_rendimento_corretto():
+    history = [
+        {"date": "2026-10-31", "holdings": {"AAA": 1.0},
+         "entry_prices": {"AAA": 100.0}, "mark_prices": {"AAA": 100.0}, "exit_prices": {}},
+        {"date": "2026-11-01", "holdings": {},
+         "entry_prices": {}, "mark_prices": {}, "exit_prices": {"AAA": 110.0}},
+    ]
+    result = benchmark.derive_momentum_trades(history)
+    assert result["open"] == []
+    assert len(result["closed"]) == 1
+    trade = result["closed"][0]
+    assert trade == {
+        "symbol": "AAA", "entry_date": "2026-10-31", "entry_price": 100.0,
+        "exit_date": "2026-11-01", "exit_price": 110.0, "return_pct": 10.0,
+    }
+
+
+def test_derive_momentum_trades_posizione_ancora_aperta_usa_mark_price_piu_recente():
+    history = [
+        {"date": "2026-10-31", "holdings": {"AAA": 1.0},
+         "entry_prices": {"AAA": 100.0}, "mark_prices": {"AAA": 100.0}, "exit_prices": {}},
+        {"date": "2026-11-01", "holdings": {"AAA": 1.0},
+         "entry_prices": {"AAA": 100.0}, "mark_prices": {"AAA": 108.0}, "exit_prices": {}},
+    ]
+    result = benchmark.derive_momentum_trades(history)
+    assert result["closed"] == []
+    assert len(result["open"]) == 1
+    open_trade = result["open"][0]
+    assert open_trade["entry_date"] == "2026-10-31"
+    assert open_trade["entry_price"] == 100.0
+    assert open_trade["mark_price"] == 108.0
+    assert open_trade["return_pct"] == 8.0
+
+
+def test_derive_momentum_trades_entry_price_non_cambia_tra_chiusura_e_riapertura():
+    """Se un titolo esce e poi rientra più tardi, la seconda apertura deve
+    avere il SUO prezzo d'ingresso, non quello della volta precedente."""
+    history = [
+        {"date": "2026-10-31", "holdings": {"AAA": 1.0},
+         "entry_prices": {"AAA": 100.0}, "mark_prices": {"AAA": 100.0}, "exit_prices": {}},
+        {"date": "2026-11-01", "holdings": {},
+         "entry_prices": {}, "mark_prices": {}, "exit_prices": {"AAA": 90.0}},
+        {"date": "2026-11-03", "holdings": {"AAA": 1.0},
+         "entry_prices": {"AAA": 95.0}, "mark_prices": {"AAA": 95.0}, "exit_prices": {}},
+    ]
+    result = benchmark.derive_momentum_trades(history)
+    assert len(result["closed"]) == 1
+    assert result["closed"][0]["entry_price"] == 100.0
+    assert result["closed"][0]["exit_price"] == 90.0
+    assert len(result["open"]) == 1
+    assert result["open"][0]["entry_date"] == "2026-11-03"
+    assert result["open"][0]["entry_price"] == 95.0
+
+
+def test_derive_momentum_trades_storico_vuoto_non_crasha():
+    assert benchmark.derive_momentum_trades([]) == {"closed": [], "open": []}

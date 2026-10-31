@@ -688,17 +688,14 @@ AI_TRADER_EQUITY_HISTORY_FILE = f"{AI_TRADER_DIR}/equity_history.jsonl"
 # un giorno).
 AI_TRADER_PORTFOLIO_HISTORY_FILE = f"{AI_TRADER_DIR}/portfolio_history.json"
 
-# Due righe di confronto sullo stesso grafico del Trading AI (src/benchmark.py),
-# richieste dall'utente dopo aver visto una proposta di ChatGPT: calcolate
+# Riga di confronto sullo stesso grafico del Trading AI (src/benchmark.py),
+# richiesta dall'utente dopo aver visto una proposta di ChatGPT: calcolata
 # SOLO da prezzi pubblici Yahoo Finance, zero chiamate AI, zero ordini reali,
-# zero costo aggiuntivo sul budget mensile. Partono dalla stessa data e dallo
+# zero costo aggiuntivo sul budget mensile. Parte dalla stessa data e dallo
 # stesso capitale di experiment.json, per restare un confronto onesto.
-AI_TRADER_BUYHOLD_FILE = f"{AI_TRADER_DIR}/benchmark_buyhold.jsonl"
+# (Un secondo confronto, "Buy & Hold SPY", è stato tolto il 2026-11-02 su
+# richiesta dell'utente — niente più costante/file per quello.)
 AI_TRADER_MOMENTUM_FILE = f"{AI_TRADER_DIR}/benchmark_momentum.jsonl"
-# ETF che replica l'S&P 500: la scelta più leggibile per un confronto "se
-# avessi solo comprato l'indice" (stesso simbolo già usato altrove nel
-# progetto, vedi INDEX_ASSETS sopra).
-AI_TRADER_BENCHMARK_SYMBOL = "SPY"
 # Rendimento sugli ultimi N giorni di borsa per classificare il momentum di
 # ogni titolo — finestra classica per un segnale "momentum" di breve periodo,
 # compatibile con i ~3 mesi di storico richiesti a Yahoo in benchmark.py.
@@ -707,6 +704,17 @@ AI_TRADER_MOMENTUM_LOOKBACK_DAYS = 20
 # non un numero diverso: altrimenti un confronto "più diversificato vince
 # sempre di meno in un mercato in salita" non sarebbe più onesto.
 AI_TRADER_MOMENTUM_TOP_N = AI_TRADER_MAX_POSITIONS
+
+# Snapshot (sovrascritti ad ogni run, non uno storico — stesso principio di
+# AI_TRADER_PORTFOLIO_HISTORY_FILE sopra) dell'elenco di operazioni
+# chiuse/aperte di ciascuna strategia, ricalcolati da zero ogni giorno da
+# ai_trader_run.py: trades_real.json dalle esecuzioni vere su Alpaca
+# (src/trade_history.py), trades_momentum.json dallo storico di
+# benchmark_momentum.jsonl (benchmark.derive_momentum_trades). Il frontend
+# legge solo questi due file, non deve mai ricostruire l'abbinamento
+# acquisto/vendita da solo in JavaScript.
+AI_TRADER_REAL_TRADES_FILE = f"{AI_TRADER_DIR}/trades_real.json"
+AI_TRADER_MOMENTUM_TRADES_FILE = f"{AI_TRADER_DIR}/trades_momentum.json"
 
 
 def snapshot_file(asset: str) -> str:

@@ -135,6 +135,41 @@ def cancel_order(order_id: str) -> None:
         raise AlpacaError(f"DELETE /v2/orders/{order_id} fallita ({resp.status_code}): {resp.text}")
 
 
+def get_activities(after: str, activity_types: str = "FILL") -> list[dict]:
+    """Esecuzioni REALI (fill) sul conto paper — fonte autorevole per il
+    prezzo di acquisto/vendita effettivo, a differenza di orders.jsonl che
+    salva l'ordine al momento dell'INVIO (status "pending_new"/"accepted":
+    il fill arriva più tardi e quella riga non viene mai aggiornata dopo —
+    bug reale di dati scoperto il 2026-11-02, tutti gli ordini finora
+    registrati avevano filled_avg_price=None). after è una data ISO (es.
+    l'inizio dell'esperimento): nessun bisogno di fill precedenti a quello.
+
+    Paginata (page_token = id dell'ultima attività, come richiesto da
+    Alpaca): con l'esperimento ancora piccolo un solo giro basta quasi
+    sempre, ma non ci si affida a quello — un ciclo while, mai un singolo
+    fetch spacciato per "tutto"."""
+    activities: list[dict] = []
+    page_token: str | None = None
+    while True:
+        params = {"activity_types": activity_types, "after": after, "direction": "asc", "page_size": 100}
+        if page_token:
+            params["page_token"] = page_token
+        resp = requests.get(
+            f"{ALPACA_PAPER_BASE_URL}/v2/account/activities",
+            headers=_headers(), params=params, timeout=TIMEOUT,
+        )
+        if not resp.ok:
+            raise AlpacaError(f"GET /v2/account/activities fallita ({resp.status_code}): {resp.text}")
+        batch = resp.json()
+        if not batch:
+            break
+        activities.extend(batch)
+        if len(batch) < 100:
+            break
+        page_token = batch[-1]["id"]
+    return activities
+
+
 def get_portfolio_history(start: str, timeframe: str = "1D") -> dict:
     """Curva equity calcolata da Alpaca stesso (GET /v2/account/portfolio/
     history), non la nostra accumulazione manuale (vedi

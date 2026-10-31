@@ -23,15 +23,19 @@ def _isolate(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "AI_TRADER_DIR", str(tmp_path))
     monkeypatch.setattr(config, "PAPER_ORDERS_FILE", str(tmp_path / "orders.jsonl"))
     monkeypatch.setattr(config, "PAPER_ACCOUNT_FILE", str(tmp_path / "account.json"))
+    monkeypatch.setattr(config, "AI_TRADER_MOMENTUM_FILE", str(tmp_path / "benchmark_momentum.jsonl"))
+    monkeypatch.setattr(config, "AI_TRADER_REAL_TRADES_FILE", str(tmp_path / "trades_real.json"))
+    monkeypatch.setattr(config, "AI_TRADER_MOMENTUM_TRADES_FILE", str(tmp_path / "trades_momentum.json"))
     monkeypatch.setenv("ANTHROPIC_API_KEY", "fake-key")
-    # _update_benchmarks (src/benchmark.py) gira dopo ogni setup/daily: senza
-    # questo no-op, ogni test di run_setup/run_daily farebbe una vera
-    # chiamata di rete a Yahoo Finance (lenta, flaky, contro il principio
-    # "nessuna chiamata di rete reale" dichiarato in cima a questo file). I
-    # test dedicati all'integrazione sotto sovrascrivono di nuovo questi due
-    # mock per verificare che vengano chiamati davvero.
-    monkeypatch.setattr(ai_trader_run.benchmark, "update_buy_hold", lambda *a, **k: None)
+    # _update_benchmarks e _update_trade_dashboards girano dopo ogni
+    # setup/daily: senza questi no-op, ogni test di run_setup/run_daily
+    # farebbe una vera chiamata di rete a Yahoo Finance e/o Alpaca (lenta,
+    # flaky, contro il principio "nessuna chiamata di rete reale" dichiarato
+    # in cima a questo file). I test dedicati all'integrazione sotto
+    # sovrascrivono di nuovo questi mock per verificare che vengano
+    # chiamati davvero.
     monkeypatch.setattr(ai_trader_run.benchmark, "update_momentum", lambda *a, **k: None)
+    monkeypatch.setattr(ai_trader_run, "_update_trade_dashboards", lambda *a, **k: None)
 
 
 # ─── budget.py: tetto mensile in dollari ────────────────────────────────────
@@ -619,10 +623,9 @@ def test_budget_file_corrotto_blocca_la_spesa_invece_di_azzerarla(tmp_path, monk
 # ─── _update_benchmarks: aggancio a benchmark.py, mai bloccante ────────────
 
 
-def test_run_setup_chiama_i_due_benchmark(tmp_path, monkeypatch):
+def test_run_setup_chiama_update_benchmarks(tmp_path, monkeypatch):
     _isolate(tmp_path, monkeypatch)
     calls = []
-    monkeypatch.setattr(ai_trader_run.benchmark, "update_buy_hold", lambda *a, **k: calls.append("buyhold"))
     monkeypatch.setattr(ai_trader_run.benchmark, "update_momentum", lambda *a, **k: calls.append("momentum"))
 
     with patch("src.ai_trader_run.paper_trading.get_positions", return_value=[]), \
@@ -631,17 +634,16 @@ def test_run_setup_chiama_i_due_benchmark(tmp_path, monkeypatch):
          patch("src.ai_trader_run.paper_trading.get_portfolio_history", return_value={"timestamp": [], "equity": []}):
         ai_trader_run.run_setup(dry_run=False)
 
-    assert calls == ["buyhold", "momentum"]
+    assert calls == ["momentum"]
 
 
-def test_run_daily_chiama_i_due_benchmark(tmp_path, monkeypatch):
+def test_run_daily_chiama_update_benchmarks(tmp_path, monkeypatch):
     _isolate(tmp_path, monkeypatch)
     end_date = (__import__("datetime").date.today() + __import__("datetime").timedelta(days=30)).isoformat()
     with open(config.AI_TRADER_EXPERIMENT_FILE, "w", encoding="utf-8") as fh:
         json.dump({"start_date": "2026-01-01", "end_date": end_date, "status": "running"}, fh)
 
     calls = []
-    monkeypatch.setattr(ai_trader_run.benchmark, "update_buy_hold", lambda *a, **k: calls.append("buyhold"))
     monkeypatch.setattr(ai_trader_run.benchmark, "update_momentum", lambda *a, **k: calls.append("momentum"))
 
     with patch("src.ai_trader_run.paper_trading.get_positions", return_value=[]), \
@@ -653,20 +655,16 @@ def test_run_daily_chiama_i_due_benchmark(tmp_path, monkeypatch):
          patch("src.ai_trader.decide_all", return_value=[]):
         ai_trader_run.run_daily(dry_run=False)
 
-    assert calls == ["buyhold", "momentum"]
+    assert calls == ["momentum"]
 
 
-def test_un_benchmark_fallito_non_blocca_laltro_ne_il_trading_reale(tmp_path, monkeypatch):
-    """Resilienza: i due benchmark sono richieste di rete indipendenti dal
-    trading reale — se una fallisce (Yahoo giù, ticker senza dati),
-    l'esperimento vero deve comunque aggiornarsi e l'altro benchmark deve
-    comunque essere provato."""
+def test_un_benchmark_fallito_non_blocca_il_trading_reale(tmp_path, monkeypatch):
+    """Resilienza: il confronto Momentum è una richiesta di rete
+    indipendente dal trading reale — se fallisce (Yahoo giù, ticker senza
+    dati), l'esperimento vero deve comunque aggiornarsi."""
     _isolate(tmp_path, monkeypatch)
-    momentum_calls = []
-    monkeypatch.setattr(ai_trader_run.benchmark, "update_buy_hold",
-                         lambda *a, **k: (_ for _ in ()).throw(RuntimeError("Yahoo giù")))
     monkeypatch.setattr(ai_trader_run.benchmark, "update_momentum",
-                         lambda *a, **k: momentum_calls.append(1))
+                         lambda *a, **k: (_ for _ in ()).throw(RuntimeError("Yahoo giù")))
 
     with patch("src.ai_trader_run.paper_trading.get_positions", return_value=[]), \
          patch("src.ai_trader_run.paper_trading.get_account", return_value={"equity": "99000.0"}), \
@@ -674,6 +672,87 @@ def test_un_benchmark_fallito_non_blocca_laltro_ne_il_trading_reale(tmp_path, mo
          patch("src.ai_trader_run.paper_trading.get_portfolio_history", return_value={"timestamp": [], "equity": []}):
         ai_trader_run.run_setup(dry_run=False)  # non deve sollevare
 
-    assert momentum_calls == [1]  # provato comunque, nonostante l'altro sia fallito
     experiment = ai_trader_run.load_experiment()
     assert experiment is not None and experiment["status"] == "running"
+
+
+# ─── _update_trade_dashboards: i due elenchi di operazioni, mai bloccanti ──
+
+
+def test_update_trade_dashboards_scrive_i_due_file_json(tmp_path, monkeypatch):
+    # Catturato PRIMA di _isolate: quella funzione sostituisce
+    # ai_trader_run._update_trade_dashboards con un no-op per tutti gli
+    # altri test (vedi commento lì) — questi tre test vogliono invece
+    # verificare la funzione VERA, quindi tengono un riferimento diretto
+    # all'oggetto funzione originale, non al nome del modulo (che dopo
+    # _isolate punterebbe al no-op).
+    real_update_trade_dashboards = ai_trader_run._update_trade_dashboards
+    _isolate(tmp_path, monkeypatch)
+    experiment = {"start_date": "2026-10-31", "start_equity_usd": 100000.0}
+    fills = [
+        {"symbol": "NVDA", "side": "buy", "qty": "10", "price": "100.0",
+         "transaction_time": "2026-10-31T14:30:00Z"},
+        {"symbol": "NVDA", "side": "sell", "qty": "10", "price": "110.0",
+         "transaction_time": "2026-11-02T14:30:00Z"},
+    ]
+    from src import storage as storage_module
+    storage_module.append_record(config.AI_TRADER_MOMENTUM_FILE, {
+        "date": "2026-10-31", "equity_usd": 100000.0,
+        "holdings": {"AAPL": 1.0}, "entry_prices": {"AAPL": 50.0},
+        "mark_prices": {"AAPL": 50.0}, "exit_prices": {},
+    })
+
+    with patch("src.ai_trader_run.paper_trading.get_activities", return_value=fills) as mock_activities, \
+         patch("src.ai_trader_run.paper_trading.get_positions", return_value=[]):
+        real_update_trade_dashboards(experiment)
+
+    mock_activities.assert_called_once_with(after="2026-10-31")
+
+    with open(config.AI_TRADER_REAL_TRADES_FILE, encoding="utf-8") as fh:
+        real_trades = json.load(fh)
+    assert len(real_trades["closed"]) == 1
+    assert real_trades["closed"][0]["symbol"] == "NVDA"
+    assert real_trades["closed"][0]["pl_usd"] == 100.0
+
+    with open(config.AI_TRADER_MOMENTUM_TRADES_FILE, encoding="utf-8") as fh:
+        momentum_trades = json.load(fh)
+    assert len(momentum_trades["open"]) == 1
+    assert momentum_trades["open"][0]["symbol"] == "AAPL"
+
+
+def test_update_trade_dashboards_reale_fallito_non_blocca_momentum(tmp_path, monkeypatch):
+    real_update_trade_dashboards = ai_trader_run._update_trade_dashboards
+    _isolate(tmp_path, monkeypatch)
+    experiment = {"start_date": "2026-10-31", "start_equity_usd": 100000.0}
+    from src import storage as storage_module
+    storage_module.append_record(config.AI_TRADER_MOMENTUM_FILE, {
+        "date": "2026-10-31", "equity_usd": 100000.0,
+        "holdings": {}, "entry_prices": {}, "mark_prices": {}, "exit_prices": {},
+    })
+
+    with patch("src.ai_trader_run.paper_trading.get_activities",
+               side_effect=RuntimeError("Alpaca giù")):
+        real_update_trade_dashboards(experiment)  # non deve sollevare
+
+    import os as os_module
+    assert not os_module.path.exists(config.AI_TRADER_REAL_TRADES_FILE)
+    assert os_module.path.exists(config.AI_TRADER_MOMENTUM_TRADES_FILE)
+
+
+def test_update_trade_dashboards_momentum_fallito_non_blocca_reale(tmp_path, monkeypatch):
+    real_update_trade_dashboards = ai_trader_run._update_trade_dashboards
+    _isolate(tmp_path, monkeypatch)
+    experiment = {"start_date": "2026-10-31", "start_equity_usd": 100000.0}
+    # AI_TRADER_MOMENTUM_FILE non esiste: storage.read_all torna [] (non un
+    # errore) — per forzare davvero un fallimento lato Momentum, il modo più
+    # realistico è un file corrotto piuttosto che un file assente.
+    with open(config.AI_TRADER_MOMENTUM_FILE, "w", encoding="utf-8") as fh:
+        fh.write("{non è jsonl valido")
+
+    with patch("src.ai_trader_run.paper_trading.get_activities", return_value=[]), \
+         patch("src.ai_trader_run.paper_trading.get_positions", return_value=[]):
+        real_update_trade_dashboards(experiment)  # non deve sollevare
+
+    import os as os_module
+    assert os_module.path.exists(config.AI_TRADER_REAL_TRADES_FILE)  # scritto comunque
+    assert not os_module.path.exists(config.AI_TRADER_MOMENTUM_TRADES_FILE)  # mai arrivato a scriverlo

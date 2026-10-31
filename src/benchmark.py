@@ -1,28 +1,41 @@
-"""Due strategie di confronto per la pagina Trading AI, calcolate SOLO da
-prezzi pubblici Yahoo Finance (stessa fonte di market_scanner.py) — zero
-chiamate AI, zero ordini reali su Alpaca, zero costo aggiuntivo sul budget
-mensile. Partono dalla stessa data e dallo stesso capitale di
-data/ai_trader/experiment.json, per restare un confronto onesto a parità
-di condizioni con l'esperimento reale:
+"""Strategia di confronto "Momentum" per la pagina Trading AI, calcolata
+SOLO da prezzi pubblici Yahoo Finance (stessa fonte di market_scanner.py) —
+zero chiamate AI, zero ordini reali su Alpaca, zero costo aggiuntivo sul
+budget mensile. Parte dalla stessa data e dallo stesso capitale di
+data/ai_trader/experiment.json, per restare un confronto onesto a parità di
+condizioni con l'esperimento reale.
 
-- Buy & Hold: "se invece avessi comprato SPY il primo giorno e non avessi
-  più toccato nulla". Nessuna logica di selezione, solo il prezzo SPY nel
-  tempo applicato allo stesso capitale di partenza.
-- Momentum: una strategia quantitativa classica A REGOLE FISSE, senza
-  nessun giudizio AI — ogni giorno tiene equal-weight i titoli
-  dell'universo scanner (stesso di ai_trader.py) con il miglior rendimento
-  negli ultimi AI_TRADER_MOMENTUM_LOOKBACK_DAYS giorni di borsa, fino a un
-  massimo di AI_TRADER_MOMENTUM_TOP_N posizioni (stesso tetto di
-  diversificazione dell'esperimento reale). Nessun titolo con momentum
-  positivo -> tutta in contanti, coerente con una strategia
-  trend-following classica (non compra mai "controcorrente").
+Momentum è una strategia quantitativa classica A REGOLE FISSE, senza
+nessun giudizio AI — ogni giorno tiene equal-weight i titoli dell'universo
+scanner (stesso di ai_trader.py) con il miglior rendimento negli ultimi
+AI_TRADER_MOMENTUM_LOOKBACK_DAYS giorni di borsa, fino a un massimo di
+AI_TRADER_MOMENTUM_TOP_N posizioni (stesso tetto di diversificazione
+dell'esperimento reale). Nessun titolo con momentum positivo -> tutta in
+contanti, coerente con una strategia trend-following classica (non compra
+mai "controcorrente").
 
-Entrambe le funzioni sono pensate per essere chiamate da ai_trader_run.py
-dentro un try/except separato dalla logica di trading reale (vedi
-_update_benchmarks lì): un fallimento qui — Yahoo irraggiungibile, un
-ticker senza dati — non deve mai bloccare un ordine vero. Idempotenti per
-giorno: una seconda chiamata nello stesso giorno (run manuale ripetuto)
-non aggiunge un secondo punto.
+update_momentum è pensata per essere chiamata da ai_trader_run.py dentro un
+try/except separato dalla logica di trading reale (vedi _update_benchmarks
+lì): un fallimento qui — Yahoo irraggiungibile, un ticker senza dati — non
+deve mai bloccare un ordine vero. Idempotente per giorno: una seconda
+chiamata nello stesso giorno (run manuale ripetuto) non aggiunge un secondo
+punto.
+
+Ogni record salvato distingue TRE prezzi diversi per ogni titolo tenuto,
+deliberatamente non un unico campo "prices" (bug reale corretto il
+2026-11-02: un unico campo veniva sovrascritto ogni giorno con il prezzo
+del giorno stesso, quindi per un titolo tenuto da più giorni non c'era più
+modo di sapere a quanto era stato comprato all'origine):
+- entry_prices: il prezzo di INGRESSO di ogni titolo attualmente tenuto,
+  invariato per tutta la durata del possesso (si aggiorna SOLO il giorno in
+  cui il titolo entra nel paniere).
+- mark_prices: il prezzo di OGGI di ogni titolo attualmente tenuto, usato
+  sia per segnare a mercato il giorno dopo sia per mostrare il
+  guadagno/perdita non ancora realizzato di una posizione aperta.
+- exit_prices: presente solo per i titoli USCITI quel giorno — il prezzo a
+  cui sono stati "venduti" (altrimenti andrebbe perso per sempre un attimo
+  dopo essere stato calcolato: prices_today non sopravvive oltre questa
+  chiamata).
 """
 from __future__ import annotations
 
@@ -63,41 +76,6 @@ def _already_recorded_today(filepath: str, today_str: str) -> bool:
     return bool(records) and records[-1].get("date") == today_str
 
 
-def update_buy_hold(today: dt.date, experiment: dict) -> None:
-    """Un punto al giorno: equity teorica se i soldi di partenza
-    dell'esperimento fossero finiti tutti su AI_TRADER_BENCHMARK_SYMBOL il
-    giorno 1 e non fossero più stati toccati (nessun ribilanciamento, nessun
-    dividendo reinvestito a parte — SPY li reinveste già nel suo prezzo? No:
-    l'ETF paga dividendi in contanti, qui ignorati di proposito per
-    restare un confronto SOLO sul prezzo, stessa semplificazione implicita
-    dell'esperimento reale che non riceve dividendi sulle posizioni aperte)."""
-    today_str = today.isoformat()
-    if _already_recorded_today(config.AI_TRADER_BUYHOLD_FILE, today_str):
-        return
-    closes = _fetch_closes(config.AI_TRADER_BENCHMARK_SYMBOL)
-    price_today = closes[-1]
-
-    existing = storage.read_all(config.AI_TRADER_BUYHOLD_FILE)
-    if not existing:
-        # Primo punto: l'ancora è il prezzo di oggi stesso, equity = quella
-        # di partenza dell'esperimento reale (stesso capitale, stesso
-        # giorno di partenza).
-        storage.append_record(config.AI_TRADER_BUYHOLD_FILE, {
-            "date": today_str,
-            "anchor_price": price_today,
-            "equity_usd": round(experiment["start_equity_usd"], 2),
-        })
-        return
-
-    anchor_price = existing[0]["anchor_price"]
-    equity_usd = experiment["start_equity_usd"] * (price_today / anchor_price)
-    storage.append_record(config.AI_TRADER_BUYHOLD_FILE, {
-        "date": today_str,
-        "anchor_price": anchor_price,
-        "equity_usd": round(equity_usd, 2),
-    })
-
-
 def _universe() -> list[str]:
     return [s for s in config.SCANNER_STOCKS if s not in config.AI_TRADER_EXCLUDED_TICKERS]
 
@@ -131,14 +109,16 @@ def update_momentum(today: dt.date, experiment: dict) -> None:
             momentum_rank.append((symbol, momentum_pct))
 
     existing = storage.read_all(config.AI_TRADER_MOMENTUM_FILE)
-    previous_holdings = existing[-1]["holdings"] if existing else {}
-    previous_equity = existing[-1]["equity_usd"] if existing else experiment["start_equity_usd"]
-    previous_prices = existing[-1].get("prices", {}) if existing else {}
+    last = existing[-1] if existing else {}
+    previous_holdings = last.get("holdings", {})
+    previous_equity = last.get("equity_usd", experiment["start_equity_usd"])
+    previous_mark_prices = last.get("mark_prices", {})
+    previous_entry_prices = last.get("entry_prices", {})
 
     if previous_holdings:
         day_return = 0.0
         for symbol, weight in previous_holdings.items():
-            prev_price = previous_prices.get(symbol)
+            prev_price = previous_mark_prices.get(symbol)
             curr_price = prices_today.get(symbol)
             if prev_price and curr_price:
                 day_return += weight * (curr_price / prev_price - 1)
@@ -150,17 +130,81 @@ def update_momentum(today: dt.date, experiment: dict) -> None:
     positive = [symbol for symbol, pct in momentum_rank if pct > 0][: config.AI_TRADER_MOMENTUM_TOP_N]
     new_holdings = {symbol: 1 / len(positive) for symbol in positive} if positive else {}
 
-    # Prezzi salvati per DUE scopi, non solo uno: quelli dei nuovi titoli
-    # servono domani per segnare a mercato (sopra), quelli dei titoli USCITI
-    # oggi (in previous_holdings ma non più in new_holdings) servono SOLO a
-    # mostrare "a quanto ha venduto" nella lista movimenti del frontend — se
-    # non li salvassimo qui, andrebbero persi per sempre (prices_today non
-    # sopravvive oltre questa chiamata).
     exited_today = set(previous_holdings) - set(new_holdings)
-    relevant_symbols = set(new_holdings) | exited_today
+    entered_today = set(new_holdings) - set(previous_holdings)
+
+    # entry_prices: invariato per chi resta (il prezzo a cui è ENTRATO
+    # originariamente, non quello di oggi), il prezzo di oggi solo per chi
+    # entra adesso nel paniere.
+    new_entry_prices = {}
+    for symbol in new_holdings:
+        if symbol in entered_today:
+            new_entry_prices[symbol] = prices_today.get(symbol)
+        else:
+            new_entry_prices[symbol] = previous_entry_prices.get(symbol)
+
+    new_mark_prices = {symbol: prices_today[symbol] for symbol in new_holdings if symbol in prices_today}
+    exit_prices = {symbol: prices_today[symbol] for symbol in exited_today if symbol in prices_today}
+
     storage.append_record(config.AI_TRADER_MOMENTUM_FILE, {
         "date": today_str,
         "equity_usd": round(equity_usd, 2),
         "holdings": new_holdings,
-        "prices": {symbol: prices_today[symbol] for symbol in relevant_symbols if symbol in prices_today},
+        "entry_prices": new_entry_prices,
+        "mark_prices": new_mark_prices,
+        "exit_prices": exit_prices,
     })
+
+
+def derive_momentum_trades(history: list[dict]) -> dict:
+    """Dallo storico giorno-per-giorno (holdings + entry_prices +
+    mark_prices + exit_prices) ricostruisce l'elenco delle operazioni:
+    chiuse (con rendimento % realizzato) e ancora aperte (con il rendimento
+    non realizzato a oggi, rispetto al prezzo di ingresso). Funzione pura,
+    nessuna chiamata di rete — ricalcolata da zero ogni giorno da
+    ai_trader_run.py, mai accumulata in modo incrementale: lo storico
+    completo è già tutto dentro benchmark_momentum.jsonl."""
+    open_trades: dict[str, dict] = {}
+    closed: list[dict] = []
+    for record in history:
+        date = record.get("date")
+        holdings = record.get("holdings", {})
+        entry_prices = record.get("entry_prices", {})
+        exit_prices = record.get("exit_prices", {})
+        for symbol in holdings:
+            if symbol not in open_trades:
+                entry_price = entry_prices.get(symbol)
+                if entry_price is not None:
+                    open_trades[symbol] = {"entry_date": date, "entry_price": entry_price}
+        for symbol, exit_price in exit_prices.items():
+            opened = open_trades.pop(symbol, None)
+            if opened is None:
+                continue
+            entry_price = opened["entry_price"]
+            return_pct = (exit_price / entry_price - 1) * 100 if entry_price else None
+            closed.append({
+                "symbol": symbol,
+                "entry_date": opened["entry_date"],
+                "entry_price": entry_price,
+                "exit_date": date,
+                "exit_price": exit_price,
+                "return_pct": round(return_pct, 2) if return_pct is not None else None,
+            })
+
+    latest_mark_prices = history[-1].get("mark_prices", {}) if history else {}
+    open_list = []
+    for symbol, opened in open_trades.items():
+        entry_price = opened["entry_price"]
+        mark_price = latest_mark_prices.get(symbol)
+        return_pct = (mark_price / entry_price - 1) * 100 if (entry_price and mark_price is not None) else None
+        open_list.append({
+            "symbol": symbol,
+            "entry_date": opened["entry_date"],
+            "entry_price": entry_price,
+            "mark_price": mark_price,
+            "return_pct": round(return_pct, 2) if return_pct is not None else None,
+        })
+
+    closed.sort(key=lambda t: t["exit_date"], reverse=True)
+    open_list.sort(key=lambda t: t["entry_date"], reverse=True)
+    return {"closed": closed, "open": open_list}
