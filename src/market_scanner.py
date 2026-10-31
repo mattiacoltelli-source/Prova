@@ -138,6 +138,15 @@ def scan(symbols: list[str]) -> dict:
     good_rows.sort(key=lambda r: (not r["flagged"], -(r.get("volume_ratio") or 0)))
     return {
         "generated_at": dt.datetime.now(dt.timezone.utc).isoformat(),
+        # Esposte nel JSON così il frontend può spiegare le soglie nel testo
+        # (scannerDetailRow() in index.html) leggendole da qui invece di
+        # duplicarle a mano in un secondo punto — già cambiate una volta in
+        # config.py, un valore scritto due volte sarebbe già disallineato.
+        "thresholds": {
+            "volume_ratio": config.SCANNER_VOLUME_RATIO_FLAG,
+            "gap_pct": config.SCANNER_GAP_PCT_FLAG,
+            "breakout_pct": config.SCANNER_BREAKOUT_PCT_FLAG,
+        },
         "results": good_rows,
         "errors": errors,
     }

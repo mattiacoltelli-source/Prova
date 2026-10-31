@@ -638,6 +638,43 @@
             font-variant-numeric: tabular-nums;
         }
 
+        /* Scheda Scanner: stessa etichetta/valore di .paper-item-detail-row
+           ma con una riga di spiegazione sotto (feedback utente: un numero
+           come "2.67x" da solo non dice cosa significa) — .scanner-detail-row
+           è un blocco (non flex come .paper-item-detail-row sopra, qui dentro
+           ci sono 2 elementi da impilare, non 2 span da affiancare), e
+           .paper-item-detail-main riusa lo stesso stile etichetta/valore
+           tale e quale. */
+        .scanner-detail-row {
+            padding: 8px 0;
+            border-bottom: 1px solid var(--card-border);
+            font-size: 0.85rem;
+        }
+        .scanner-detail-row:last-child { border-bottom: none; }
+        .paper-item-detail-main {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        .paper-item-detail-main span:first-child {
+            color: var(--text-dim);
+            font-size: 0.78rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .paper-item-detail-main span:last-child {
+            font-family: var(--font-mono);
+            font-variant-numeric: tabular-nums;
+        }
+        .paper-item-detail-desc {
+            margin-top: 4px;
+            font-size: 0.78rem;
+            color: var(--text-dim);
+            line-height: 1.4;
+        }
+
         .table-show-all {
             text-align: center;
             padding: 8px 0 2px;
@@ -1297,12 +1334,6 @@
                 mercato.
             </div>
         </details>
-
-        <div class="horizon-filter" id="scanner-filter">
-            <span class="horizon-filter-label">Mostra:</span>
-            <button class="horizon-filter-btn active" data-filter="flagged" onclick="setScannerFilter('flagged')">Segnalati</button>
-            <button class="horizon-filter-btn" data-filter="all" onclick="setScannerFilter('all')">Tutti</button>
-        </div>
 
         <div class="asset-card">
             <div class="asset-header">
@@ -2390,7 +2421,6 @@
         // dalle altre pagine, aggiornato solo da un run del workflow.
         let scannerDataLoaded = false;
         let scannerData = null;
-        let scannerShowAll = false;
 
         async function fetchScannerData() {
             try {
@@ -2418,18 +2448,26 @@
             return value >= 0 ? 'pl-positive' : 'pl-negative';
         }
 
-        function setScannerFilter(filter) {
-            scannerShowAll = filter === 'all';
-            document.querySelectorAll('#scanner-filter .horizon-filter-btn').forEach(btn => {
-                btn.classList.toggle('active', btn.dataset.filter === filter);
-            });
-            renderScannerResults();
-        }
-
         async function loadScannerData() {
             scannerDataLoaded = true;
             scannerData = await fetchScannerData();
             renderScannerResults();
+        }
+
+        // Una riga per metrica, etichetta+valore sopra e una riga di
+        // spiegazione sotto (vedi .paper-item-detail-desc in CSS) — feedback
+        // dell'utente: i numeri da soli (es. "2.67x") non dicono cosa
+        // significano senza aprire "Come funziona questa pagina?" a parte.
+        // La soglia citata in ciascuna è la stessa usata da is_flagged() in
+        // src/market_scanner.py (config.SCANNER_*_FLAG), non un numero
+        // scelto a caso qui nel frontend.
+        function scannerDetailRow(label, desc, valueHtml) {
+            return `
+                <div class="scanner-detail-row">
+                    <div class="paper-item-detail-main"><span>${label}</span><span>${valueHtml}</span></div>
+                    <div class="paper-item-detail-desc">${desc}</div>
+                </div>
+            `;
         }
 
         function renderScannerResults() {
@@ -2450,12 +2488,17 @@
                 day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
             });
 
-            const rows = scannerShowAll ? scannerData.results : scannerData.results.filter(r => r.flagged);
+            // Sempre tutta la watchlist, nell'ordine già deciso dal backend
+            // (segnalati prima — vedi scan() in src/market_scanner.py): niente
+            // filtro in questa pagina, su richiesta esplicita dell'utente.
+            const rows = scannerData.results;
+            // Fallback solo per un file data/scanner/results.json scritto da
+            // un run precedente a questa modifica (senza "thresholds"): non
+            // dovrebbe capitare dopo il primo run del workflow aggiornato.
+            const thresholds = scannerData.thresholds || { volume_ratio: 2, gap_pct: 4, breakout_pct: 0 };
 
             if (rows.length === 0) {
-                const msg = scannerShowAll
-                    ? 'Nessun dato disponibile.'
-                    : 'Nessun titolo segnalato al momento — prova "Tutti".';
+                const msg = 'Nessun dato disponibile.';
                 tableBody.innerHTML = tableMessageRow(6, msg, false);
                 list.innerHTML = paperListMessage(msg, false);
                 return;
@@ -2480,15 +2523,15 @@
                             <span class="paper-item-sub">${formatScannerPrice(r.price, r.currency)}</span>
                         </span>
                         <span class="paper-item-headline">
-                            ${scannerShowAll && r.flagged ? '<span class="badge badge-UP">segnalato</span>' : ''}
+                            ${r.flagged ? '<span class="badge badge-UP">segnalato</span>' : ''}
                             <span class="chevron-icon">▼</span>
                         </span>
                     </summary>
                     <div class="paper-item-detail">
-                        <div class="paper-item-detail-row"><span>Variazione</span><span class="${pctClass(r.change_pct)}">${formatPct(r.change_pct)}</span></div>
-                        <div class="paper-item-detail-row"><span>Volume vs media</span><span>${r.volume_ratio != null ? r.volume_ratio + 'x' : '—'}</span></div>
-                        <div class="paper-item-detail-row"><span>Gap apertura</span><span class="${pctClass(r.gap_pct)}">${formatPct(r.gap_pct)}</span></div>
-                        <div class="paper-item-detail-row"><span>Da massimo recente</span><span class="${pctClass(r.breakout_pct)}">${formatPct(r.breakout_pct)}</span></div>
+                        ${scannerDetailRow('Variazione', 'Rispetto alla chiusura di ieri.', `<span class="${pctClass(r.change_pct)}">${formatPct(r.change_pct)}</span>`)}
+                        ${scannerDetailRow('Volume vs media', `Scambiato oggi rispetto alla media di circa un mese — segnalato da ${thresholds.volume_ratio}x in su.`, r.volume_ratio != null ? r.volume_ratio + 'x' : '—')}
+                        ${scannerDetailRow('Gap apertura', `Apertura di oggi vs chiusura di ieri — segnalato da ±${thresholds.gap_pct}% in su.`, `<span class="${pctClass(r.gap_pct)}">${formatPct(r.gap_pct)}</span>`)}
+                        ${scannerDetailRow('Da massimo recente', `Distanza dal prezzo più alto dell'ultimo mese — ${formatPct(thresholds.breakout_pct)} o sopra è un vero breakout.`, `<span class="${pctClass(r.breakout_pct)}">${formatPct(r.breakout_pct)}</span>`)}
                     </div>
                 </details>
             `).join('');

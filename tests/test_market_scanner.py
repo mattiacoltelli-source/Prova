@@ -182,6 +182,19 @@ def test_scan_un_simbolo_fallito_non_blocca_gli_altri():
     assert result["errors"][0]["symbol"] == "BAD"
 
 
+def test_scan_espone_le_soglie_usate_per_flagged():
+    """Il frontend spiega le soglie nel testo (scannerDetailRow() in
+    index.html) leggendole da qui, non duplicandole a mano."""
+    payload = _yahoo_payload()
+    with patch("src.market_scanner.http.get", return_value=FakeResponse(json_data=payload)):
+        result = market_scanner.scan(["FAKE"])
+    assert result["thresholds"] == {
+        "volume_ratio": config.SCANNER_VOLUME_RATIO_FLAG,
+        "gap_pct": config.SCANNER_GAP_PCT_FLAG,
+        "breakout_pct": config.SCANNER_BREAKOUT_PCT_FLAG,
+    }
+
+
 def test_scan_ordina_i_flagged_prima_per_volume_ratio_decrescente():
     def payload_for(volume_ratio):
         # price=10.0 ben sotto il massimo recente (12.0, da highs) e gap
