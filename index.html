@@ -138,43 +138,42 @@
         .refresh-btn:hover { filter: brightness(1.1); }
         .refresh-btn:active { transform: scale(0.96); }
 
-        /* "Pillole" in riga (etichetta+valore affiancati) invece di 3
-           colonne: chiesto dall'utente dopo aver visto la versione impilata
-           verticalmente ("rispetta le spaziature giuste, ma lo voglio in
-           linea"). flex-wrap invece di un breakpoint fisso: ogni pillola
-           (.stat-box, white-space:nowrap) è un blocco indivisibile — se lo
-           spazio in riga finisce, l'intera pillola va a capo da sola, mai
-           il valore staccato dalla propria etichetta, a qualunque
-           larghezza/zoom testo (stesso principio del fix di poco fa, ma
-           senza bisogno di un secondo layout "impilato" sotto una soglia:
-           qui il contenuto è sempre breve — percentuali, conteggi — quindi
-           basta lasciare che vada a capo da sola). Il portafoglio paper
-           invece ha valori lunghi in valuta ("$370.802,67"): per quello
-           resta il layout impilato a riga piena sotto i 480px, vedi
-           l'override scoped più sotto — qui una pillola nowrap con un
-           valore così lungo rischierebbe di sforare su schermi stretti con
-           testo ingrandito, lo stesso bug già risolto una volta oggi. */
+        /* 3 riquadri singoli ("box fatto su misura" — richiesta esplicita
+           dell'utente dopo le due versioni precedenti), etichetta sopra il
+           valore, SEMPRE tutti sulla stessa riga. Per garantirlo senza
+           rischiare di tagliare dati a schermi stretti/testo ingrandito
+           (bug reale già trovato due volte oggi con layout "fissi"), riuso
+           lo stesso principio già in .horizon-filter più sotto in questo
+           file: mai wrap, mai restringere il contenuto — se per caso i 3
+           riquadri non ci stanno tutti, scorre solo questa riga
+           (overflow-x:auto), mai la pagina intera e mai un valore tagliato.
+           flex-shrink:0 su ogni riquadro: nessuno dei tre si schiaccia per
+           far posto agli altri, restano sempre leggibili alla loro
+           dimensione naturale. Vale anche per il portafoglio paper (stessa
+           regola, nessun override specifico): un valore lungo come
+           "$370.802,67" semplicemente rende quel riquadro un po' più largo,
+           mai tagliato. */
         .summary-banner {
-            background: linear-gradient(160deg, var(--card-bg) 0%, var(--bg-color-2) 100%);
-            border: 1px solid var(--card-border);
-            border-radius: var(--radius-lg);
-            padding: 14px 20px;
-            width: fit-content;
-            max-width: 100%;
-            margin: 0 auto 20px;
             display: flex;
-            flex-wrap: wrap;
+            flex-wrap: nowrap;
             justify-content: center;
-            align-items: baseline;
-            gap: 8px 28px;
-            box-shadow: var(--shadow-card);
+            gap: 12px;
+            overflow-x: auto;
+            padding-bottom: 2px;
+            margin: 0 auto 20px;
         }
 
         .stat-box {
             display: flex;
-            align-items: baseline;
-            gap: 8px;
-            white-space: nowrap;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            flex-shrink: 0;
+            background: linear-gradient(160deg, var(--card-bg) 0%, var(--bg-color-2) 100%);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius-lg);
+            padding: 12px 18px;
+            box-shadow: var(--shadow-card);
         }
 
         .stat-label {
@@ -183,19 +182,21 @@
             text-transform: uppercase;
             letter-spacing: 0.06em;
             font-weight: 600;
+            white-space: nowrap;
         }
 
         .stat-value {
             font-family: var(--font-mono);
-            font-size: 1.15rem;
+            font-size: 1.3rem;
             font-weight: 700;
             letter-spacing: -0.01em;
             font-variant-numeric: tabular-nums;
+            white-space: nowrap;
         }
 
         /* L'accuratezza AI è la metrica più importante della pagina:
            leggermente più grande delle altre due per gerarchia visiva. */
-        #stat-accuracy { font-size: 1.3rem; }
+        #stat-accuracy { font-size: 1.45rem; }
 
         .stat-value.green { color: var(--accent-green); }
         .stat-value.accent { color: var(--accent-signal); }
@@ -203,46 +204,53 @@
         .pl-positive { color: var(--accent-green); }
         .pl-negative { color: var(--accent-red); }
 
-        /* Solo il portafoglio paper (valori lunghi in valuta): sotto i
-           480px resta impilato a riga piena invece delle pillole in linea
-           di sopra — etichetta a sinistra, valore a destra, tutta la
-           larghezza della card per riga. #page-paper ha più specificità
-           (id+classe) della regola base sopra, quindi vince sempre, in
-           qualunque ordine nel file. */
+        /* Solo il portafoglio paper, sotto i 480px: i box singoli sopra
+           (pensati per valori brevi come "41.5%") con un valore lungo in
+           valuta ("$370.802,67") non ci stanno 3 affiancati nemmeno a
+           zoom normale — visto dal vivo: riga già scorsa/tagliata alla
+           prima apertura, non solo a zoom estremo. Qui invece impilato a
+           riga piena, etichetta a sinistra valore a destra: ogni riga ha
+           tutta la larghezza della card per sé. Da 481px in su (anche
+           desktop) i box singoli di sopra restano, lì c'è spazio a
+           sufficienza (verificato). #page-paper ha più specificità
+           (id+classe) della regola base sopra, vince sempre. */
         @media (max-width: 480px) {
             #page-paper .summary-banner {
                 flex-wrap: nowrap;
                 flex-direction: column;
+                overflow-x: visible;
                 width: 100%;
                 gap: 0;
                 padding: 6px 16px;
+                background: linear-gradient(160deg, var(--card-bg) 0%, var(--bg-color-2) 100%);
+                border: 1px solid var(--card-border);
+                border-radius: var(--radius-lg);
+                box-shadow: var(--shadow-card);
             }
             #page-paper .stat-box {
+                flex-direction: row;
+                align-items: baseline;
                 justify-content: space-between;
                 gap: 10px;
                 padding: 12px 0;
+                border: none;
                 border-bottom: 1px solid var(--card-border);
+                border-radius: 0;
+                background: none;
+                box-shadow: none;
                 min-width: 0;
             }
             #page-paper .stat-box:last-child { border-bottom: none; }
             #page-paper .stat-label { white-space: normal; }
-            /* white-space:normal + overflow-wrap: il valore eredita
-               nowrap da .stat-box (pensato per le pillole brevi della
-               dashboard principale) — un valore lungo in valuta con testo
-               di sistema ingrandito non ci stava più e veniva tagliato dal
-               bordo della card (visto dal vivo: "$370.802,6" con il "7"
-               finale perso). Qui può andare a capo come rete di sicurezza,
-               stesso principio già usato altrove in questo file. */
+            /* white-space:normal + overflow-wrap + min-width:0: senza
+               quest'ultimo il valore (figlio flex di .stat-box) resta
+               largo almeno quanto il proprio contenuto e overflow-wrap non
+               scatta mai — bug reale già trovato oggi su questo stesso
+               punto, un valore lungo si tagliava comunque a zoom estremo. */
             #page-paper .stat-value {
                 font-size: 1.05rem;
                 white-space: normal;
                 overflow-wrap: break-word;
-                /* Senza questo il valore, come figlio flex di .stat-box,
-                   resta largo almeno quanto il proprio contenuto
-                   (min-width:auto di default) e overflow-wrap non scatta
-                   mai: lo spazio sembra non bastare ma il browser non lo fa
-                   davvero andare a capo. Stesso principio già in .stat-box
-                   stesso più sopra nel file, qui serve sul figlio. */
                 min-width: 0;
             }
         }
