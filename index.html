@@ -1147,16 +1147,10 @@
             </div>
         </details>
 
-        <!-- Spostato qui in cima (richiesto dall'utente il 2026-11-02): lo
-             switch non controlla più solo la dashboard operazioni più in
-             basso, ma anche i box numerici subito sotto — ha senso vederlo
-             prima di loro, non dopo. -->
-        <p style="font-size:11px;color:var(--text-dim);margin:0 0 8px;">
-            Scegli quale strategia guardare: i numeri sotto, il grafico e la dashboard delle
-            operazioni più in basso seguono questa scelta. "Momentum" è solo un confronto — regole
-            fisse senza AI, stessi titoli e stesso capitale dell'esperimento reale, nessun ordine
-            vero, nessun costo (vedi "Come funziona questa pagina?" sopra).
-        </p>
+        <!-- In cima (richiesto dall'utente il 2026-11-02): controlla sia i
+             box numerici sia la dashboard operazioni più in basso. Nessuna
+             didascalia sopra: tolta su richiesta dell'utente il
+             2026-11-02, "si capisce" — i due pulsanti parlano da soli. -->
         <div class="horizon-filter" id="aitrader-strategy-filter">
             <button class="horizon-filter-btn active" data-strategy="real" onclick="setTradeStrategyFilter('real')">AI reale</button>
             <button class="horizon-filter-btn" data-strategy="momentum" onclick="setTradeStrategyFilter('momentum')">Momentum</button>
