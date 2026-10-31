@@ -453,13 +453,16 @@
         }
         .aitrader-hero__delta {
             display: inline-flex;
+            align-items: center;
+            gap: 6px;
             margin-top: 8px;
-            padding: 5px 12px;
+            padding: 5px 12px 5px 9px;
             border-radius: var(--radius-pill);
             background: var(--card-bg);
             border: 1px solid var(--card-border);
         }
-        .aitrader-hero__delta .stat-value { font-size: 0.95rem; }
+        .aitrader-hero__delta .stat-value { font-size: 0.84rem; }
+        .aitrader-hero__delta-icon { flex-shrink: 0; color: inherit; }
 
         .risk-row { margin-bottom: 14px; }
         .risk-row:last-child { margin-bottom: 0; }
@@ -585,6 +588,8 @@
             --accent-yellow: #fbbf24;
             --accent-signal: #4f7cff;
             --accent-momentum: #a78bfa;
+            --accent-green-dim: rgba(52, 211, 153, 0.13);
+            --accent-red-dim: rgba(251, 113, 133, 0.13);
             --font-mono: 'JetBrains Mono', ui-monospace, "SF Mono", Menlo, monospace;
             --shadow-card: none;
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -610,6 +615,26 @@
            con --accent-signal ora blu va aggiornata insieme, altrimenti lo
            sfondo resterebbe ciano dietro un'icona blu. */
         #page-aitrader .agent-card__icon { background: rgba(79, 124, 255, 0.13); }
+        /* Pillola "Equity attuale"/delta: sfondo e icona colorati secondo il
+           segno (come l'artefatto — prima restava sempre del colore neutro
+           della card, e senza la freccia direzionale). pl-positive/negative
+           sono già scritte da JS sullo span interno (_renderAiTraderStatBoxes),
+           :has() le legge senza bisogno di toccare quel JS. */
+        #page-aitrader .aitrader-hero__delta:has(.pl-positive) { background: var(--accent-green-dim); color: var(--accent-green); }
+        #page-aitrader .aitrader-hero__delta:has(.pl-negative) { background: var(--accent-red-dim); color: var(--accent-red); }
+        #page-aitrader .aitrader-hero__delta:has(.pl-negative) .aitrader-hero__delta-icon { transform: rotate(180deg); }
+        /* Titolo della sola card rischio più piccolo del resto (13.5px),
+           esattamente come .risk-card__title nell'artefatto — distinto da
+           .section__title (16px, usato dalle altre card: Posizioni, Vendite
+           recenti, Agente AI...). */
+        #page-aitrader .aitrader-risk-card__title { font-size: 13.5px; letter-spacing: 0.02em; }
+        #page-aitrader .risk-row__top { font-size: 12px; }
+        #page-aitrader .pos-row__icon, #page-aitrader .trade-row__icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            font-family: 'Outfit', sans-serif;
+        }
         /* Switch AI reale/Momentum come un'unica pillola con il bottone
            attivo pieno, stessa dimensione dell'artefatto approvato (non più
            due pillole separate e grandi come le altre coppie di filtri del
@@ -1447,7 +1472,10 @@
 
             <div class="aitrader-hero__label">Equity attuale</div>
             <div class="aitrader-hero__value"><span class="stat-value" id="aitrader-stat-equity">—</span></div>
-            <div class="aitrader-hero__delta"><span class="stat-value" id="aitrader-stat-pl">—</span></div>
+            <div class="aitrader-hero__delta">
+              <svg class="aitrader-hero__delta-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+              <span class="stat-value" id="aitrader-stat-pl">—</span>
+            </div>
         </div>
 
         <div class="asset-card" id="aitrader-not-started" style="display:none">
@@ -1475,7 +1503,7 @@
 
         <div class="asset-card risk-card" style="margin-bottom:16px;">
             <div class="asset-header">
-                <span class="asset-title">Esposizione &amp; rischio</span>
+                <span class="asset-title aitrader-risk-card__title">Esposizione &amp; rischio</span>
             </div>
             <div class="risk-row">
                 <div class="risk-row__top"><span>Capitale impiegato</span><span id="aitrader-risk-deployed-val">—</span></div>
