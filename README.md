@@ -476,8 +476,13 @@ utile per controllare i parametri prima di disattivarlo.
 
 Ogni ordine inviato finisce in `data/paper/orders.jsonl` (stessa catena
 hash append-only di predictions/outcomes), e lo stato del conto
-(`data/paper/account.json`) viene riscritto dopo ogni ordine — entrambi
-letti in sola lettura dalla dashboard, tab "Portafoglio Paper".
+(`data/paper/account.json`) viene riscritto dopo ogni ordine — entrambi letti
+in sola lettura dalla dashboard, dentro la tab "Trading AI" (sezione
+"Posizioni aperte"/"Storico ordini": fino al 2026-10-31 viveva in una tab
+"Portafoglio Paper" separata, rimossa — stesso conto Alpaca dell'esperimento
+sotto, non ha più senso tenerlo separato ora che il trading è completamente
+automatico). Il workflow resta disponibile per un intervento manuale
+d'emergenza, ma non è più linkato dall'interfaccia.
 
 ## Trading automatico AI (esperimento di 6 mesi)
 
