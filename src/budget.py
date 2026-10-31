@@ -110,8 +110,16 @@ def get_trader_spent_usd() -> float:
     path = _trader_budget_state_file(year, month)
     if not os.path.exists(path):
         return 0.0
-    with open(path, "r", encoding="utf-8") as fh:
-        return json.load(fh).get("spent_usd", 0.0)
+    try:
+        with open(path, "r", encoding="utf-8") as fh:
+            return json.load(fh).get("spent_usd", 0.0)
+    except Exception:  # noqa: BLE001 - un file di stato illeggibile deve bloccare la spesa, non azzerarla
+        # Fail-safe: se non si riesce a leggere quanto già speso questo mese,
+        # l'assunzione sicura è "tetto raggiunto" (blocca nuove chiamate),
+        # mai "zero speso" (riaprirebbe il budget e rischierebbe di sforare
+        # il tetto reale se il file si fosse corrotto proprio vicino al
+        # limite). Si sblocca da solo al mese successivo (nuovo nome file).
+        return config.AI_TRADER_MONTHLY_BUDGET_USD
 
 
 def _set_trader_spent_usd(spent_usd: float) -> None:

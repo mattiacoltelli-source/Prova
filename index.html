@@ -1713,12 +1713,22 @@
         // scadenza a 6 mesi dei fondamentali (stesso fetched_at).
         function renderRecentNews(newsBlock) {
             if (!newsBlock || !Array.isArray(newsBlock.headlines) || newsBlock.headlines.length === 0) return '';
-            const items = newsBlock.headlines.map(h => `
-                <li style="margin-bottom: 6px;">
-                    <a href="${h.link}" target="_blank" rel="noopener" style="color: inherit;">${h.title}</a>
-                    <span style="opacity:0.6; font-size: 11px;"> — ${h.provider}, ${h.published}</span>
-                </li>
-            `).join('');
+            // Contenuto esterno (titoli/link di notizie reali) — mai fidato
+            // alla lettera: titolo/fonte/data passano da escapeHtml, il link
+            // in più da escapeAttr (va dentro href="...") ed è reso cliccabile
+            // solo se http/https genuino (vedi isSafeHttpUrl sopra).
+            const items = newsBlock.headlines.map(h => {
+                const safeTitle = escapeHtml(h.title || '(senza titolo)');
+                const titleHtml = isSafeHttpUrl(h.link)
+                    ? `<a href="${escapeAttr(h.link)}" target="_blank" rel="noopener" style="color: inherit;">${safeTitle}</a>`
+                    : safeTitle;
+                return `
+                    <li style="margin-bottom: 6px;">
+                        ${titleHtml}
+                        <span style="opacity:0.6; font-size: 11px;"> — ${escapeHtml(h.provider || '')}, ${escapeHtml(h.published || '')}</span>
+                    </li>
+                `;
+            }).join('');
             return `
                 <br><strong>Notizie recenti (snapshot)</strong><br>
                 <ul style="margin: 6px 0 0; padding-left: 18px; font-size: 0.82rem; line-height: 1.5;">${items}</ul>
@@ -2117,7 +2127,7 @@
 
             const cyclePhase = m.cycle_phase || 'sconosciuta';
             const cycleLabel = CYCLE_PHASE_LABEL[cyclePhase] || cyclePhase;
-            const drivers = (latest.key_drivers || []).map(d => `<span class="driver-chip">${d}</span>`).join('');
+            const drivers = (latest.key_drivers || []).map(d => `<span class="driver-chip">${escapeHtml(d)}</span>`).join('');
 
             // Episodi storici "molto estesa" + esiti (correzione/recupero) e
             // distanza da ATH/52w high: numeri calcolati da trend_analysis.py
@@ -2176,10 +2186,10 @@
 
                 <div class="section-title">Valutazione ciclo</div>
                 <p style="font-size:0.85rem; line-height:1.5; color: var(--text-main); margin-bottom: 10px;">
-                    ${latest.cycle_assessment || 'Non disponibile.'}
+                    ${latest.cycle_assessment ? escapeHtml(latest.cycle_assessment) : 'Non disponibile.'}
                 </p>
                 ${drivers ? `<div class="driver-chip-list">${drivers}</div>` : ''}
-                ${latest.risk_notes ? `<div class="risk-note">${latest.risk_notes}</div>` : ''}
+                ${latest.risk_notes ? `<div class="risk-note">${escapeHtml(latest.risk_notes)}</div>` : ''}
                 <div style="font-size:0.76rem; color: var(--text-muted); margin-top:10px;">
                     Drawdown storico max: ${m.max_drawdown != null ? formatPct(m.max_drawdown * 100) : '—'} ·
                     Volatilità ann.: ${m.annualized_volatility != null ? formatPct(m.annualized_volatility * 100, 0) : '—'} ·
@@ -2997,6 +3007,31 @@
             const div = document.createElement('div');
             div.textContent = text ?? '';
             return div.innerHTML;
+        }
+
+        // escapeHtml basta per TESTO dentro un tag (il trucco textContent->
+        // innerHTML non ha bisogno di proteggere le virgolette lì), ma NON
+        // per un valore dentro un attributo come href="${...}" — lì una
+        // virgoletta doppia non neutralizzata esce dall'attributo e inietta
+        // markup/handler arbitrari. Bug reale trovato il 2026-10-31
+        // (audit di sicurezza): renderRecentNews usava h.link crudo dentro
+        // href="...". escapeAttr aggiunge l'escape delle virgolette che
+        // manca a escapeHtml per questo contesto specifico.
+        function escapeAttr(text) {
+            return escapeHtml(text).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+
+        // Oltre a neutralizzare le virgolette, un link esterno non fidato
+        // (notizie) non deve mai poter essere uno schema diverso da http/
+        // https (es. "javascript:") — altrimenti il click stesso esegue
+        // codice, indipendentemente da come l'attributo è stato escapato.
+        function isSafeHttpUrl(url) {
+            try {
+                const parsed = new URL(url, window.location.href);
+                return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+            } catch {
+                return false;
+            }
         }
 
         function technicalsLines(inputsSummary) {

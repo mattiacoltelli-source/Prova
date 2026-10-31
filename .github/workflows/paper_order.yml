@@ -54,6 +54,24 @@ on:
 permissions:
   contents: write
 
+# Senza questo blocco, due "Run workflow" quasi in parallelo potrebbero
+# entrambi fare checkout prima che il primo pushi il proprio ordine: ogni
+# run calcola prev_hash/record_hash (src/storage.py: append_record) sulla
+# base dell'ULTIMA riga del file COME LA VEDE IN LOCALE, prima del commit.
+# Il retry fetch+rebase nello step "Commit e push" risolve solo il
+# conflitto git (il rebase applica comunque la riga in append), ma non
+# ricalcola l'hash: il secondo ordine finirebbe pushato con un prev_hash
+# che punta alla riga sbagliata (quella di prima del primo ordine, non
+# quella appena arrivata), rompendo la catena verificata da
+# storage.verify_chain() — corruzione silenziosa, scoperta solo
+# nell'audit del 2026-10-31, mai capitata dal vivo. group senza
+# cancel-in-progress: la seconda run resta in coda e parte (checkout
+# compreso) solo dopo che la prima ha finito, azzerando la finestra di
+# race invece di limitarsi a ridurla.
+concurrency:
+  group: paper-order
+  cancel-in-progress: false
+
 jobs:
   order:
     runs-on: ubuntu-latest
@@ -82,21 +100,43 @@ jobs:
         id: mode
         run: echo "dry_run=${{ inputs.dry_run }}" >> "$GITHUB_OUTPUT"
 
+      # symbol/qty/notional/limit_price sono input a testo libero
+      # (type: string, compilati a mano nel form "Run workflow"): passano
+      # per variabili d'ambiente, mai interpolati direttamente nello script
+      # — ${{ inputs.X }} viene sostituito PRIMA che bash legga lo script,
+      # quindi un valore con dentro uno spazio o una virgoletta potrebbe
+      # iniettare comandi arbitrari nel runner (che ha le chiavi Alpaca in
+      # ambiente). Bug reale di sicurezza trovato il 2026-10-31 (audit),
+      # fix raccomandato da GitHub per questa classe di problema. L'array
+      # bash (non una stringa con "$ARGS" senza virgolette) evita anche un
+      # bug più innocuo ma reale: un prezzo o un notional scritto con le
+      # virgole al posto del punto si sarebbe spezzato in due argomenti.
       - name: Invia ordine paper
+        env:
+          SYMBOL: ${{ inputs.symbol }}
+          SIDE: ${{ inputs.side }}
+          ORDER_TYPE: ${{ inputs.order_type }}
+          QTY: ${{ inputs.qty }}
+          NOTIONAL: ${{ inputs.notional }}
+          LIMIT_PRICE: ${{ inputs.limit_price }}
+          TIME_IN_FORCE: ${{ inputs.time_in_force }}
+          DRY_RUN: ${{ steps.mode.outputs.dry_run }}
         run: |
-          ARGS="--symbol ${{ inputs.symbol }} --side ${{ inputs.side }} --order-type ${{ inputs.order_type }}"
-          if [ -n "${{ inputs.qty }}" ]; then ARGS="$ARGS --qty ${{ inputs.qty }}"; fi
-          if [ -n "${{ inputs.notional }}" ]; then ARGS="$ARGS --notional ${{ inputs.notional }}"; fi
-          if [ -n "${{ inputs.limit_price }}" ]; then ARGS="$ARGS --limit-price ${{ inputs.limit_price }}"; fi
-          ARGS="$ARGS --time-in-force ${{ inputs.time_in_force }}"
-          if [ "${{ steps.mode.outputs.dry_run }}" = "true" ]; then ARGS="$ARGS --dry-run"; fi
-          python -m src.paper_order_run $ARGS
+          ARGS=(--symbol "$SYMBOL" --side "$SIDE" --order-type "$ORDER_TYPE")
+          if [ -n "$QTY" ]; then ARGS+=(--qty "$QTY"); fi
+          if [ -n "$NOTIONAL" ]; then ARGS+=(--notional "$NOTIONAL"); fi
+          if [ -n "$LIMIT_PRICE" ]; then ARGS+=(--limit-price "$LIMIT_PRICE"); fi
+          ARGS+=(--time-in-force "$TIME_IN_FORCE")
+          if [ "$DRY_RUN" = "true" ]; then ARGS+=(--dry-run); fi
+          python -m src.paper_order_run "${ARGS[@]}"
 
       # Stesso pattern di retry-con-rebase di predict.yml/evaluate.yml:
       # tocca un path diverso (data/paper/) quindi un conflitto reale con
-      # quei due workflow è comunque impossibile, ma un secondo run manuale
-      # di QUESTO stesso workflow lanciato quasi in parallelo resta
-      # possibile.
+      # quei due workflow è comunque impossibile. Un secondo run manuale di
+      # QUESTO stesso workflow non può più arrivare in parallelo (vedi il
+      # blocco concurrency sopra); questo retry resta solo per un push
+      # concorrente da un'altra fonte (es. un commit manuale sullo stesso
+      # path).
       - name: Commit e push
         if: steps.mode.outputs.dry_run != 'true'
         run: |

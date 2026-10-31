@@ -31,5 +31,14 @@ jobs:
 
       - run: pip install -r requirements.txt
 
+      # TICKERS passa per una variabile d'ambiente, non interpolato
+      # direttamente nello script (anche tra virgolette): l'interpolazione
+      # ${{ inputs.tickers }} avviene PRIMA che bash legga lo script, quindi
+      # un valore con una virgoletta dentro uscirebbe comunque dalle
+      # virgolette e inietterebbe comandi — bug reale di sicurezza trovato
+      # il 2026-10-31 (audit), stesso fix raccomandato da GitHub per questa
+      # classe di problema.
       - name: Controlla news
-        run: python -m src.news_check_run --tickers "${{ inputs.tickers }}"
+        env:
+          TICKERS: ${{ inputs.tickers }}
+        run: python -m src.news_check_run --tickers "$TICKERS"

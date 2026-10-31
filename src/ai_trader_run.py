@@ -170,9 +170,17 @@ def run_setup(dry_run: bool) -> None:
         )
         return
 
+    # Una posizione alla volta, mai fatale per le altre: se una chiusura
+    # fallisce, experiment.json deve comunque poter partire — altrimenti un
+    # solo ordine rifiutato bloccherebbe per sempre l'avvio dell'esperimento
+    # (il prossimo tentativo di setup non riprova le posizioni già chiuse,
+    # ma qui l'obiettivo è solo non restare bloccati).
     for position in positions:
-        _sell_to_close(position)
-        print(f"Posizione manuale chiusa: {position['symbol']} ({position['qty']})")
+        try:
+            _sell_to_close(position)
+            print(f"Posizione manuale chiusa: {position['symbol']} ({position['qty']})")
+        except Exception as exc:  # noqa: BLE001 - una posizione alla volta, mai fatale
+            print(f"Chiusura non riuscita per {position.get('symbol')} (continuo con le altre): {exc}")
 
     account = paper_trading.get_account()
     start_date = dt.date.today()
@@ -196,15 +204,25 @@ def run_setup(dry_run: bool) -> None:
 def _check_stop_losses(positions: list[dict]) -> list[str]:
     """Vende subito ogni posizione sotto AI_TRADER_STOP_LOSS_PCT, prima e
     indipendentemente dal giudizio AI del giorno. Ritorna i simboli
-    venduti."""
+    venduti.
+
+    Una posizione alla volta, mai fatale per le altre (stesso principio di
+    market_scanner.scan()): senza questo try/except, un solo ordine di
+    chiusura rifiutato da Alpaca (titolo sospeso, illiquido, qualunque
+    motivo) interromperebbe il controllo per TUTTE le posizioni successive
+    nello stesso giro — inaccettabile per il meccanismo di sicurezza più
+    importante del sistema."""
     sold = []
     for position in positions:
         plpc = position.get("unrealized_plpc")
         if plpc is None:
             continue
         if float(plpc) * 100 <= config.AI_TRADER_STOP_LOSS_PCT:
-            _sell_to_close(position)
-            sold.append(position["symbol"])
+            try:
+                _sell_to_close(position)
+                sold.append(position["symbol"])
+            except Exception as exc:  # noqa: BLE001 - una posizione alla volta, mai fatale
+                print(f"Stop-loss non eseguito per {position.get('symbol')} (continuo con le altre posizioni): {exc}")
     return sold
 
 
@@ -257,27 +275,37 @@ def run_daily(dry_run: bool) -> None:
     account = paper_trading.get_account()
     buying_power = float(account["buying_power"])
 
+    # Un titolo alla volta, mai fatale per gli altri (stesso principio di
+    # _check_stop_losses sopra e di market_scanner.scan()): senza questo
+    # try/except, un solo ordine rifiutato da Alpaca (titolo sospeso, non
+    # tradabile quel giorno, buying power finito a metà, qualunque motivo)
+    # interromperebbe l'intero ciclo — tutti i titoli successivi nella
+    # lista non verrebbero mai processati quel giorno, anche se le loro
+    # decisioni sono già state registrate in decisions.jsonl sopra.
     for decision in decisions:
         symbol = decision["symbol"]
         action = decision["decision"]
-        if action == "SELL" and symbol in open_symbols:
-            position = next(p for p in positions if p["symbol"] == symbol)
-            _sell_to_close(position)
-            open_symbols.discard(symbol)
-            print(f"SELL {symbol} — {decision['reasoning_short']}")
-        elif action == "BUY" and symbol not in open_symbols:
-            if len(open_symbols) >= config.AI_TRADER_MAX_POSITIONS:
-                continue
-            if buying_power < config.AI_TRADER_POSITION_NOTIONAL_USD:
-                continue
-            order = paper_trading.place_order(
-                symbol=symbol, side="buy", notional=config.AI_TRADER_POSITION_NOTIONAL_USD
-            )
-            paper_trading.record_order(order)
-            _attach_native_stop(symbol)
-            open_symbols.add(symbol)
-            buying_power -= config.AI_TRADER_POSITION_NOTIONAL_USD
-            print(f"BUY {symbol} — {decision['reasoning_short']}")
+        try:
+            if action == "SELL" and symbol in open_symbols:
+                position = next(p for p in positions if p["symbol"] == symbol)
+                _sell_to_close(position)
+                open_symbols.discard(symbol)
+                print(f"SELL {symbol} — {decision['reasoning_short']}")
+            elif action == "BUY" and symbol not in open_symbols:
+                if len(open_symbols) >= config.AI_TRADER_MAX_POSITIONS:
+                    continue
+                if buying_power < config.AI_TRADER_POSITION_NOTIONAL_USD:
+                    continue
+                order = paper_trading.place_order(
+                    symbol=symbol, side="buy", notional=config.AI_TRADER_POSITION_NOTIONAL_USD
+                )
+                paper_trading.record_order(order)
+                _attach_native_stop(symbol)
+                open_symbols.add(symbol)
+                buying_power -= config.AI_TRADER_POSITION_NOTIONAL_USD
+                print(f"BUY {symbol} — {decision['reasoning_short']}")
+        except Exception as exc:  # noqa: BLE001 - un titolo alla volta, mai fatale
+            print(f"Ordine non eseguito per {symbol} (continuo con gli altri titoli): {exc}")
 
     account = paper_trading.get_account()
     positions = paper_trading.get_positions()

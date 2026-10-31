@@ -487,3 +487,122 @@ def test_daily_buy_piazza_anche_lo_stop_nativo(tmp_path, monkeypatch):
     assert stop_call.kwargs["order_type"] == "stop"
     assert stop_call.kwargs["symbol"] == "RIVN"
     assert stop_call.kwargs["stop_price"] == round(14.0 * 0.92, 2)
+
+
+# ─── Resilienza: un titolo/una posizione con problemi non blocca gli altri ──
+# (audit di affidabilità richiesto dall'utente il 2026-10-31)
+
+
+def test_check_stop_losses_un_fallimento_non_blocca_le_altre_posizioni(tmp_path, monkeypatch):
+    _isolate(tmp_path, monkeypatch)
+    monkeypatch.setattr(config, "AI_TRADER_STOP_LOSS_PCT", -8.0)
+    losing_positions = [
+        {"symbol": "AAA", "qty": "5", "unrealized_plpc": "-0.12"},
+        {"symbol": "BBB", "qty": "3", "unrealized_plpc": "-0.20"},
+    ]
+    order_resp = {"id": "ord-1", "symbol": "BBB", "status": "accepted"}
+
+    def fake_place_order(symbol, **kwargs):
+        if symbol == "AAA":
+            raise paper_trading.AlpacaError("422 titolo sospeso")
+        return order_resp
+
+    with patch("src.ai_trader_run.paper_trading.get_open_orders", return_value=[]), \
+         patch("src.ai_trader_run.paper_trading.place_order", side_effect=fake_place_order):
+        sold = ai_trader_run._check_stop_losses(losing_positions)
+    # AAA fallisce ma non impedisce a BBB di essere venduta
+    assert sold == ["BBB"]
+
+
+def test_run_daily_un_ordine_fallito_non_blocca_gli_altri_titoli(tmp_path, monkeypatch):
+    _isolate(tmp_path, monkeypatch)
+    end_date = (__import__("datetime").date.today() + __import__("datetime").timedelta(days=30)).isoformat()
+    with open(config.AI_TRADER_EXPERIMENT_FILE, "w", encoding="utf-8") as fh:
+        json.dump({"start_date": "2026-01-01", "end_date": end_date, "status": "running"}, fh)
+
+    decisions = [
+        {"symbol": "AAA", "decision": "BUY", "reasoning_short": "x", "model_used": "haiku", "cost_usd": 0.0},
+        {"symbol": "BBB", "decision": "BUY", "reasoning_short": "x", "model_used": "haiku", "cost_usd": 0.0},
+    ]
+
+    def fake_place_order(symbol, **kwargs):
+        if symbol == "AAA":
+            raise paper_trading.AlpacaError("422 titolo non tradabile")
+        return {"id": "ord-bbb", "symbol": "BBB", "status": "accepted"}
+
+    with patch("src.ai_trader_run.paper_trading.get_positions", return_value=[]), \
+         patch("src.ai_trader_run.paper_trading.place_order", side_effect=fake_place_order) as mock_place, \
+         patch("src.ai_trader_run.paper_trading.get_account",
+               return_value={"equity": "100000", "buying_power": "90000"}), \
+         patch("src.ai_trader_run.paper_trading.snapshot_account"), \
+         patch("src.ai_trader_run.paper_trading.get_portfolio_history", return_value={"timestamp": [], "equity": []}), \
+         patch("src.ai_trader.decide_all", return_value=decisions):
+        ai_trader_run.run_daily(dry_run=False)  # non deve sollevare
+
+    # BBB deve essere stato tentato nonostante AAA sia fallito prima di lui
+    symbols_tried = [call.kwargs.get("symbol") for call in mock_place.call_args_list]
+    assert "BBB" in symbols_tried
+
+
+def test_run_setup_una_chiusura_fallita_non_impedisce_experiment_json(tmp_path, monkeypatch):
+    _isolate(tmp_path, monkeypatch)
+    positions = [{"symbol": "AAA", "qty": "1"}, {"symbol": "BBB", "qty": "1"}]
+
+    def fake_place_order(symbol, **kwargs):
+        if symbol == "AAA":
+            raise paper_trading.AlpacaError("422 rifiutato")
+        return {"id": "ord-bbb", "symbol": "BBB", "status": "accepted"}
+
+    with patch("src.ai_trader_run.paper_trading.get_positions", return_value=positions), \
+         patch("src.ai_trader_run.paper_trading.place_order", side_effect=fake_place_order), \
+         patch("src.ai_trader_run.paper_trading.get_account", return_value={"equity": "99000.0"}), \
+         patch("src.ai_trader_run.paper_trading.snapshot_account"), \
+         patch("src.ai_trader_run.paper_trading.get_open_orders", return_value=[]), \
+         patch("src.ai_trader_run.paper_trading.get_portfolio_history", return_value={"timestamp": [], "equity": []}):
+        ai_trader_run.run_setup(dry_run=False)  # non deve sollevare
+    experiment = ai_trader_run.load_experiment()
+    assert experiment is not None
+    assert experiment["status"] == "running"
+
+
+def test_decide_all_asset_che_solleva_torna_hold_invece_di_bloccare(tmp_path, monkeypatch):
+    _isolate(tmp_path, monkeypatch)
+    monkeypatch.setattr(config, "DATA_DIR", str(tmp_path / "data"))
+    monkeypatch.setattr(config, "ASSETS", ["NVDA", "AAPL"])
+    monkeypatch.setattr(config, "SCANNER_STOCKS", ["NVDA", "AAPL"])
+    monkeypatch.setattr(config, "SCANNER_FILE", str(tmp_path / "nessuno.json"))
+
+    def fake_core_decision(asset):
+        if asset == "NVDA":
+            raise RuntimeError("predictions.jsonl corrotto")
+        return {"symbol": asset, "model_used": "previsione_esistente", "decision": "BUY",
+                "reasoning_short": "x", "cost_usd": 0.0}
+
+    with patch("src.ai_trader.core_asset_decision", side_effect=fake_core_decision):
+        decisions = ai_trader.decide_all()
+
+    by_symbol = {d["symbol"]: d for d in decisions}
+    assert by_symbol["AAPL"]["decision"] == "BUY"
+    assert by_symbol["NVDA"]["decision"] == "HOLD"  # fallback di sicurezza, non un crash
+
+
+def test_load_scanner_results_json_corrotto_torna_vuoto(tmp_path, monkeypatch):
+    _isolate(tmp_path, monkeypatch)
+    bad_file = tmp_path / "scanner_corrotto.json"
+    bad_file.write_text("{non è json valido")
+    monkeypatch.setattr(config, "SCANNER_FILE", str(bad_file))
+    assert ai_trader.load_scanner_results() == {}
+
+
+def test_budget_file_corrotto_blocca_la_spesa_invece_di_azzerarla(tmp_path, monkeypatch):
+    """Fail-safe deliberato: un file di stato illeggibile deve far
+    assumere 'tetto raggiunto', mai 'zero speso' — altrimenti un file
+    corrotto proprio vicino al limite potrebbe far sforare il tetto
+    mensile reale."""
+    _isolate(tmp_path, monkeypatch)
+    year, month = __import__("datetime").date.today().year, __import__("datetime").date.today().month
+    bad_file = tmp_path / "_state" / f"ai_trader_budget_{year}-{month:02d}.json"
+    bad_file.parent.mkdir(parents=True, exist_ok=True)
+    bad_file.write_text("{corrotto")
+    assert budget.get_trader_spent_usd() == config.AI_TRADER_MONTHLY_BUDGET_USD
+    assert budget.trader_has_budget() is False

@@ -29,5 +29,11 @@ jobs:
 
       - run: pip install -r requirements.txt
 
+      # TICKERS passa per una variabile d'ambiente, non interpolato
+      # direttamente nello script (anche tra virgolette) — vedi lo stesso
+      # commento in news_check.yml su perché le virgolette da sole non
+      # bastano (bug reale di sicurezza trovato il 2026-10-31, audit).
       - name: Controlla valutazione
-        run: python -m src.valuation_check_run --tickers "${{ inputs.tickers }}"
+        env:
+          TICKERS: ${{ inputs.tickers }}
+        run: python -m src.valuation_check_run --tickers "$TICKERS"

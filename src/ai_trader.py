@@ -33,14 +33,19 @@ def tradeable_universe() -> list[str]:
 
 def load_scanner_results() -> dict[str, dict]:
     """Ultimo scan disponibile (data/scanner/results.json), indicizzato per
-    simbolo. {} se lo scanner non ha ancora mai girato — chi chiama decide
-    come comportarsi (vedi decide_all: un simbolo senza riga scanner non
-    riceve un giudizio quel giorno, invece di bloccare tutto il run)."""
+    simbolo. {} se lo scanner non ha ancora mai girato, o se il file non si
+    legge per qualunque motivo (JSON corrotto, campi mancanti) — un
+    problema qui non deve mai bloccare decide_all(): i 4 ASSETS non
+    dipendono dallo scanner, degradano correttamente a "nessun giudizio sui
+    titoli non-ASSETS oggi" invece di un run completamente perso."""
     if not os.path.exists(config.SCANNER_FILE):
         return {}
-    with open(config.SCANNER_FILE, "r", encoding="utf-8") as fh:
-        data = json.load(fh)
-    return {row["symbol"]: row for row in data.get("results", [])}
+    try:
+        with open(config.SCANNER_FILE, "r", encoding="utf-8") as fh:
+            data = json.load(fh)
+        return {row["symbol"]: row for row in data.get("results", [])}
+    except Exception:  # noqa: BLE001 - degrada a "nessun dato scanner oggi", mai fatale
+        return {}
 
 
 def latest_prediction(asset: str, horizon_code: str = "1d") -> dict | None:
@@ -200,24 +205,53 @@ def decide_all() -> list[dict]:
     scanner_by_symbol = load_scanner_results()
     thresholds = {}
     if os.path.exists(config.SCANNER_FILE):
-        with open(config.SCANNER_FILE, "r", encoding="utf-8") as fh:
-            thresholds = json.load(fh).get("thresholds", {})
+        try:
+            with open(config.SCANNER_FILE, "r", encoding="utf-8") as fh:
+                thresholds = json.load(fh).get("thresholds", {})
+        except Exception:  # noqa: BLE001 - le soglie sono solo testo esplicativo nel prompt, mai fatale
+            thresholds = {}
 
     universe = tradeable_universe()
     non_core = [s for s in universe if s not in config.ASSETS]
     flagged_today = [s for s in non_core if scanner_by_symbol.get(s, {}).get("flagged")]
     sonnet_symbols = set(flagged_today[: config.AI_TRADER_MAX_SONNET_CALLS_PER_DAY])
 
+    # Un asset/titolo alla volta, mai fatale per gli altri: senza questo
+    # try/except, un problema isolato su un solo asset (es. predictions.jsonl
+    # corrotto per quel titolo) interromperebbe decide_all() PRIMA di
+    # arrivare agli altri 40+ titoli — nessuna decisione quel giorno per
+    # nessuno, non solo per l'asset col problema. scanner_symbol_decision ha
+    # già una propria protezione sulla chiamata al modello (torna HOLD), ma
+    # non su un errore prima di quella chiamata (es. riga scanner malformata)
+    # — qui è protetta anche quella.
     for asset in config.ASSETS:
         if asset in universe:
-            decisions.append(core_asset_decision(asset))
+            try:
+                decisions.append(core_asset_decision(asset))
+            except Exception as exc:  # noqa: BLE001 - un asset alla volta, mai fatale
+                decisions.append({
+                    "symbol": asset,
+                    "model_used": "previsione_esistente",
+                    "decision": "HOLD",
+                    "reasoning_short": f"Errore nel leggere la previsione esistente, HOLD per sicurezza: {exc}",
+                    "cost_usd": 0.0,
+                })
 
     for symbol in non_core:
         row = scanner_by_symbol.get(symbol)
         if row is None:
             continue
         model = config.AI_TRADER_SONNET_MODEL if symbol in sonnet_symbols else config.AI_TRADER_HAIKU_MODEL
-        decisions.append(scanner_symbol_decision(symbol, row, thresholds, model))
+        try:
+            decisions.append(scanner_symbol_decision(symbol, row, thresholds, model))
+        except Exception as exc:  # noqa: BLE001 - un titolo alla volta, mai fatale
+            decisions.append({
+                "symbol": symbol,
+                "model_used": model,
+                "decision": "HOLD",
+                "reasoning_short": f"Errore imprevisto nel giudizio AI, HOLD per sicurezza: {exc}",
+                "cost_usd": 0.0,
+            })
 
     return decisions
 
