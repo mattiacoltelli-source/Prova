@@ -3341,7 +3341,7 @@
                 renderPriceChart(`chart-${asset}-${h}`, `${asset}-${h}`, toChartPoints(hOutcomes), false);
             });
 
-            renderAccuracyChart(asset, outcomes);
+            renderAccuracyChart(asset, outcomes, persistence);
         }
 
         function showEmptyChart(canvasId, message) {
@@ -3481,18 +3481,32 @@
             });
         }
 
-        function renderAccuracyChart(asset, outcomes) {
+        // Finestra della media mobile: stessa misura (20) già usata altrove
+        // nel progetto per un lookback "corto ma non rumoroso" (es.
+        // config.SCANNER_LOOKBACK_DAYS). Sostituisce l'accuratezza
+        // cumulativa-da-sempre di prima: con la cumulativa, più previsioni
+        // si valutano più la curva si appiattisce (un nuovo esito sposta
+        // sempre meno la media di tutti quelli passati) — diventa piatta e
+        // poco informativa proprio quando c'è più storia, il difetto
+        // segnalato dall'utente. La media mobile mostra invece come sta
+        // andando DI RECENTE, reattiva per tutta la vita del grafico.
+        const ACCURACY_ROLLING_WINDOW = 20;
+
+        function renderAccuracyChart(asset, outcomes, persistence) {
             const canvasId = `accuracy-chart-${asset}`;
 
-            // Accuratezza cumulativa: % di previsioni corrette tra tutte
-            // quelle valutate fino a quel momento, in ordine di valutazione.
             const sorted = [...outcomes].sort((a, b) => (a.evaluated_at || '').localeCompare(b.evaluated_at || ''));
-            let correctSoFar = 0;
+            // Prima dei 20 esiti la finestra si allarga fino a quel punto
+            // invece di restare vuota (nessun dato perso sulle previsioni
+            // più vecchie): esito i usa gli ultimi min(20, i+1) esiti.
             const points = sorted.map((o, i) => {
-                if (o.correct) correctSoFar++;
+                const windowStart = Math.max(0, i - ACCURACY_ROLLING_WINDOW + 1);
+                const window = sorted.slice(windowStart, i + 1);
+                const correct = window.filter(x => x.correct).length;
                 return {
                     date: (o.evaluated_at || '').slice(0, 10),
-                    accuracy: Number((correctSoFar / (i + 1) * 100).toFixed(1))
+                    accuracy: Number((correct / window.length * 100).toFixed(1)),
+                    n: window.length
                 };
             });
 
@@ -3506,32 +3520,70 @@
             const ctx = canvasEl.getContext('2d');
             const labels = points.map(p => p.date);
             const values = points.map(p => p.accuracy);
+            const windowSizes = points.map(p => p.n);
 
             const key = `accuracy-${asset}`;
             if (chartInstances[key]) {
                 chartInstances[key].destroy();
             }
 
+            const datasets = [{
+                label: `Accuratezza (ultime ${ACCURACY_ROLLING_WINDOW})`,
+                data: values,
+                borderColor: '#3ddc9a',
+                backgroundColor: 'rgba(61, 220, 154, 0.15)',
+                fill: true,
+                tension: 0.25,
+                pointRadius: 0,
+                pointHoverRadius: 3,
+                borderWidth: 2
+            }];
+
+            // Linea di riferimento della baseline "persistenza" (stesso
+            // numero già mostrato in chiaro sotto il testo del segnale, vedi
+            // persistenceAccuracy()): così si vede a colpo d'occhio se e
+            // quando l'AI la batte, invece di doverlo solo leggere a parole.
+            if (persistence) {
+                datasets.push({
+                    label: `Baseline persistenza (${persistence.pct}%)`,
+                    data: labels.map(() => Number(persistence.pct)),
+                    borderColor: '#8a94a8',
+                    borderDash: [5, 4],
+                    borderWidth: 1.5,
+                    pointRadius: 0,
+                    fill: false
+                });
+            }
+
             chartInstances[key] = new Chart(ctx, {
                 type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Accuratezza cumulativa %',
-                        data: values,
-                        borderColor: '#3ddc9a',
-                        backgroundColor: 'rgba(61, 220, 154, 0.15)',
-                        fill: true,
-                        stepped: true,
-                        pointRadius: 2
-                    }]
-                },
+                data: { labels, datasets },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            labels: { color: '#8a94a8', font: { size: 9 }, boxWidth: 12, padding: 10 }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                // La prima riga (accuratezza) riporta anche su
+                                // quante previsioni è calcolata quel punto:
+                                // un 60% su 3 valutazioni non è lo stesso
+                                // tipo di informazione di un 60% su 20.
+                                label: (item) => item.datasetIndex === 0
+                                    ? `${item.dataset.label}: ${item.formattedValue}% (su ${windowSizes[item.dataIndex]})`
+                                    : `${item.dataset.label}`
+                            }
+                        }
+                    },
                     scales: {
-                        x: { ticks: { color: '#8a94a8', font: { size: 8 } }, grid: { display: false } },
+                        x: {
+                            ticks: { color: '#8a94a8', font: { size: 8 }, maxTicksLimit: 7, maxRotation: 0 },
+                            grid: { display: false }
+                        },
                         y: {
                             min: 0, max: 100,
                             ticks: { color: '#8a94a8', font: { size: 8 }, callback: (v) => v + '%' },

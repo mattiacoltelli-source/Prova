@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ai-predictor-v47';
+const CACHE_NAME = 'ai-predictor-v48';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
