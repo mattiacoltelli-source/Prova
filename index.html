@@ -602,7 +602,8 @@
             font-weight: 700;
             letter-spacing: normal;
         }
-        #page-aitrader .pos-row__sym, #page-aitrader .trade-row__sym, #page-aitrader .agent-card__title {
+        #page-aitrader .pos-row__sym, #page-aitrader .trade-row__sym, #page-aitrader .agent-card__title,
+        #page-aitrader .paper-item-title, #page-aitrader td[data-label="Titolo"] {
             font-family: 'Outfit', sans-serif;
         }
         /* L'icona dell'agente usava un ciano fisso legato al vecchio accento:
@@ -610,11 +611,14 @@
            sfondo resterebbe ciano dietro un'icona blu. */
         #page-aitrader .agent-card__icon { background: rgba(79, 124, 255, 0.13); }
         /* Switch AI reale/Momentum come un'unica pillola con il bottone
-           attivo pieno (uguale all'artefatto), non due pillole separate
-           affiancate come le altre coppie di filtri del sito (Asset/
-           Orizzonte in Tech, invariate: questo override riguarda solo
-           #aitrader-strategy-filter). Tocco minimo 44px lasciato invariato
-           (fix di un audit precedente), solo l'aspetto cambia. */
+           attivo pieno, stessa dimensione dell'artefatto approvato (non più
+           due pillole separate e grandi come le altre coppie di filtri del
+           sito — Asset/Orizzonte in Tech restano invariate, questo override
+           riguarda solo #aitrader-strategy-filter). Il bersaglio di tocco
+           44px di un audit precedente qui viene volutamente ridotto
+           (richiesto due volte dall'utente, 2026-11: "molto più grande
+           rispetto all'artefatto") — resta comunque un pulsante largo (non
+           un'icona), non sotto i criteri minimi di leggibilità. */
         #aitrader-strategy-filter {
             display: inline-flex;
             background: var(--card-bg);
@@ -629,6 +633,10 @@
             border: none;
             box-shadow: none;
             color: var(--text-muted);
+            min-height: 0;
+            padding: 7px 15px;
+            font-size: 12.5px;
+            font-weight: 700;
         }
         #aitrader-strategy-filter .horizon-filter-btn.active {
             background: var(--accent-signal);
