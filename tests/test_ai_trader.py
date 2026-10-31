@@ -311,14 +311,33 @@ def test_daily_stop_loss_vende_posizione_sotto_soglia(tmp_path, monkeypatch):
 
 
 def test_setup_chiude_posizione_crypto_con_gtc_non_day(tmp_path, monkeypatch):
-    """Bug reale scoperto al primo run di setup: Alpaca rifiuta
-    time_in_force='day' (il default) per un simbolo crypto come BTC/USD,
-    che la posizione manuale precedente aveva davvero."""
+    """Bug reale scoperto in due run di setup falliti di fila: Alpaca
+    rifiuta time_in_force='day' (il default) per una posizione crypto, ma
+    GET /v2/positions ritorna il simbolo crypto SENZA slash (es. "BTCUSD",
+    non "BTC/USD" come negli ordini) — quindi il riconoscimento deve usare
+    asset_class="crypto" (il campo che Alpaca fornisce), non la presenza
+    dello slash nella stringa del simbolo."""
     _isolate(tmp_path, monkeypatch)
-    order_resp = {"id": "ord-btc", "symbol": "BTC/USD", "status": "accepted"}
-    with patch("src.ai_trader_run.paper_trading.get_positions", return_value=[{"symbol": "BTC/USD", "qty": "0.5"}]), \
+    order_resp = {"id": "ord-btc", "symbol": "BTCUSD", "status": "accepted"}
+    crypto_position = {"symbol": "BTCUSD", "qty": "0.5", "asset_class": "crypto"}
+    with patch("src.ai_trader_run.paper_trading.get_positions", return_value=[crypto_position]), \
          patch("src.ai_trader_run.paper_trading.place_order", return_value=order_resp) as mock_place, \
          patch("src.ai_trader_run.paper_trading.get_account", return_value={"equity": "99950.0"}), \
          patch("src.ai_trader_run.paper_trading.snapshot_account"):
         ai_trader_run.run_setup(dry_run=False)
-    mock_place.assert_called_once_with(symbol="BTC/USD", side="sell", qty=0.5, time_in_force="gtc")
+    mock_place.assert_called_once_with(symbol="BTCUSD", side="sell", qty=0.5, time_in_force="gtc")
+
+
+def test_setup_posizione_us_equity_senza_asset_class_resta_day(tmp_path, monkeypatch):
+    """Una posizione azionaria normale (asset_class="us_equity", o il campo
+    assente del tutto in un mock di test) non deve mai finire su 'gtc' —
+    solo asset_class="crypto" lo giustifica."""
+    _isolate(tmp_path, monkeypatch)
+    order_resp = {"id": "ord-qqq", "symbol": "QQQ", "status": "accepted"}
+    with patch("src.ai_trader_run.paper_trading.get_positions",
+               return_value=[{"symbol": "QQQ", "qty": "1", "asset_class": "us_equity"}]), \
+         patch("src.ai_trader_run.paper_trading.place_order", return_value=order_resp) as mock_place, \
+         patch("src.ai_trader_run.paper_trading.get_account", return_value={"equity": "99950.0"}), \
+         patch("src.ai_trader_run.paper_trading.snapshot_account"):
+        ai_trader_run.run_setup(dry_run=False)
+    mock_place.assert_called_once_with(symbol="QQQ", side="sell", qty=1.0, time_in_force="day")

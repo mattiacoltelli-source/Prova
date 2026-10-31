@@ -36,15 +36,22 @@ import sys
 from . import ai_trader, budget, config, paper_trading, storage
 
 
-def _sell_to_close(symbol: str, qty: float) -> dict:
+def _sell_to_close(position: dict) -> dict:
     """Vende l'intera quantità per chiudere una posizione, scegliendo il
     time_in_force giusto: Alpaca rifiuta 'day' (il default di
-    paper_trading.place_order) per un simbolo crypto ("BASE/QUOTE", es.
-    BTC/USD) — bug reale scoperto al primo run di setup, che aveva una
-    posizione BTC/USD manuale precedente da chiudere. L'universo di
-    ai_trader.py non include crypto, ma una posizione MANUALE preesistente
-    (quella che run_setup chiude) può averne una."""
-    time_in_force = "gtc" if "/" in symbol else "day"
+    paper_trading.place_order) per una posizione crypto.
+
+    Bug reale scoperto in due run di setup falliti di fila: il PRIMO
+    tentativo di fix usava "/" in symbol per riconoscere una crypto (come fa
+    paper_trading.place_order() per un simbolo scelto da noi, es.
+    "BTC/USD"), ma GET /v2/positions di Alpaca ritorna il simbolo di una
+    posizione crypto SENZA slash (es. "BTCUSD") — quindi quel controllo
+    falliva silenziosamente e il bug si ripresentava identico. Il campo
+    affidabile è asset_class ("crypto" vs "us_equity"), fornito da Alpaca
+    stesso su ogni posizione, non dedotto dalla forma della stringa."""
+    symbol = position["symbol"]
+    qty = abs(float(position["qty"]))
+    time_in_force = "gtc" if position.get("asset_class") == "crypto" else "day"
     order = paper_trading.place_order(symbol=symbol, side="sell", qty=qty, time_in_force=time_in_force)
     return paper_trading.record_order(order)
 
@@ -89,10 +96,8 @@ def run_setup(dry_run: bool) -> None:
         return
 
     for position in positions:
-        symbol = position["symbol"]
-        qty = position["qty"]
-        _sell_to_close(symbol, abs(float(qty)))
-        print(f"Posizione manuale chiusa: {symbol} ({qty})")
+        _sell_to_close(position)
+        print(f"Posizione manuale chiusa: {position['symbol']} ({position['qty']})")
 
     account = paper_trading.get_account()
     start_date = dt.date.today()
@@ -122,9 +127,8 @@ def _check_stop_losses(positions: list[dict]) -> list[str]:
         if plpc is None:
             continue
         if float(plpc) * 100 <= config.AI_TRADER_STOP_LOSS_PCT:
-            symbol = position["symbol"]
-            _sell_to_close(symbol, abs(float(position["qty"])))
-            sold.append(symbol)
+            _sell_to_close(position)
+            sold.append(position["symbol"])
     return sold
 
 
@@ -182,7 +186,7 @@ def run_daily(dry_run: bool) -> None:
         action = decision["decision"]
         if action == "SELL" and symbol in open_symbols:
             position = next(p for p in positions if p["symbol"] == symbol)
-            _sell_to_close(symbol, abs(float(position["qty"])))
+            _sell_to_close(position)
             open_symbols.discard(symbol)
             print(f"SELL {symbol} — {decision['reasoning_short']}")
         elif action == "BUY" and symbol not in open_symbols:
