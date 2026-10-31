@@ -157,7 +157,14 @@
             display: flex;
             flex-wrap: nowrap;
             justify-content: center;
-            gap: 12px;
+            gap: 8px;
+            /* overflow-x:auto resta come rete di sicurezza (mai rimosso:
+               stesso bug già visto due volte oggi se tolto), ma dimensioni
+               e spaziatura sono state strette apposta perché su un
+               telefono reale a 390px e dimensione del testo normale non
+               serva mai — l'utente lo vedeva scorrere leggermente e lo
+               voleva "fisso". Verificato (Playwright) senza scroll fino a
+               360px di larghezza. */
             overflow-x: auto;
             padding-bottom: 2px;
             margin: 0 auto 20px;
@@ -172,7 +179,7 @@
             background: linear-gradient(160deg, var(--card-bg) 0%, var(--bg-color-2) 100%);
             border: 1px solid var(--card-border);
             border-radius: var(--radius-lg);
-            padding: 12px 18px;
+            padding: 10px 14px;
             box-shadow: var(--shadow-card);
         }
 
@@ -187,7 +194,7 @@
 
         .stat-value {
             font-family: var(--font-mono);
-            font-size: 1.3rem;
+            font-size: 1.2rem;
             font-weight: 700;
             letter-spacing: -0.01em;
             font-variant-numeric: tabular-nums;
@@ -196,7 +203,7 @@
 
         /* L'accuratezza AI è la metrica più importante della pagina:
            leggermente più grande delle altre due per gerarchia visiva. */
-        #stat-accuracy { font-size: 1.45rem; }
+        #stat-accuracy { font-size: 1.3rem; }
 
         .stat-value.green { color: var(--accent-green); }
         .stat-value.accent { color: var(--accent-signal); }
@@ -259,7 +266,10 @@
             display: flex;
             align-items: center;
             gap: 6px;
-            margin-bottom: 20px;
+            /* 12px invece di 20px: l'utente ha chiesto Asset e Orizzonte
+               (le due righe che usano questa stessa classe) "un pelo più
+               vicini". */
+            margin-bottom: 12px;
             /* Tutto su una riga sola anche su schermi stretti: se proprio non
                ci sta, scorre solo questa riga (come .table-wrapper), mai la
                pagina intera. */
