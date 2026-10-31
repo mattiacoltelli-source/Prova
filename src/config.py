@@ -678,6 +678,16 @@ AI_TRADER_DECISIONS_FILE = f"{AI_TRADER_DIR}/decisions.jsonl"
 # di disegnare una curva dell'andamento dei 6 mesi, solo l'ultimo punto.
 AI_TRADER_EQUITY_HISTORY_FILE = f"{AI_TRADER_DIR}/equity_history.jsonl"
 
+# Istantanea (sovrascritta ad ogni run, non uno storico — stesso principio
+# di PAPER_ACCOUNT_FILE) della curva equity calcolata da Alpaca stesso
+# (GET /v2/account/portfolio/history), non dalla nostra accumulazione
+# manuale in AI_TRADER_EQUITY_HISTORY_FILE sopra: copre correttamente i
+# giorni di mercato chiuso e non ha buchi se un giorno il nostro workflow
+# non gira. Il frontend la preferisce quando disponibile, equity_history.jsonl
+# resta come riserva (append-only, mai perso anche se questa chiamata fallisce
+# un giorno).
+AI_TRADER_PORTFOLIO_HISTORY_FILE = f"{AI_TRADER_DIR}/portfolio_history.json"
+
 
 def snapshot_file(asset: str) -> str:
     return f"{asset_dir(asset)}/snapshot.json"

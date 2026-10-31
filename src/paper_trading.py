@@ -57,6 +57,7 @@ def place_order(
     notional: float | None = None,
     order_type: str = "market",
     limit_price: float | None = None,
+    stop_price: float | None = None,
     time_in_force: str = "day",
 ) -> dict:
     """Invia un ordine reale al conto paper. Nessun retry automatico sugli
@@ -67,10 +68,12 @@ def place_order(
     come errore esplicito, mai ritentato in silenzio."""
     if side not in ("buy", "sell"):
         raise ValueError(f"side deve essere 'buy' o 'sell', non {side!r}")
-    if order_type not in ("market", "limit"):
-        raise ValueError(f"order_type deve essere 'market' o 'limit', non {order_type!r}")
+    if order_type not in ("market", "limit", "stop"):
+        raise ValueError(f"order_type deve essere 'market', 'limit' o 'stop', non {order_type!r}")
     if order_type == "limit" and limit_price is None:
         raise ValueError("limit_price è obbligatorio per un ordine 'limit'")
+    if order_type == "stop" and stop_price is None:
+        raise ValueError("stop_price è obbligatorio per un ordine 'stop'")
     if (qty is None) == (notional is None):
         raise ValueError("specifica esattamente uno tra qty e notional, non entrambi o nessuno")
     # Crypto (simbolo "BASE/QUOTE", es. BTC/USD) accetta solo gtc/ioc come
@@ -96,12 +99,57 @@ def place_order(
         payload["notional"] = str(notional)
     if order_type == "limit":
         payload["limit_price"] = str(limit_price)
+    if order_type == "stop":
+        payload["stop_price"] = str(stop_price)
 
     resp = requests.post(
         f"{ALPACA_PAPER_BASE_URL}/v2/orders", headers=_headers(), json=payload, timeout=TIMEOUT
     )
     if not resp.ok:
         raise AlpacaError(f"POST /v2/orders fallita ({resp.status_code}): {resp.text}")
+    return resp.json()
+
+
+def get_open_orders(symbol: str | None = None) -> list[dict]:
+    """Ordini ancora aperti (status=open), opzionalmente filtrati per
+    simbolo — serve ad ai_trader_run.py per annullare uno stop nativo
+    rimasto appeso quando una posizione viene chiusa da un'altra parte
+    (giudizio AI o stop-loss python), prima che provi a vendere azioni che
+    non ci sono più."""
+    params = {"status": "open"}
+    if symbol:
+        params["symbols"] = symbol.upper()
+    resp = requests.get(f"{ALPACA_PAPER_BASE_URL}/v2/orders", headers=_headers(), params=params, timeout=TIMEOUT)
+    if not resp.ok:
+        raise AlpacaError(f"GET /v2/orders fallita ({resp.status_code}): {resp.text}")
+    return resp.json()
+
+
+def cancel_order(order_id: str) -> None:
+    """Annulla un ordine aperto. Un 404 (l'ordine è già stato eseguito o
+    annullato nel frattempo, caso normale per un ordine stop su cui si è
+    appena fatta una GET) non è un errore: chi chiama voleva solo
+    assicurarsi che l'ordine non fosse più lì, e non lo è."""
+    resp = requests.delete(f"{ALPACA_PAPER_BASE_URL}/v2/orders/{order_id}", headers=_headers(), timeout=TIMEOUT)
+    if not resp.ok and resp.status_code != 404:
+        raise AlpacaError(f"DELETE /v2/orders/{order_id} fallita ({resp.status_code}): {resp.text}")
+
+
+def get_portfolio_history(start: str, timeframe: str = "1D") -> dict:
+    """Curva equity calcolata da Alpaca stesso (GET /v2/account/portfolio/
+    history), non la nostra accumulazione manuale (vedi
+    AI_TRADER_EQUITY_HISTORY_FILE in config.py) — copre correttamente i
+    giorni di mercato chiuso. start è una data ISO (es. l'inizio
+    dell'esperimento); con timeframe="1D" (il default qui) Alpaca include
+    solo i giorni in cui il mercato era aperto."""
+    resp = requests.get(
+        f"{ALPACA_PAPER_BASE_URL}/v2/account/portfolio/history",
+        headers=_headers(),
+        params={"start": start, "timeframe": timeframe},
+        timeout=TIMEOUT,
+    )
+    if not resp.ok:
+        raise AlpacaError(f"GET /v2/account/portfolio/history fallita ({resp.status_code}): {resp.text}")
     return resp.json()
 
 

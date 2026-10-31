@@ -510,9 +510,15 @@ sui token REALI restituiti da Anthropic, non su una stima — se il tetto
 viene raggiunto, i nuovi giudizi AI del mese tornano HOLD senza chiamare il
 modello.
 
-**Sicurezza**: ogni posizione con una perdita superiore a
-`AI_TRADER_STOP_LOSS_PCT` (-8%) viene chiusa comunque, indipendentemente dal
-giudizio AI del giorno.
+**Sicurezza**: due reti indipendenti. Ogni BUY piazza SUBITO un ordine
+**stop nativo su Alpaca** (`type="stop"`), che sorveglia la posizione 24 ore
+su 24 — non solo quando gira il nostro run quotidiano. In più, il controllo
+python di `AI_TRADER_STOP_LOSS_PCT` (-8%) resta come rete di sicurezza
+indipendente dal giudizio AI del giorno (nel caso raro in cui lo stop nativo
+non sia stato piazzato o sia stato rifiutato). Quando una posizione si
+chiude da un'altra parte (giudizio AI, stop python, o la chiusura manuale di
+`setup`), l'eventuale stop nativo ancora aperto viene annullato prima —
+altrimenti resterebbe un ordine orfano che punta ad azioni già vendute.
 
 **Due modalità** di
 [Actions → "Trading automatico AI"](https://github.com/mattiacoltelli-source/Prova/actions/workflows/ai_trader.yml):
@@ -525,6 +531,13 @@ curva equity nel tempo in `data/ai_trader/equity_history.jsonl` (a
 differenza di `account.json`, sovrascritto ad ogni run — serve per
 disegnare l'andamento dei 6 mesi, non solo l'ultimo punto). Tab dedicata
 "Trading AI", prima scheda della dashboard.
+
+**Curva equity**: il grafico preferisce `data/ai_trader/portfolio_history.json`
+(istantanea sovrascritta ad ogni run, calcolata da Alpaca stesso via
+`GET /v2/account/portfolio/history` — copre correttamente i giorni di
+mercato chiuso, senza buchi se un giorno il workflow non gira) a
+`equity_history.jsonl` sopra, usato come riserva se il file non c'è ancora o
+la chiamata ad Alpaca fallisce quel giorno.
 
 ## Scanner di mercato
 

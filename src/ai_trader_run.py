@@ -13,12 +13,24 @@ Due modalità:
   experiment.json esiste già non fa nulla, per non poter resettare per
   errore un esperimento già in corso.
 - daily: controlla prima lo stop-loss sulle posizioni aperte (indipendente
-  dal giudizio AI del giorno), poi una decisione per ogni titolo
-  dell'universo (ai_trader.decide_all(), che chiama i modelli pagati), poi
-  invia gli ordini di conseguenza, poi aggiorna l'istantanea del conto
-  (stessa data/paper/account.json già letta dalla pagina Paper — stesso
-  conto Alpaca, nessun file duplicato). No-op se l'esperimento non è
-  (ancora) partito o è già scaduto (6 mesi, config.AI_TRADER_DURATION_DAYS).
+  dal giudizio AI del giorno — rete di sicurezza in più oltre allo stop
+  nativo piazzato su Alpaca al momento dell'acquisto, vedi
+  _attach_native_stop), poi una decisione per ogni titolo dell'universo
+  (ai_trader.decide_all(), che chiama i modelli pagati), poi invia gli
+  ordini di conseguenza, poi aggiorna l'istantanea del conto (stessa
+  data/paper/account.json già letta dalla pagina Paper — stesso conto
+  Alpaca, nessun file duplicato) e la curva equity (sia la nostra
+  accumulazione manuale sia l'istantanea calcolata da Alpaca stesso, vedi
+  _save_portfolio_history_snapshot). No-op se l'esperimento non è (ancora)
+  partito o è già scaduto (6 mesi, config.AI_TRADER_DURATION_DAYS).
+
+Ogni BUY piazza SUBITO anche un ordine stop nativo su Alpaca (type="stop"),
+non solo il controllo python del giorno dopo: protegge la posizione 24 ore
+su 24 indipendentemente da quando gira questo workflow. Quando una
+posizione si chiude per un altro motivo (giudizio AI, stop-loss python, o
+la chiusura manuale di run_setup), _cancel_resting_orders annulla prima
+quello stop — altrimenti resterebbe un ordine orfano che, più tardi, prova
+a vendere azioni già vendute.
 
 dry_run qui non chiama MAI i modelli pagati (a differenza di un dry_run che
 si limitasse a non scrivere su disco): un giudizio AI costa soldi reali nel
@@ -34,6 +46,22 @@ import os
 import sys
 
 from . import ai_trader, budget, config, paper_trading, storage
+
+
+def _cancel_resting_orders(symbol: str) -> None:
+    """Annulla eventuali ordini ancora aperti su questo simbolo (lo stop
+    nativo piazzato da _attach_native_stop dopo un BUY) prima di chiudere la
+    posizione da un'altra parte — giudizio AI, stop-loss python, o chiusura
+    manuale in run_setup: altrimenti resta un ordine stop orfano che, più
+    tardi, prova a vendere azioni che non ci sono già più. Non bloccante:
+    se la chiamata fallisce si prova comunque a vendere, e un ordine stop
+    rimasto appeso punterà a 0 azioni disponibili (Alpaca lo rifiuta da
+    solo, non manda un ordine fantasma)."""
+    try:
+        for order in paper_trading.get_open_orders(symbol=symbol):
+            paper_trading.cancel_order(order["id"])
+    except paper_trading.AlpacaError as exc:
+        print(f"Impossibile annullare gli ordini aperti su {symbol} (non bloccante): {exc}")
 
 
 def _sell_to_close(position: dict) -> dict:
@@ -52,8 +80,38 @@ def _sell_to_close(position: dict) -> dict:
     symbol = position["symbol"]
     qty = abs(float(position["qty"]))
     time_in_force = "gtc" if position.get("asset_class") == "crypto" else "day"
+    _cancel_resting_orders(symbol)
     order = paper_trading.place_order(symbol=symbol, side="sell", qty=qty, time_in_force=time_in_force)
     return paper_trading.record_order(order)
+
+
+def _attach_native_stop(symbol: str) -> None:
+    """Protegge subito la posizione appena aperta con un ordine stop nativo
+    su Alpaca: scatta 24 ore su 24, non solo quando gira il nostro run
+    quotidiano — a differenza del controllo python in _check_stop_losses,
+    che resta comunque come rete di sicurezza in più (se per qualche motivo
+    questo ordine non venisse piazzato o venisse rifiutato, il controllo
+    giornaliero lo cattura comunque al giro successivo).
+
+    Richiede la quantità REALE comprata: il BUY in run_daily usa 'notional'
+    (importo in dollari, non quote), quindi la quantità esatta si conosce
+    solo a fill avvenuto — da qui la rilettura delle posizioni invece di
+    calcolarla da soli."""
+    positions = paper_trading.get_positions()
+    position = next((p for p in positions if p["symbol"] == symbol), None)
+    if position is None:
+        print(f"Stop nativo non piazzato per {symbol}: l'ordine non risulta ancora eseguito in questo run.")
+        return
+    qty = abs(float(position["qty"]))
+    entry_price = float(position["avg_entry_price"])
+    stop_price = round(entry_price * (1 + config.AI_TRADER_STOP_LOSS_PCT / 100), 2)
+    try:
+        order = paper_trading.place_order(
+            symbol=symbol, side="sell", qty=qty, order_type="stop", stop_price=stop_price
+        )
+        paper_trading.record_order(order)
+    except paper_trading.AlpacaError as exc:
+        print(f"Stop nativo non piazzato per {symbol} (resta protetto dal controllo giornaliero): {exc}")
 
 
 def _record_equity(date_str: str, equity_usd: float) -> None:
@@ -61,6 +119,23 @@ def _record_equity(date_str: str, equity_usd: float) -> None:
     differenza di account.json che viene sovrascritto ad ogni run (vedi
     commento su AI_TRADER_EQUITY_HISTORY_FILE in config.py)."""
     storage.append_record(config.AI_TRADER_EQUITY_HISTORY_FILE, {"date": date_str, "equity_usd": equity_usd})
+
+
+def _save_portfolio_history_snapshot(start_date: str) -> None:
+    """Istantanea (sovrascritta, non storico) della curva equity calcolata
+    da Alpaca stesso — vedi commento su AI_TRADER_PORTFOLIO_HISTORY_FILE in
+    config.py sul perché è preferibile a _record_equity sopra. Non
+    bloccante: se la chiamata fallisce, _record_equity ha già scritto il
+    punto di oggi nel file di riserva, il frontend usa quello."""
+    try:
+        history = paper_trading.get_portfolio_history(start=start_date, timeframe="1D")
+    except paper_trading.AlpacaError as exc:
+        print(f"Portfolio history non disponibile questo giro (non bloccante): {exc}")
+        return
+    os.makedirs(config.AI_TRADER_DIR, exist_ok=True)
+    with open(config.AI_TRADER_PORTFOLIO_HISTORY_FILE, "w", encoding="utf-8") as fh:
+        json.dump(history, fh, indent=2, sort_keys=True)
+        fh.write("\n")
 
 
 def load_experiment() -> dict | None:
@@ -111,6 +186,7 @@ def run_setup(dry_run: bool) -> None:
     _save_experiment(experiment)
     paper_trading.snapshot_account(account, paper_trading.get_positions())
     _record_equity(experiment["start_date"], experiment["start_equity_usd"])
+    _save_portfolio_history_snapshot(experiment["start_date"])
     print(
         f"Esperimento avviato: {experiment['start_date']} -> {experiment['end_date']}, "
         f"equity di partenza ${experiment['start_equity_usd']:.2f}"
@@ -198,6 +274,7 @@ def run_daily(dry_run: bool) -> None:
                 symbol=symbol, side="buy", notional=config.AI_TRADER_POSITION_NOTIONAL_USD
             )
             paper_trading.record_order(order)
+            _attach_native_stop(symbol)
             open_symbols.add(symbol)
             buying_power -= config.AI_TRADER_POSITION_NOTIONAL_USD
             print(f"BUY {symbol} — {decision['reasoning_short']}")
@@ -206,6 +283,7 @@ def run_daily(dry_run: bool) -> None:
     positions = paper_trading.get_positions()
     paper_trading.snapshot_account(account, positions)
     _record_equity(today.isoformat(), float(account["equity"]))
+    _save_portfolio_history_snapshot(experiment["start_date"])
     print(
         f"Run giornaliero completato: equity ${account['equity']}, {len(positions)} posizioni aperte, "
         f"spesa AI questo mese ${budget.get_trader_spent_usd():.4f} / ${config.AI_TRADER_MONTHLY_BUDGET_USD:.2f}"

@@ -248,3 +248,125 @@ def test_run_reale_invia_registra_e_fa_snapshot(tmp_path, monkeypatch):
     rows = storage.read_all(config.PAPER_ORDERS_FILE)
     assert len(rows) == 1
     assert rows[0]["alpaca_order_id"] == "ord-9"
+
+
+# ─── place_order: order_type="stop" (stop nativo, src/ai_trader_run.py) ────
+
+
+def test_place_order_stop_senza_stop_price_non_chiama_la_rete(monkeypatch):
+    monkeypatch.setenv("ALPACA_API_KEY", "x")
+    monkeypatch.setenv("ALPACA_SECRET_KEY", "y")
+    with patch("src.paper_trading.requests.post") as mock_post:
+        with pytest.raises(ValueError, match="stop_price"):
+            paper_trading.place_order("NVDA", side="sell", qty=1, order_type="stop")
+        mock_post.assert_not_called()
+
+
+def test_place_order_stop_successo_manda_stop_price(monkeypatch):
+    monkeypatch.setenv("ALPACA_API_KEY", "x")
+    monkeypatch.setenv("ALPACA_SECRET_KEY", "y")
+    fake_resp = FakeResponse(200, {"id": "ord-stop", "symbol": "NVDA", "status": "accepted"})
+    with patch("src.paper_trading.requests.post", return_value=fake_resp) as mock_post:
+        result = paper_trading.place_order("NVDA", side="sell", qty=2, order_type="stop", stop_price=180.5)
+    assert result["id"] == "ord-stop"
+    _, kwargs = mock_post.call_args
+    assert kwargs["json"]["type"] == "stop"
+    assert kwargs["json"]["stop_price"] == "180.5"
+    assert "limit_price" not in kwargs["json"]
+
+
+def test_place_order_order_type_non_valido_non_chiama_la_rete(monkeypatch):
+    monkeypatch.setenv("ALPACA_API_KEY", "x")
+    monkeypatch.setenv("ALPACA_SECRET_KEY", "y")
+    with patch("src.paper_trading.requests.post") as mock_post:
+        with pytest.raises(ValueError, match="order_type"):
+            paper_trading.place_order("NVDA", side="sell", qty=1, order_type="trailing_stop")
+        mock_post.assert_not_called()
+
+
+# ─── get_open_orders ────────────────────────────────────────────────────────
+
+
+def test_get_open_orders_senza_filtro(monkeypatch):
+    monkeypatch.setenv("ALPACA_API_KEY", "x")
+    monkeypatch.setenv("ALPACA_SECRET_KEY", "y")
+    fake_resp = FakeResponse(200, [{"id": "ord-1", "symbol": "NVDA"}])
+    with patch("src.paper_trading.requests.get", return_value=fake_resp) as mock_get:
+        result = paper_trading.get_open_orders()
+    assert result == [{"id": "ord-1", "symbol": "NVDA"}]
+    _, kwargs = mock_get.call_args
+    assert kwargs["params"] == {"status": "open"}
+
+
+def test_get_open_orders_con_filtro_simbolo(monkeypatch):
+    monkeypatch.setenv("ALPACA_API_KEY", "x")
+    monkeypatch.setenv("ALPACA_SECRET_KEY", "y")
+    fake_resp = FakeResponse(200, [])
+    with patch("src.paper_trading.requests.get", return_value=fake_resp) as mock_get:
+        paper_trading.get_open_orders(symbol="nvda")
+    _, kwargs = mock_get.call_args
+    assert kwargs["params"] == {"status": "open", "symbols": "NVDA"}
+
+
+def test_get_open_orders_errore_http_solleva_alpaca_error(monkeypatch):
+    monkeypatch.setenv("ALPACA_API_KEY", "x")
+    monkeypatch.setenv("ALPACA_SECRET_KEY", "y")
+    fake_resp = FakeResponse(500, text="server error")
+    with patch("src.paper_trading.requests.get", return_value=fake_resp):
+        with pytest.raises(paper_trading.AlpacaError, match="server error"):
+            paper_trading.get_open_orders()
+
+
+# ─── cancel_order ────────────────────────────────────────────────────────────
+
+
+def test_cancel_order_successo(monkeypatch):
+    monkeypatch.setenv("ALPACA_API_KEY", "x")
+    monkeypatch.setenv("ALPACA_SECRET_KEY", "y")
+    fake_resp = FakeResponse(204)
+    with patch("src.paper_trading.requests.delete", return_value=fake_resp) as mock_delete:
+        paper_trading.cancel_order("ord-1")
+    mock_delete.assert_called_once()
+
+
+def test_cancel_order_404_non_solleva_errore(monkeypatch):
+    """Un 404 (ordine già eseguito o già annullato) non è un errore: chi
+    chiama voleva solo che l'ordine non fosse più lì, ed è già così."""
+    monkeypatch.setenv("ALPACA_API_KEY", "x")
+    monkeypatch.setenv("ALPACA_SECRET_KEY", "y")
+    fake_resp = FakeResponse(404, text="order not found")
+    with patch("src.paper_trading.requests.delete", return_value=fake_resp):
+        paper_trading.cancel_order("ord-1")  # non deve sollevare
+
+
+def test_cancel_order_altro_errore_solleva(monkeypatch):
+    monkeypatch.setenv("ALPACA_API_KEY", "x")
+    monkeypatch.setenv("ALPACA_SECRET_KEY", "y")
+    fake_resp = FakeResponse(500, text="server error")
+    with patch("src.paper_trading.requests.delete", return_value=fake_resp):
+        with pytest.raises(paper_trading.AlpacaError, match="server error"):
+            paper_trading.cancel_order("ord-1")
+
+
+# ─── get_portfolio_history ───────────────────────────────────────────────────
+
+
+def test_get_portfolio_history_successo(monkeypatch):
+    monkeypatch.setenv("ALPACA_API_KEY", "x")
+    monkeypatch.setenv("ALPACA_SECRET_KEY", "y")
+    fake_data = {"timestamp": [1, 2], "equity": [100000.0, 100050.0], "timeframe": "1D"}
+    fake_resp = FakeResponse(200, fake_data)
+    with patch("src.paper_trading.requests.get", return_value=fake_resp) as mock_get:
+        result = paper_trading.get_portfolio_history(start="2026-10-31")
+    assert result == fake_data
+    _, kwargs = mock_get.call_args
+    assert kwargs["params"] == {"start": "2026-10-31", "timeframe": "1D"}
+
+
+def test_get_portfolio_history_errore_http_solleva_alpaca_error(monkeypatch):
+    monkeypatch.setenv("ALPACA_API_KEY", "x")
+    monkeypatch.setenv("ALPACA_SECRET_KEY", "y")
+    fake_resp = FakeResponse(422, text="bad request")
+    with patch("src.paper_trading.requests.get", return_value=fake_resp):
+        with pytest.raises(paper_trading.AlpacaError, match="bad request"):
+            paper_trading.get_portfolio_history(start="2026-10-31")

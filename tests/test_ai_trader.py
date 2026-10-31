@@ -19,6 +19,8 @@ def _isolate(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "AI_TRADER_DECISIONS_FILE", str(tmp_path / "decisions.jsonl"))
     monkeypatch.setattr(config, "AI_TRADER_EXPERIMENT_FILE", str(tmp_path / "experiment.json"))
     monkeypatch.setattr(config, "AI_TRADER_EQUITY_HISTORY_FILE", str(tmp_path / "equity_history.jsonl"))
+    monkeypatch.setattr(config, "AI_TRADER_PORTFOLIO_HISTORY_FILE", str(tmp_path / "portfolio_history.json"))
+    monkeypatch.setattr(config, "AI_TRADER_DIR", str(tmp_path))
     monkeypatch.setattr(config, "PAPER_ORDERS_FILE", str(tmp_path / "orders.jsonl"))
     monkeypatch.setattr(config, "PAPER_ACCOUNT_FILE", str(tmp_path / "account.json"))
     monkeypatch.setenv("ANTHROPIC_API_KEY", "fake-key")
@@ -249,7 +251,9 @@ def test_setup_reale_chiude_posizioni_e_fissa_experiment(tmp_path, monkeypatch):
     with patch("src.ai_trader_run.paper_trading.get_positions", return_value=[{"symbol": "QQQ", "qty": "1"}]), \
          patch("src.ai_trader_run.paper_trading.place_order", return_value=order_resp) as mock_place, \
          patch("src.ai_trader_run.paper_trading.get_account", return_value={"equity": "99950.0"}), \
-         patch("src.ai_trader_run.paper_trading.snapshot_account"):
+         patch("src.ai_trader_run.paper_trading.snapshot_account"), \
+         patch("src.ai_trader_run.paper_trading.get_open_orders", return_value=[]), \
+         patch("src.ai_trader_run.paper_trading.get_portfolio_history", return_value={"timestamp": [], "equity": []}):
         ai_trader_run.run_setup(dry_run=False)
     mock_place.assert_called_once_with(symbol="QQQ", side="sell", qty=1.0, time_in_force="day")
     experiment = ai_trader_run.load_experiment()
@@ -258,6 +262,8 @@ def test_setup_reale_chiude_posizioni_e_fissa_experiment(tmp_path, monkeypatch):
     history = storage.read_all(config.AI_TRADER_EQUITY_HISTORY_FILE)
     assert len(history) == 1
     assert history[0]["equity_usd"] == 99950.0
+    with open(config.AI_TRADER_PORTFOLIO_HISTORY_FILE, encoding="utf-8") as fh:
+        assert json.load(fh) == {"timestamp": [], "equity": []}
 
 
 # ─── ai_trader_run: daily ──────────────────────────────────────────────────
@@ -305,6 +311,8 @@ def test_daily_stop_loss_vende_posizione_sotto_soglia(tmp_path, monkeypatch):
          patch("src.ai_trader_run.paper_trading.place_order", return_value=order_resp) as mock_place, \
          patch("src.ai_trader_run.paper_trading.get_account", return_value={"equity": "99000", "buying_power": "50000"}), \
          patch("src.ai_trader_run.paper_trading.snapshot_account"), \
+         patch("src.ai_trader_run.paper_trading.get_open_orders", return_value=[]), \
+         patch("src.ai_trader_run.paper_trading.get_portfolio_history", return_value={"timestamp": [], "equity": []}), \
          patch("src.ai_trader.decide_all", return_value=[]):
         ai_trader_run.run_daily(dry_run=False)
     mock_place.assert_any_call(symbol="GME", side="sell", qty=5.0, time_in_force="day")
@@ -323,7 +331,9 @@ def test_setup_chiude_posizione_crypto_con_gtc_non_day(tmp_path, monkeypatch):
     with patch("src.ai_trader_run.paper_trading.get_positions", return_value=[crypto_position]), \
          patch("src.ai_trader_run.paper_trading.place_order", return_value=order_resp) as mock_place, \
          patch("src.ai_trader_run.paper_trading.get_account", return_value={"equity": "99950.0"}), \
-         patch("src.ai_trader_run.paper_trading.snapshot_account"):
+         patch("src.ai_trader_run.paper_trading.snapshot_account"), \
+         patch("src.ai_trader_run.paper_trading.get_open_orders", return_value=[]), \
+         patch("src.ai_trader_run.paper_trading.get_portfolio_history", return_value={"timestamp": [], "equity": []}):
         ai_trader_run.run_setup(dry_run=False)
     mock_place.assert_called_once_with(symbol="BTCUSD", side="sell", qty=0.5, time_in_force="gtc")
 
@@ -338,6 +348,142 @@ def test_setup_posizione_us_equity_senza_asset_class_resta_day(tmp_path, monkeyp
                return_value=[{"symbol": "QQQ", "qty": "1", "asset_class": "us_equity"}]), \
          patch("src.ai_trader_run.paper_trading.place_order", return_value=order_resp) as mock_place, \
          patch("src.ai_trader_run.paper_trading.get_account", return_value={"equity": "99950.0"}), \
-         patch("src.ai_trader_run.paper_trading.snapshot_account"):
+         patch("src.ai_trader_run.paper_trading.snapshot_account"), \
+         patch("src.ai_trader_run.paper_trading.get_open_orders", return_value=[]), \
+         patch("src.ai_trader_run.paper_trading.get_portfolio_history", return_value={"timestamp": [], "equity": []}):
         ai_trader_run.run_setup(dry_run=False)
     mock_place.assert_called_once_with(symbol="QQQ", side="sell", qty=1.0, time_in_force="day")
+
+
+# ─── _cancel_resting_orders ─────────────────────────────────────────────────
+
+
+def test_cancel_resting_orders_annulla_ogni_ordine_aperto(tmp_path, monkeypatch):
+    _isolate(tmp_path, monkeypatch)
+    open_orders = [{"id": "ord-1"}, {"id": "ord-2"}]
+    with patch("src.ai_trader_run.paper_trading.get_open_orders", return_value=open_orders), \
+         patch("src.ai_trader_run.paper_trading.cancel_order") as mock_cancel:
+        ai_trader_run._cancel_resting_orders("GME")
+    assert mock_cancel.call_count == 2
+    mock_cancel.assert_any_call("ord-1")
+    mock_cancel.assert_any_call("ord-2")
+
+
+def test_cancel_resting_orders_nessun_ordine_aperto_non_chiama_cancel(tmp_path, monkeypatch):
+    _isolate(tmp_path, monkeypatch)
+    with patch("src.ai_trader_run.paper_trading.get_open_orders", return_value=[]), \
+         patch("src.ai_trader_run.paper_trading.cancel_order") as mock_cancel:
+        ai_trader_run._cancel_resting_orders("GME")
+    mock_cancel.assert_not_called()
+
+
+def test_cancel_resting_orders_errore_non_bloccante(tmp_path, monkeypatch):
+    _isolate(tmp_path, monkeypatch)
+    with patch("src.ai_trader_run.paper_trading.get_open_orders",
+               side_effect=paper_trading.AlpacaError("rete giù")):
+        ai_trader_run._cancel_resting_orders("GME")  # non deve sollevare
+
+
+def test_sell_to_close_annulla_ordini_aperti_prima_di_vendere(tmp_path, monkeypatch):
+    _isolate(tmp_path, monkeypatch)
+    order_resp = {"id": "ord-sell", "symbol": "GME", "status": "accepted"}
+    with patch("src.ai_trader_run.paper_trading.get_open_orders", return_value=[{"id": "ord-stop-vecchio"}]) as mock_get_open, \
+         patch("src.ai_trader_run.paper_trading.cancel_order") as mock_cancel, \
+         patch("src.ai_trader_run.paper_trading.place_order", return_value=order_resp) as mock_place:
+        ai_trader_run._sell_to_close({"symbol": "GME", "qty": "3"})
+    mock_get_open.assert_called_once_with(symbol="GME")
+    mock_cancel.assert_called_once_with("ord-stop-vecchio")
+    mock_place.assert_called_once_with(symbol="GME", side="sell", qty=3.0, time_in_force="day")
+
+
+# ─── _attach_native_stop ─────────────────────────────────────────────────────
+
+
+def test_attach_native_stop_piazza_ordine_con_stop_price_corretto(tmp_path, monkeypatch):
+    _isolate(tmp_path, monkeypatch)
+    monkeypatch.setattr(config, "AI_TRADER_STOP_LOSS_PCT", -8.0)
+    position = {"symbol": "RIVN", "qty": "100", "avg_entry_price": "10.00"}
+    order_resp = {"id": "ord-stop", "symbol": "RIVN", "status": "accepted"}
+    with patch("src.ai_trader_run.paper_trading.get_positions", return_value=[position]), \
+         patch("src.ai_trader_run.paper_trading.place_order", return_value=order_resp) as mock_place:
+        ai_trader_run._attach_native_stop("RIVN")
+    mock_place.assert_called_once_with(
+        symbol="RIVN", side="sell", qty=100.0, order_type="stop", stop_price=9.2
+    )
+
+
+def test_attach_native_stop_nessuna_posizione_non_piazza_nulla(tmp_path, monkeypatch):
+    _isolate(tmp_path, monkeypatch)
+    with patch("src.ai_trader_run.paper_trading.get_positions", return_value=[]), \
+         patch("src.ai_trader_run.paper_trading.place_order") as mock_place:
+        ai_trader_run._attach_native_stop("RIVN")
+    mock_place.assert_not_called()
+
+
+def test_attach_native_stop_errore_non_bloccante(tmp_path, monkeypatch):
+    """Se Alpaca rifiuta l'ordine stop, non deve far fallire tutto il run:
+    la posizione resta comunque protetta dal controllo giornaliero
+    (_check_stop_losses)."""
+    _isolate(tmp_path, monkeypatch)
+    position = {"symbol": "RIVN", "qty": "100", "avg_entry_price": "10.00"}
+    with patch("src.ai_trader_run.paper_trading.get_positions", return_value=[position]), \
+         patch("src.ai_trader_run.paper_trading.place_order",
+               side_effect=paper_trading.AlpacaError("422 rifiutato")):
+        ai_trader_run._attach_native_stop("RIVN")  # non deve sollevare
+
+
+# ─── _save_portfolio_history_snapshot ───────────────────────────────────────
+
+
+def test_save_portfolio_history_snapshot_scrive_il_file(tmp_path, monkeypatch):
+    _isolate(tmp_path, monkeypatch)
+    fake_history = {"timestamp": [1, 2], "equity": [99987.08, 100100.0], "timeframe": "1D"}
+    with patch("src.ai_trader_run.paper_trading.get_portfolio_history", return_value=fake_history) as mock_get:
+        ai_trader_run._save_portfolio_history_snapshot("2026-10-31")
+    mock_get.assert_called_once_with(start="2026-10-31", timeframe="1D")
+    with open(config.AI_TRADER_PORTFOLIO_HISTORY_FILE, encoding="utf-8") as fh:
+        assert json.load(fh) == fake_history
+
+
+def test_save_portfolio_history_snapshot_errore_non_scrive_e_non_solleva(tmp_path, monkeypatch):
+    _isolate(tmp_path, monkeypatch)
+    with patch("src.ai_trader_run.paper_trading.get_portfolio_history",
+               side_effect=paper_trading.AlpacaError("rete giù")):
+        ai_trader_run._save_portfolio_history_snapshot("2026-10-31")  # non deve sollevare
+    import os as os_module
+    assert not os_module.path.exists(config.AI_TRADER_PORTFOLIO_HISTORY_FILE)
+
+
+# ─── run_daily: BUY piazza anche lo stop nativo ────────────────────────────
+
+
+def test_daily_buy_piazza_anche_lo_stop_nativo(tmp_path, monkeypatch):
+    _isolate(tmp_path, monkeypatch)
+    monkeypatch.setattr(config, "AI_TRADER_STOP_LOSS_PCT", -8.0)
+    end_date = (__import__("datetime").date.today() + __import__("datetime").timedelta(days=30)).isoformat()
+    with open(config.AI_TRADER_EXPERIMENT_FILE, "w", encoding="utf-8") as fh:
+        json.dump({"start_date": "2026-01-01", "end_date": end_date, "status": "running"}, fh)
+
+    buy_decision = [{"symbol": "RIVN", "decision": "BUY", "reasoning_short": "x", "model_used": "haiku", "cost_usd": 0.0}]
+    buy_order_resp = {"id": "ord-buy", "symbol": "RIVN", "status": "accepted"}
+    new_position = {"symbol": "RIVN", "qty": "500", "avg_entry_price": "14.0"}
+
+    # Prima di decide_all(): nessuna posizione aperta. Dopo il BUY,
+    # _attach_native_stop rilegge le posizioni e trova quella appena aperta.
+    positions_sequence = [[], [new_position], [new_position]]
+
+    with patch("src.ai_trader_run.paper_trading.get_positions", side_effect=positions_sequence), \
+         patch("src.ai_trader_run.paper_trading.place_order", return_value=buy_order_resp) as mock_place, \
+         patch("src.ai_trader_run.paper_trading.get_account",
+               return_value={"equity": "100000", "buying_power": "90000"}), \
+         patch("src.ai_trader_run.paper_trading.snapshot_account"), \
+         patch("src.ai_trader_run.paper_trading.get_portfolio_history", return_value={"timestamp": [], "equity": []}), \
+         patch("src.ai_trader.decide_all", return_value=buy_decision):
+        ai_trader_run.run_daily(dry_run=False)
+
+    buy_call = mock_place.call_args_list[0]
+    assert buy_call.kwargs == {"symbol": "RIVN", "side": "buy", "notional": config.AI_TRADER_POSITION_NOTIONAL_USD}
+    stop_call = mock_place.call_args_list[1]
+    assert stop_call.kwargs["order_type"] == "stop"
+    assert stop_call.kwargs["symbol"] == "RIVN"
+    assert stop_call.kwargs["stop_price"] == round(14.0 * 0.92, 2)
