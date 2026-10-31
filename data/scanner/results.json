@@ -1,5 +1,10 @@
 {
-  "generated_at": "2026-10-31T07:44:45.672555+00:00",
+  "generated_at": "2026-10-31T08:39:42.730227+00:00",
+  "thresholds": {
+    "volume_ratio": 2.0,
+    "gap_pct": 4.0,
+    "breakout_pct": 0.0
+  },
   "results": [
     {
       "symbol": "INTC",
@@ -520,20 +525,6 @@
       "flagged": false
     },
     {
-      "symbol": "SOL-USD",
-      "name": "Solana USD",
-      "currency": "USD",
-      "price": 95.39,
-      "change_pct": -1.8,
-      "volume": 3136741632,
-      "average_volume": 2685096253,
-      "volume_ratio": 1.17,
-      "gap_pct": 0.0,
-      "recent_high": 113.1545,
-      "breakout_pct": -15.7,
-      "flagged": false
-    },
-    {
       "symbol": "NFLX",
       "name": "Netflix, Inc.",
       "currency": "USD",
@@ -590,6 +581,20 @@
       "flagged": false
     },
     {
+      "symbol": "SOL-USD",
+      "name": "Solana USD",
+      "currency": "USD",
+      "price": 95.02,
+      "change_pct": -2.24,
+      "volume": 3063476480,
+      "average_volume": 2685096253,
+      "volume_ratio": 1.14,
+      "gap_pct": 0.0,
+      "recent_high": 113.1545,
+      "breakout_pct": -16.03,
+      "flagged": false
+    },
+    {
       "symbol": "TSLA",
       "name": "Tesla, Inc.",
       "currency": "USD",
@@ -618,20 +623,6 @@
       "flagged": false
     },
     {
-      "symbol": "BTC-USD",
-      "name": "Bitcoin USD",
-      "currency": "USD",
-      "price": 77183.18,
-      "change_pct": -1.07,
-      "volume": 29776992256,
-      "average_volume": 26786337335,
-      "volume_ratio": 1.11,
-      "gap_pct": 0.01,
-      "recent_high": 84840.0469,
-      "breakout_pct": -9.03,
-      "flagged": false
-    },
-    {
       "symbol": "KO",
       "name": "Coca-Cola Company (The)",
       "currency": "USD",
@@ -643,20 +634,6 @@
       "gap_pct": 1.83,
       "recent_high": 95.37,
       "breakout_pct": -1.35,
-      "flagged": false
-    },
-    {
-      "symbol": "ETH-USD",
-      "name": "Ethereum USD",
-      "currency": "USD",
-      "price": 2239.36,
-      "change_pct": 0.27,
-      "volume": 12509048832,
-      "average_volume": 11515623861,
-      "volume_ratio": 1.09,
-      "gap_pct": 0.01,
-      "recent_high": 2576.5774,
-      "breakout_pct": -13.09,
       "flagged": false
     },
     {
@@ -674,6 +651,20 @@
       "flagged": false
     },
     {
+      "symbol": "BTC-USD",
+      "name": "Bitcoin USD",
+      "currency": "USD",
+      "price": 77136.96,
+      "change_pct": -0.95,
+      "volume": 28157964288,
+      "average_volume": 26786337335,
+      "volume_ratio": 1.05,
+      "gap_pct": 0.01,
+      "recent_high": 84840.0469,
+      "breakout_pct": -9.08,
+      "flagged": false
+    },
+    {
       "symbol": "BAC",
       "name": "Bank of America Corporation",
       "currency": "USD",
@@ -685,6 +676,20 @@
       "gap_pct": -0.22,
       "recent_high": 54.93,
       "breakout_pct": -8.96,
+      "flagged": false
+    },
+    {
+      "symbol": "ETH-USD",
+      "name": "Ethereum USD",
+      "currency": "USD",
+      "price": 2236.44,
+      "change_pct": 0.51,
+      "volume": 11771857920,
+      "average_volume": 11515623861,
+      "volume_ratio": 1.02,
+      "gap_pct": 0.01,
+      "recent_high": 2576.5774,
+      "breakout_pct": -13.2,
       "flagged": false
     },
     {
