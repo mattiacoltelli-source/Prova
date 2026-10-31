@@ -1157,6 +1157,15 @@
             </p>
         </div>
 
+        <div class="asset-card" id="aitrader-strategies-detail-card" style="margin-top:16px;">
+            <div class="asset-header">
+                <span class="asset-title">Dentro le due strategie di confronto</span>
+            </div>
+            <div id="aitrader-buyhold-detail" style="font-size:13px;color:var(--text-dim);margin-bottom:14px;"></div>
+            <div id="aitrader-momentum-holdings" style="font-size:13px;color:var(--text-dim);margin-bottom:10px;"></div>
+            <div class="paper-item-list" id="aitrader-momentum-moves"></div>
+        </div>
+
         <div class="asset-card" style="margin-top:16px;">
             <div class="asset-header">
                 <span class="asset-title">Posizioni aperte</span>
@@ -2523,6 +2532,7 @@
             }
 
             renderAiTraderEquityChart(history, experiment, buyHoldRes.data, momentumRes.data);
+            renderStrategyDetails(buyHoldRes.data, momentumRes.data);
 
             const decisionsList = document.getElementById('aitrader-decisions-list');
             const decisions = [...decisionsRes.data]
@@ -2652,6 +2662,86 @@
                     }
                 }
             });
+        }
+
+        // Cosa fanno davvero le due righe di confronto (non solo "come si
+        // muove il numero", richiesto dall'utente dopo aver visto solo le
+        // righe sul grafico): Buy & Hold è per definizione un solo
+        // acquisto iniziale, nessun'altra operazione da mostrare. Momentum
+        // invece cambia titoli nel tempo — i "movimenti" sono dedotti
+        // confrontando il paniere (holdings) di un giorno con quello del
+        // giorno prima: nessun file dedicato alle transazioni, la storia
+        // completa è già tutta dentro benchmark_momentum.jsonl.
+        function renderStrategyDetails(buyHoldHistory, momentumHistory) {
+            const buyHoldEl = document.getElementById('aitrader-buyhold-detail');
+            if (buyHoldHistory && buyHoldHistory.length > 0) {
+                const first = buyHoldHistory[0];
+                buyHoldEl.innerHTML =
+                    `<strong>Buy &amp; Hold SPY:</strong> ha comprato SPY il ${escapeHtml(first.date)} ` +
+                    `a $${Number(first.anchor_price).toFixed(2)} e lo tiene da allora — per come è definita ` +
+                    `questa strategia, non farà nessun'altra operazione.`;
+            } else {
+                buyHoldEl.innerHTML = '<strong>Buy &amp; Hold SPY:</strong> ancora nessun dato.';
+            }
+
+            const holdingsEl = document.getElementById('aitrader-momentum-holdings');
+            const movesEl = document.getElementById('aitrader-momentum-moves');
+            if (!momentumHistory || momentumHistory.length === 0) {
+                holdingsEl.innerHTML = '<strong>Momentum:</strong> ancora nessun dato.';
+                movesEl.innerHTML = '';
+                return;
+            }
+
+            const latest = momentumHistory[momentumHistory.length - 1];
+            const holdings = latest.holdings || {};
+            const symbols = Object.keys(holdings).sort();
+            if (symbols.length === 0) {
+                holdingsEl.innerHTML =
+                    '<strong>Momentum tiene oggi:</strong> tutta in contanti — nessun titolo ' +
+                    'dell\'universo ha un rendimento a 20 giorni positivo.';
+            } else {
+                const chips = symbols.map(s =>
+                    `<span class="badge badge-FLAT">${escapeHtml(s)} ${(holdings[s] * 100).toFixed(1)}%</span>`
+                ).join(' ');
+                holdingsEl.innerHTML =
+                    `<strong>Momentum tiene oggi</strong> (${symbols.length} titoli, equal-weight):` +
+                    `<div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px;">${chips}</div>`;
+            }
+
+            const moves = [];
+            for (let i = 1; i < momentumHistory.length; i++) {
+                const prevHoldings = momentumHistory[i - 1].holdings || {};
+                const currHoldings = momentumHistory[i].holdings || {};
+                const date = momentumHistory[i].date;
+                for (const symbol of Object.keys(currHoldings)) {
+                    if (!(symbol in prevHoldings)) moves.push({ date, symbol, action: 'BUY' });
+                }
+                for (const symbol of Object.keys(prevHoldings)) {
+                    if (!(symbol in currHoldings)) moves.push({ date, symbol, action: 'SELL' });
+                }
+            }
+            moves.reverse();
+
+            if (moves.length === 0) {
+                movesEl.innerHTML = paperListMessage(
+                    'Nessun movimento ancora: solo il primo giorno registrato finora, si vedranno da domani in poi.',
+                    false
+                );
+            } else {
+                movesEl.innerHTML = moves.slice(0, 30).map(m => `
+                    <div class="paper-item">
+                        <div class="paper-item-summary" style="cursor:default;">
+                            <span class="paper-item-heading">
+                                <span class="paper-item-title">${escapeHtml(m.symbol)}</span>
+                                <span class="paper-item-sub">${escapeHtml(m.date)}</span>
+                            </span>
+                            <span class="paper-item-headline">
+                                <span class="badge ${decisionBadgeClass(m.action)}">${m.action}</span>
+                            </span>
+                        </div>
+                    </div>
+                `).join('');
+            }
         }
 
         async function fetchPaperAccount() {
