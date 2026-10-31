@@ -219,10 +219,17 @@
            riga piena, etichetta a sinistra valore a destra: ogni riga ha
            tutta la larghezza della card per sé. Da 481px in su (anche
            desktop) i box singoli di sopra restano, lì c'è spazio a
-           sufficienza (verificato). #page-paper ha più specificità
-           (id+classe) della regola base sopra, vince sempre. */
+           sufficienza (verificato). #page-aitrader ha più specificità
+           (id+classe) della regola base sopra, vince sempre.
+
+           Era #page-paper (equity/liquidità/potere d'acquisto): la tab
+           Paper è stata rimossa il 2026-10-31 (il suo contenuto spostato
+           dentro questa tab, vedi commento su #page-aitrader nell'HTML) e
+           questa regola spostata con lei — il banner equity/P&L di questa
+           tab ha lo stesso problema (valori in valuta lunghi), non uno
+           nuovo. */
         @media (max-width: 480px) {
-            #page-paper .summary-banner {
+            #page-aitrader .summary-banner {
                 flex-wrap: nowrap;
                 flex-direction: column;
                 overflow-x: visible;
@@ -234,7 +241,7 @@
                 border-radius: var(--radius-lg);
                 box-shadow: var(--shadow-card);
             }
-            #page-paper .stat-box {
+            #page-aitrader .stat-box {
                 flex-direction: row;
                 align-items: baseline;
                 justify-content: space-between;
@@ -247,14 +254,15 @@
                 box-shadow: none;
                 min-width: 0;
             }
-            #page-paper .stat-box:last-child { border-bottom: none; }
-            #page-paper .stat-label { white-space: normal; }
+            #page-aitrader .stat-box:last-child { border-bottom: none; }
+            #page-aitrader .stat-label { white-space: normal; }
             /* white-space:normal + overflow-wrap + min-width:0: senza
                quest'ultimo il valore (figlio flex di .stat-box) resta
                largo almeno quanto il proprio contenuto e overflow-wrap non
-               scatta mai — bug reale già trovato oggi su questo stesso
-               punto, un valore lungo si tagliava comunque a zoom estremo. */
-            #page-paper .stat-value {
+               scatta mai — bug reale già trovato in questa sessione su
+               questo stesso punto, un valore lungo si tagliava comunque a
+               zoom estremo. */
+            #page-aitrader .stat-value {
                 font-size: 1.05rem;
                 white-space: normal;
                 overflow-wrap: break-word;
@@ -1038,7 +1046,6 @@
         <button class="page-tab" id="tab-btn-tech" onclick="switchPage('tech')"><span class="tab-label-long">Tech (breve termine)</span><span class="tab-label-short">Tech</span></button>
         <button class="page-tab" id="tab-btn-robotics" onclick="switchPage('robotics')"><span class="tab-label-long">Trend strutturali</span><span class="tab-label-short">Trend</span></button>
         <button class="page-tab" id="tab-btn-report" onclick="switchPage('report')">Report</button>
-        <button class="page-tab" id="tab-btn-paper" onclick="switchPage('paper')"><span class="tab-label-long">Portafoglio Paper</span><span class="tab-label-short">Paper</span></button>
         <button class="page-tab" id="tab-btn-scanner" onclick="switchPage('scanner')">Scanner</button>
     </div>
 
@@ -1057,9 +1064,8 @@
                 Scanner segnala come anomali quel giorno, più economico (Claude Haiku 5.5) su tutti gli
                 altri — dentro un tetto di spesa fisso al mese, calcolato sui token reali usati.<br><br>
                 <strong>Sicurezza:</strong> ogni posizione viene chiusa comunque se perde più
-                dell'8%, indipendentemente dal giudizio AI del giorno.<br><br>
-                Dettaglio posizioni aperte e storico completo degli ordini (stesso conto) nella scheda
-                <strong>Portafoglio Paper</strong>.
+                dell'8%, indipendentemente dal giudizio AI del giorno. Pagina di sola lettura: nessuna
+                operazione manuale è possibile da qui, è tutto gestito dal sistema in automatico.
             </div>
         </details>
 
@@ -1092,6 +1098,36 @@
             <div class="chart-container">
                 <canvas id="aitrader-equity-chart"></canvas>
             </div>
+        </div>
+
+        <div class="asset-card" style="margin-top:16px;">
+            <div class="asset-header">
+                <span class="asset-title">Posizioni aperte</span>
+            </div>
+            <div class="table-wrapper desktop-only">
+                <table>
+                    <thead>
+                        <tr><th>Titolo</th><th>Quantità</th><th>Prezzo medio</th><th>Prezzo attuale</th><th>P&amp;L</th></tr>
+                    </thead>
+                    <tbody id="paper-positions-body"></tbody>
+                </table>
+            </div>
+            <div class="paper-item-list mobile-only" id="paper-positions-list"></div>
+        </div>
+
+        <div class="asset-card" style="margin-top:16px;">
+            <div class="asset-header">
+                <span class="asset-title">Storico ordini</span>
+            </div>
+            <div class="table-wrapper desktop-only">
+                <table>
+                    <thead>
+                        <tr><th>Inviato</th><th>Titolo</th><th>Lato</th><th>Quantità</th><th>Stato</th><th>Prezzo fill</th></tr>
+                    </thead>
+                    <tbody id="paper-orders-body"></tbody>
+                </table>
+            </div>
+            <div class="paper-item-list mobile-only" id="paper-orders-list"></div>
         </div>
 
         <div class="asset-card" style="margin-top:16px;">
@@ -1319,68 +1355,6 @@
 
     </div><!-- /page-report -->
 
-    <div id="page-paper" style="display:none">
-
-        <details class="info-panel">
-            <summary><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-2px;margin-right:5px"><circle cx="12" cy="12" r="9"/><line x1="12" y1="11" x2="12" y2="16"/><circle cx="12" cy="7.4" r="0.6" fill="currentColor" stroke="none"/></svg>Come funziona questa pagina?</summary>
-            <div class="info-panel-body">
-                Conto paper trading su Alpaca — denaro finto, nessuna operazione reale è mai possibile da
-                qui. Questa pagina è di sola lettura: mostra l'ultima istantanea scritta da un run manuale
-                del workflow qui sotto, non interroga Alpaca da sola.<br><br>
-                <strong>Inviare un nuovo ordine:</strong>
-                <a href="https://github.com/mattiacoltelli-source/Prova/actions/workflows/paper_order.yml" target="_blank" rel="noopener">GitHub Actions ↗</a>
-                (richiede login al tuo account GitHub) — scegli titolo, lato, quantità; lascia "Mostra
-                senza inviare" attivo per vedere cosa succederebbe prima di disattivarlo e inviarlo
-                davvero. Ogni ordine richiede questo passaggio manuale, mai automatico.
-            </div>
-        </details>
-
-        <div class="summary-banner">
-            <div class="stat-box">
-                <span class="stat-label">Equity</span>
-                <span class="stat-value" id="paper-stat-equity">—</span>
-            </div>
-            <div class="stat-box">
-                <span class="stat-label">Liquidità</span>
-                <span class="stat-value" id="paper-stat-cash">—</span>
-            </div>
-            <div class="stat-box">
-                <span class="stat-label">Potere d'acquisto</span>
-                <span class="stat-value accent" id="paper-stat-buying-power">—</span>
-            </div>
-        </div>
-
-        <div class="asset-card">
-            <div class="asset-header">
-                <span class="asset-title">Posizioni aperte</span>
-            </div>
-            <div class="table-wrapper desktop-only">
-                <table>
-                    <thead>
-                        <tr><th>Titolo</th><th>Quantità</th><th>Prezzo medio</th><th>Prezzo attuale</th><th>P&amp;L</th></tr>
-                    </thead>
-                    <tbody id="paper-positions-body"></tbody>
-                </table>
-            </div>
-            <div class="paper-item-list mobile-only" id="paper-positions-list"></div>
-        </div>
-
-        <div class="asset-card" style="margin-top:16px;">
-            <div class="asset-header">
-                <span class="asset-title">Storico ordini</span>
-            </div>
-            <div class="table-wrapper desktop-only">
-                <table>
-                    <thead>
-                        <tr><th>Inviato</th><th>Titolo</th><th>Lato</th><th>Quantità</th><th>Stato</th><th>Prezzo fill</th></tr>
-                    </thead>
-                    <tbody id="paper-orders-body"></tbody>
-                </table>
-            </div>
-            <div class="paper-item-list mobile-only" id="paper-orders-list"></div>
-        </div>
-
-    </div><!-- /page-paper -->
 
     <div id="page-scanner" style="display:none">
 
@@ -1818,19 +1792,16 @@
             document.getElementById('page-tech').style.display = page === 'tech' ? '' : 'none';
             document.getElementById('page-robotics').style.display = page === 'robotics' ? '' : 'none';
             document.getElementById('page-report').style.display = page === 'report' ? '' : 'none';
-            document.getElementById('page-paper').style.display = page === 'paper' ? '' : 'none';
             document.getElementById('page-scanner').style.display = page === 'scanner' ? '' : 'none';
             document.getElementById('tab-btn-aitrader').classList.toggle('active', page === 'aitrader');
             document.getElementById('tab-btn-tech').classList.toggle('active', page === 'tech');
             document.getElementById('tab-btn-robotics').classList.toggle('active', page === 'robotics');
             document.getElementById('tab-btn-report').classList.toggle('active', page === 'report');
-            document.getElementById('tab-btn-paper').classList.toggle('active', page === 'paper');
             document.getElementById('tab-btn-scanner').classList.toggle('active', page === 'scanner');
-            // I dati delle pagine Trading AI/Paper/Scanner non cambiano con i
-            // filtri asset/orizzonte delle altre pagine: basta caricarli la
-            // prima volta che si aprono.
-            if (page === 'aitrader' && !aiTraderDataLoaded) loadAiTraderData();
-            if (page === 'paper' && !paperDataLoaded) loadPaperData();
+            // I dati della pagina Trading AI vengono caricati subito
+            // all'avvio (vedi fondo dello script), non al primo switchPage:
+            // è la pagina di default. Scanner invece resta lazy, caricato
+            // solo alla prima apertura del tab.
             if (page === 'scanner' && !scannerDataLoaded) loadScannerData();
         }
 
@@ -2380,8 +2351,7 @@
             return 'badge-FLAT';
         }
 
-        async function loadAiTraderData() {
-            aiTraderDataLoaded = true;
+        async function _loadAiTraderExperimentAndDecisions() {
             const now = new Date();
             const budgetFile = `data/_state/ai_trader_budget_${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}.json`;
             const [experiment, equityRes, decisionsRes, budgetState] = await Promise.all([
@@ -2464,6 +2434,12 @@
             }
         }
 
+        async function loadAiTraderData() {
+            aiTraderDataLoaded = true;
+            await loadAiTraderPositionsAndOrders();
+            await _loadAiTraderExperimentAndDecisions();
+        }
+
         function renderAiTraderEquityChart(history, experiment) {
             const canvasId = 'aitrader-equity-chart';
             if (history.length === 0) {
@@ -2518,12 +2494,6 @@
             });
         }
 
-        // Pagina "Portafoglio Paper": caricata una volta sola alla prima
-        // apertura del tab (vedi switchPage), non ad ogni refresh dei filtri
-        // asset/orizzonte delle altre pagine — i dati cambiano solo quando
-        // gira a mano paper_order.yml, non ha senso rileggerli più spesso.
-        let paperDataLoaded = false;
-
         async function fetchPaperAccount() {
             try {
                 const res = await fetch('data/paper/account.json', { cache: 'no-store' });
@@ -2540,16 +2510,19 @@
             return '$' + n.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
 
-        async function loadPaperData() {
-            paperDataLoaded = true;
+        // Posizioni aperte + storico ordini: stesso conto Alpaca che gestisce
+        // l'esperimento, mostrato dentro la tab Trading AI (fino al
+        // 2026-10-31 era una tab "Portafoglio Paper" separata — rimossa
+        // perché, con il trading ormai completamente automatico, non aveva
+        // più senso tenere un pannello pensato per inviare ordini a mano;
+        // il dettaglio posizione-per-posizione però restava utile, quindi
+        // si è spostato qui invece di sparire). Chiamata da
+        // loadAiTraderData(), non lazy: la tab è quella di default.
+        async function loadAiTraderPositionsAndOrders() {
             const [account, ordersRes] = await Promise.all([
                 fetchPaperAccount(),
                 parseJsonl('data/paper/orders.jsonl'),
             ]);
-
-            document.getElementById('paper-stat-equity').innerText = account ? formatMoney(account.equity) : '—';
-            document.getElementById('paper-stat-cash').innerText = account ? formatMoney(account.cash) : '—';
-            document.getElementById('paper-stat-buying-power').innerText = account ? formatMoney(account.buying_power) : '—';
 
             const positionsBody = document.getElementById('paper-positions-body');
             const positionsList = document.getElementById('paper-positions-list');
@@ -2648,8 +2621,8 @@
         }
 
         // Pagina "Scanner": caricata una volta sola alla prima apertura del
-        // tab, stesso principio di loadPaperData — non è un dato filtrato
-        // dalle altre pagine, aggiornato solo da un run del workflow.
+        // tab — non è un dato filtrato dalle altre pagine, aggiornato solo
+        // da un run del workflow.
         let scannerDataLoaded = false;
         let scannerData = null;
 
