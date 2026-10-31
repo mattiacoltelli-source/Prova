@@ -138,11 +138,17 @@
             gap: 9px;
         }
 
-        h1 .icon-brand { color: var(--accent-signal); display: inline-flex; flex-shrink: 0; }
+        /* Logo e pulsante Aggiorna: blu come il resto dell'app ri-tematizzata
+           (richiesto dall'utente, 2026-11), scritto diretto invece che via
+           var(--accent-signal) — quel token resta ciano per .page-tab-primary
+           appena sotto, che ha anche uno sfondo rgba ciano scritto a mano
+           (non toccato): cambiare il token avrebbe sfasato bordo/testo del
+           tab dal suo stesso sfondo. */
+        h1 .icon-brand { color: #4f7cff; display: inline-flex; flex-shrink: 0; }
 
         .refresh-btn {
-            background: var(--accent-signal);
-            color: var(--bg-color);
+            background: #4f7cff;
+            color: #0a0d12;
             border: none;
             padding: 8px 14px;
             border-radius: var(--radius-sm);
