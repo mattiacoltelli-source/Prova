@@ -46,11 +46,6 @@
             --accent-red: #f87171;
             --accent-yellow: #f5b942;
             --accent-signal: #38b6d9;
-            /* Colore della riga di confronto "Momentum" nel grafico equity
-               (vedi renderAiTraderEquityChart): era già usato inline lì,
-               tokenizzato qui per riusarlo anche nella legenda e nelle
-               nuove card Trading AI senza duplicare l'esadecimale. */
-            --accent-momentum: #b07cdb;
             --radius-lg: 18px;
             --radius-md: 12px;
             --radius-sm: 8px;
@@ -451,15 +446,6 @@
             border: 1px solid var(--card-border);
         }
         .aitrader-hero__delta .stat-value { font-size: 0.95rem; }
-        .aitrader-chart-legend {
-            display: flex;
-            gap: 14px;
-            margin: 10px 0 2px;
-            font-size: 0.78rem;
-            color: var(--text-dim);
-        }
-        .aitrader-chart-legend span { display: inline-flex; align-items: center; gap: 5px; }
-        .aitrader-chart-legend .dot { width: 8px; height: 8px; border-radius: 50%; }
 
         .risk-row { margin-bottom: 14px; }
         .risk-row:last-child { margin-bottom: 0; }
@@ -768,22 +754,12 @@
             .mobile-only { display: block; }
         }
 
-        .aitrader-trades-subhead {
-            font-size: 0.78rem;
-            color: var(--text-dim);
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            font-weight: 600;
-            margin: 14px 0 8px;
-        }
-        .aitrader-trades-subhead:first-of-type { margin-top: 2px; }
-
         /* Scanner (UX-06, audit 2026-11-02): separatore visivo tra "titoli
            segnalati" e il resto — mai un filtro, l'utente aveva chiesto
            esplicitamente di vedere sempre tutta la lista (vedi commento su
-           renderScannerResults). Stessa etichetta di .aitrader-trades-subhead
-           sopra per coerenza, ma dentro la lista/tabella invece che come
-           intestazione di sezione a parte. */
+           renderScannerResults). Stessa etichetta uppercase/letter-spacing
+           usata altrove in pagina per i sottotitoli di sezione, ma dentro
+           la lista/tabella invece che come intestazione a parte. */
         .scanner-group-divider {
             font-size: 0.78rem;
             color: var(--text-dim);
@@ -2855,8 +2831,11 @@
                 daysEl.innerText = 'Concluso';
             }
 
+            // Il grafico vero e proprio viene disegnato da applyTradeStrategyFilter
+            // (chiamata in fondo a renderTradeDashboards sotto), che legge da
+            // questa cache — non chiamarlo anche qui: altrimenti Chart.js lo
+            // disegnerebbe due volte di seguito a ogni caricamento.
             aiTraderChartCache = { history, experiment, momentumHistory: momentumRes.data };
-            renderAiTraderEquityChart(history, experiment, momentumRes.data);
             renderTradeDashboards(realTrades, momentumTrades);
 
             const decisionsList = document.getElementById('aitrader-decisions-list');
@@ -3037,7 +3016,11 @@
             return ` · ${n} ${n === 1 ? 'azione' : 'azioni'}`;
         }
 
-        function _openTradeRow(t, showUsd) {
+        // Le posizioni aperte mostrano solo prezzo d'acquisto + variazione %,
+        // mai il $ non realizzato (a differenza delle vendite chiuse sotto):
+        // per "AI reale" sarebbe comunque disponibile (pl_usd), ma qui non lo
+        // si usa per scelta di design, quindi niente parametro showUsd.
+        function _openTradeRow(t) {
             const entryTxt = t.entry_price != null ? `$${Number(t.entry_price).toFixed(2)}` : '—';
             return `
                 <div class="pos-row">
@@ -3177,14 +3160,14 @@
 
             realOpenEl.innerHTML = (real.open || []).length === 0
                 ? paperListMessage('Nessuna posizione aperta.', false)
-                : real.open.map(t => _openTradeRow(t, true)).join('');
+                : real.open.map(t => _openTradeRow(t)).join('');
             realClosedEl.innerHTML = (real.closed || []).length === 0
                 ? paperListMessage('Nessuna operazione chiusa ancora.', false)
                 : real.closed.slice(0, 30).map(t => _closedTradeRow(t, true)).join('');
 
             momOpenEl.innerHTML = (momentum.open || []).length === 0
                 ? paperListMessage('Nessuna posizione aperta.', false)
-                : momentum.open.map(t => _openTradeRow(t, false)).join('');
+                : momentum.open.map(t => _openTradeRow(t)).join('');
             momClosedEl.innerHTML = (momentum.closed || []).length === 0
                 ? paperListMessage('Nessuna operazione chiusa ancora.', false)
                 : momentum.closed.slice(0, 30).map(t => _closedTradeRow(t, false)).join('');
