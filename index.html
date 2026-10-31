@@ -1093,9 +1093,7 @@
     <div class="page-tabs">
         <button class="page-tab active" id="tab-btn-aitrader" onclick="switchPage('aitrader')"><span class="tab-label-long">Trading AI</span><span class="tab-label-short">Trading AI</span></button>
         <button class="page-tab" id="tab-btn-tech" onclick="switchPage('tech')"><span class="tab-label-long">Tech (breve termine)</span><span class="tab-label-short">Tech</span></button>
-        <button class="page-tab" id="tab-btn-robotics" onclick="switchPage('robotics')"><span class="tab-label-long">Trend strutturali</span><span class="tab-label-short">Trend</span></button>
-        <button class="page-tab" id="tab-btn-report" onclick="switchPage('report')">Report</button>
-        <button class="page-tab" id="tab-btn-scanner" onclick="switchPage('scanner')">Scanner</button>
+        <button class="page-tab" id="tab-btn-explore" onclick="switchPage('explore')">Approfondimenti</button>
     </div>
 
     <div id="page-aitrader">
@@ -1281,7 +1279,24 @@
 
     </div><!-- /page-tech -->
 
-    <div id="page-robotics" style="display:none">
+    <div id="page-explore" style="display:none">
+
+        <!-- Raccoglie Trend strutturali/Report/Scanner (erano 3 schede separate
+             in cima, accorpate il 2026-10-31 su richiesta esplicita
+             dell'utente: troppe schede nella barra principale, queste tre
+             sono "approfondimenti" secondari rispetto al cuore dell'app
+             (Trading AI + Tech) — non vanno viste una sotto l'altra, solo
+             una selezionata alla volta, come un'unica pagina con un menu
+             interno invece di 3 pagine affiancate. switchExplorePage()
+             sotto gestisce la selezione, stessi ID pagina di prima (nessun
+             cambio nella logica di caricamento dati di ciascuna). -->
+        <div class="horizon-filter" id="explore-subnav">
+            <button class="horizon-filter-btn active" id="explore-btn-robotics" onclick="switchExplorePage('robotics')">Trend</button>
+            <button class="horizon-filter-btn" id="explore-btn-report" onclick="switchExplorePage('report')">Report</button>
+            <button class="horizon-filter-btn" id="explore-btn-scanner" onclick="switchExplorePage('scanner')">Scanner</button>
+        </div>
+
+    <div id="page-robotics">
 
         <details class="info-panel">
             <summary><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-2px;margin-right:5px"><circle cx="12" cy="12" r="9"/><line x1="12" y1="11" x2="12" y2="16"/><circle cx="12" cy="7.4" r="0.6" fill="currentColor" stroke="none"/></svg>Come funziona questa pagina?</summary>
@@ -1437,6 +1452,8 @@
         </div>
 
     </div><!-- /page-scanner -->
+
+    </div><!-- /page-explore -->
 
     <script>
         // Unico punto da modificare quando cambia il paniere di asset seguiti.
@@ -1839,19 +1856,27 @@
         function switchPage(page) {
             document.getElementById('page-aitrader').style.display = page === 'aitrader' ? '' : 'none';
             document.getElementById('page-tech').style.display = page === 'tech' ? '' : 'none';
-            document.getElementById('page-robotics').style.display = page === 'robotics' ? '' : 'none';
-            document.getElementById('page-report').style.display = page === 'report' ? '' : 'none';
-            document.getElementById('page-scanner').style.display = page === 'scanner' ? '' : 'none';
+            document.getElementById('page-explore').style.display = page === 'explore' ? '' : 'none';
             document.getElementById('tab-btn-aitrader').classList.toggle('active', page === 'aitrader');
             document.getElementById('tab-btn-tech').classList.toggle('active', page === 'tech');
-            document.getElementById('tab-btn-robotics').classList.toggle('active', page === 'robotics');
-            document.getElementById('tab-btn-report').classList.toggle('active', page === 'report');
-            document.getElementById('tab-btn-scanner').classList.toggle('active', page === 'scanner');
-            // I dati della pagina Trading AI vengono caricati subito
-            // all'avvio (vedi fondo dello script), non al primo switchPage:
-            // è la pagina di default. Scanner invece resta lazy, caricato
-            // solo alla prima apertura del tab.
-            if (page === 'scanner' && !scannerDataLoaded) loadScannerData();
+            document.getElementById('tab-btn-explore').classList.toggle('active', page === 'explore');
+        }
+
+        // Sotto-navigazione dentro "Approfondimenti" (Trend/Report/Scanner):
+        // stesso pattern di switchPage ma un livello più dentro, sugli stessi
+        // ID pagina di quando erano 3 schede separate. Trend e Report
+        // caricano i dati subito all'avvio indipendentemente dalla visibilità
+        // (vedi fondo dello script, invariato); solo Scanner resta lazy,
+        // caricato alla prima apertura di questa sotto-pagina invece che al
+        // primo switchPage come prima.
+        function switchExplorePage(subpage) {
+            document.getElementById('page-robotics').style.display = subpage === 'robotics' ? '' : 'none';
+            document.getElementById('page-report').style.display = subpage === 'report' ? '' : 'none';
+            document.getElementById('page-scanner').style.display = subpage === 'scanner' ? '' : 'none';
+            document.getElementById('explore-btn-robotics').classList.toggle('active', subpage === 'robotics');
+            document.getElementById('explore-btn-report').classList.toggle('active', subpage === 'report');
+            document.getElementById('explore-btn-scanner').classList.toggle('active', subpage === 'scanner');
+            if (subpage === 'scanner' && !scannerDataLoaded) loadScannerData();
         }
 
         function formatPct(value, digits = 1) {
