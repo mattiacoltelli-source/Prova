@@ -36,6 +36,19 @@ import sys
 from . import ai_trader, budget, config, paper_trading, storage
 
 
+def _sell_to_close(symbol: str, qty: float) -> dict:
+    """Vende l'intera quantità per chiudere una posizione, scegliendo il
+    time_in_force giusto: Alpaca rifiuta 'day' (il default di
+    paper_trading.place_order) per un simbolo crypto ("BASE/QUOTE", es.
+    BTC/USD) — bug reale scoperto al primo run di setup, che aveva una
+    posizione BTC/USD manuale precedente da chiudere. L'universo di
+    ai_trader.py non include crypto, ma una posizione MANUALE preesistente
+    (quella che run_setup chiude) può averne una."""
+    time_in_force = "gtc" if "/" in symbol else "day"
+    order = paper_trading.place_order(symbol=symbol, side="sell", qty=qty, time_in_force=time_in_force)
+    return paper_trading.record_order(order)
+
+
 def _record_equity(date_str: str, equity_usd: float) -> None:
     """Un punto in più nella curva equity nel tempo — append-only, a
     differenza di account.json che viene sovrascritto ad ogni run (vedi
@@ -78,8 +91,7 @@ def run_setup(dry_run: bool) -> None:
     for position in positions:
         symbol = position["symbol"]
         qty = position["qty"]
-        order = paper_trading.place_order(symbol=symbol, side="sell", qty=abs(float(qty)))
-        paper_trading.record_order(order)
+        _sell_to_close(symbol, abs(float(qty)))
         print(f"Posizione manuale chiusa: {symbol} ({qty})")
 
     account = paper_trading.get_account()
@@ -111,8 +123,7 @@ def _check_stop_losses(positions: list[dict]) -> list[str]:
             continue
         if float(plpc) * 100 <= config.AI_TRADER_STOP_LOSS_PCT:
             symbol = position["symbol"]
-            order = paper_trading.place_order(symbol=symbol, side="sell", qty=abs(float(position["qty"])))
-            paper_trading.record_order(order)
+            _sell_to_close(symbol, abs(float(position["qty"])))
             sold.append(symbol)
     return sold
 
@@ -171,8 +182,7 @@ def run_daily(dry_run: bool) -> None:
         action = decision["decision"]
         if action == "SELL" and symbol in open_symbols:
             position = next(p for p in positions if p["symbol"] == symbol)
-            order = paper_trading.place_order(symbol=symbol, side="sell", qty=abs(float(position["qty"])))
-            paper_trading.record_order(order)
+            _sell_to_close(symbol, abs(float(position["qty"])))
             open_symbols.discard(symbol)
             print(f"SELL {symbol} — {decision['reasoning_short']}")
         elif action == "BUY" and symbol not in open_symbols:

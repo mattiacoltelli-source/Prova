@@ -251,7 +251,7 @@ def test_setup_reale_chiude_posizioni_e_fissa_experiment(tmp_path, monkeypatch):
          patch("src.ai_trader_run.paper_trading.get_account", return_value={"equity": "99950.0"}), \
          patch("src.ai_trader_run.paper_trading.snapshot_account"):
         ai_trader_run.run_setup(dry_run=False)
-    mock_place.assert_called_once_with(symbol="QQQ", side="sell", qty=1.0)
+    mock_place.assert_called_once_with(symbol="QQQ", side="sell", qty=1.0, time_in_force="day")
     experiment = ai_trader_run.load_experiment()
     assert experiment["status"] == "running"
     assert experiment["start_equity_usd"] == 99950.0
@@ -307,4 +307,18 @@ def test_daily_stop_loss_vende_posizione_sotto_soglia(tmp_path, monkeypatch):
          patch("src.ai_trader_run.paper_trading.snapshot_account"), \
          patch("src.ai_trader.decide_all", return_value=[]):
         ai_trader_run.run_daily(dry_run=False)
-    mock_place.assert_any_call(symbol="GME", side="sell", qty=5.0)
+    mock_place.assert_any_call(symbol="GME", side="sell", qty=5.0, time_in_force="day")
+
+
+def test_setup_chiude_posizione_crypto_con_gtc_non_day(tmp_path, monkeypatch):
+    """Bug reale scoperto al primo run di setup: Alpaca rifiuta
+    time_in_force='day' (il default) per un simbolo crypto come BTC/USD,
+    che la posizione manuale precedente aveva davvero."""
+    _isolate(tmp_path, monkeypatch)
+    order_resp = {"id": "ord-btc", "symbol": "BTC/USD", "status": "accepted"}
+    with patch("src.ai_trader_run.paper_trading.get_positions", return_value=[{"symbol": "BTC/USD", "qty": "0.5"}]), \
+         patch("src.ai_trader_run.paper_trading.place_order", return_value=order_resp) as mock_place, \
+         patch("src.ai_trader_run.paper_trading.get_account", return_value={"equity": "99950.0"}), \
+         patch("src.ai_trader_run.paper_trading.snapshot_account"):
+        ai_trader_run.run_setup(dry_run=False)
+    mock_place.assert_called_once_with(symbol="BTC/USD", side="sell", qty=0.5, time_in_force="gtc")
