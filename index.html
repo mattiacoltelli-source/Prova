@@ -611,6 +611,16 @@
             .mobile-only { display: block; }
         }
 
+        .aitrader-trades-subhead {
+            font-size: 0.78rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            font-weight: 600;
+            margin: 14px 0 8px;
+        }
+        .aitrader-trades-subhead:first-of-type { margin-top: 2px; }
+
         .paper-item-list .table-message {
             text-align: center;
             color: var(--text-muted);
@@ -1113,10 +1123,11 @@
                 <strong>Sicurezza:</strong> ogni posizione viene chiusa comunque se perde più
                 dell'8%, indipendentemente dal giudizio AI del giorno. Pagina di sola lettura: nessuna
                 operazione manuale è possibile da qui, è tutto gestito dal sistema in automatico.<br><br>
-                <strong>Righe di confronto nel grafico:</strong> "Buy &amp; Hold SPY" e "Momentum" non
-                sono altre strategie reali in corso, solo un termine di paragone calcolato ogni giorno
-                dai soli prezzi pubblici (nessun ordine, nessun costo AI) — vedi la didascalia sotto il
-                grafico.
+                <strong>Riga "Momentum" nel grafico e dashboard operazioni sotto:</strong> non è
+                un'altra strategia reale in corso, solo un termine di paragone a regole fisse (senza
+                AI) calcolato ogni giorno dai soli prezzi pubblici — nessun ordine, nessun costo. La
+                dashboard sotto il grafico mostra le operazioni vere (acquisto/vendita, prezzo,
+                guadagno/perdita) sia dell'AI reale sia di questo confronto.
             </div>
         </details>
 
@@ -1150,20 +1161,37 @@
                 <canvas id="aitrader-equity-chart"></canvas>
             </div>
             <p style="font-size:11px;color:var(--text-dim);margin:8px 0 0;">
-                Le due righe sottili sono un confronto, non altre strategie reali in corso:
-                "Buy &amp; Hold SPY" = se il capitale iniziale fosse finito tutto sull'indice S&amp;P 500 e non fosse più stato toccato;
-                "Momentum" = una strategia a regole fisse senza AI, stessi titoli e stesso capitale.
-                Tocca il loro nome in legenda per nasconderle.
+                La riga sottile "Momentum" è un confronto, non un'altra strategia reale in corso: regole
+                fisse senza AI, stessi titoli e stesso capitale dell'esperimento. Tocca il suo nome in
+                legenda per nasconderla — le operazioni vere di entrambe sono nella dashboard sotto.
             </p>
         </div>
 
-        <div class="asset-card" id="aitrader-strategies-detail-card" style="margin-top:16px;">
-            <div class="asset-header">
-                <span class="asset-title">Dentro le due strategie di confronto</span>
+        <p style="font-size:11px;color:var(--text-dim);margin:16px 0 8px;">
+            Operazioni di entrambe le strategie: quando sono entrate/uscite, a che prezzo, quanto
+            hanno guadagnato o perso. "Momentum" è solo un confronto — regole fisse senza AI, stessi
+            titoli e stesso capitale dell'esperimento reale, nessun ordine vero, nessun costo (vedi
+            "Come funziona questa pagina?" sopra).
+        </p>
+        <div class="grid-two-assets">
+            <div class="asset-card" id="aitrader-real-trades-card">
+                <div class="asset-header">
+                    <span class="asset-title">AI reale</span>
+                </div>
+                <div class="aitrader-trades-subhead">Posizioni aperte</div>
+                <div class="paper-item-list" id="aitrader-real-open"></div>
+                <div class="aitrader-trades-subhead">Operazioni chiuse</div>
+                <div class="paper-item-list" id="aitrader-real-closed"></div>
             </div>
-            <div id="aitrader-buyhold-detail" style="font-size:13px;color:var(--text-dim);margin-bottom:14px;"></div>
-            <div id="aitrader-momentum-holdings" style="font-size:13px;color:var(--text-dim);margin-bottom:10px;"></div>
-            <div class="paper-item-list" id="aitrader-momentum-moves"></div>
+            <div class="asset-card" id="aitrader-momentum-trades-card">
+                <div class="asset-header">
+                    <span class="asset-title">Momentum (regole fisse)</span>
+                </div>
+                <div class="aitrader-trades-subhead">Posizioni aperte</div>
+                <div class="paper-item-list" id="aitrader-momentum-open"></div>
+                <div class="aitrader-trades-subhead">Operazioni chiuse</div>
+                <div class="paper-item-list" id="aitrader-momentum-closed"></div>
+            </div>
         </div>
 
         <div class="asset-card" style="margin-top:16px;">
@@ -2474,14 +2502,15 @@
         async function _loadAiTraderExperimentAndDecisions() {
             const now = new Date();
             const budgetFile = `data/_state/ai_trader_budget_${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}.json`;
-            const [experiment, equityRes, decisionsRes, budgetState, portfolioHistoryRaw, buyHoldRes, momentumRes] = await Promise.all([
+            const [experiment, equityRes, decisionsRes, budgetState, portfolioHistoryRaw, momentumRes, realTrades, momentumTrades] = await Promise.all([
                 fetchJsonNoStore('data/ai_trader/experiment.json'),
                 parseJsonl('data/ai_trader/equity_history.jsonl'),
                 parseJsonl('data/ai_trader/decisions.jsonl'),
                 fetchJsonNoStore(budgetFile),
                 fetchJsonNoStore('data/ai_trader/portfolio_history.json'),
-                parseJsonl('data/ai_trader/benchmark_buyhold.jsonl'),
                 parseJsonl('data/ai_trader/benchmark_momentum.jsonl'),
+                fetchJsonNoStore('data/ai_trader/trades_real.json'),
+                fetchJsonNoStore('data/ai_trader/trades_momentum.json'),
             ]);
 
             const notStartedCard = document.getElementById('aitrader-not-started');
@@ -2531,8 +2560,8 @@
                 daysEl.innerText = 'Concluso';
             }
 
-            renderAiTraderEquityChart(history, experiment, buyHoldRes.data, momentumRes.data);
-            renderStrategyDetails(buyHoldRes.data, momentumRes.data);
+            renderAiTraderEquityChart(history, experiment, momentumRes.data);
+            renderTradeDashboards(realTrades, momentumTrades);
 
             const decisionsList = document.getElementById('aitrader-decisions-list');
             const decisions = [...decisionsRes.data]
@@ -2582,7 +2611,7 @@
             return labels.map(date => (date in byDate ? byDate[date] : null));
         }
 
-        function renderAiTraderEquityChart(history, experiment, buyHoldHistory, momentumHistory) {
+        function renderAiTraderEquityChart(history, experiment, momentumHistory) {
             const canvasId = 'aitrader-equity-chart';
             if (history.length === 0) {
                 showEmptyChart(canvasId, 'Ancora nessun punto registrato.');
@@ -2618,23 +2647,12 @@
                 }
             ];
 
-            // Due righe di confronto sottili, volutamente poco invasive
+            // Riga di confronto sottile, volutamente poco invasiva
             // (richiesto dall'utente): "se invece avessi fatto..." — non
             // decisioni reali, nessun ordine, nessun costo AI (vedi
-            // src/benchmark.py). Cliccando il loro nome in legenda si
-            // nascondono/mostrano (comportamento già nativo di Chart.js,
+            // src/benchmark.py). Cliccando il suo nome in legenda si
+            // nasconde/mostra (comportamento già nativo di Chart.js,
             // nessun controllo in più da aggiungere).
-            if (buyHoldHistory && buyHoldHistory.length > 0) {
-                datasets.push({
-                    label: 'Buy & Hold SPY',
-                    data: _alignEquityToLabels(buyHoldHistory, labels),
-                    borderColor: '#e0a33e',
-                    borderWidth: 1,
-                    pointRadius: 0,
-                    tension: 0.1,
-                    spanGaps: true
-                });
-            }
             if (momentumHistory && momentumHistory.length > 0) {
                 datasets.push({
                     label: 'Momentum (regole fisse)',
@@ -2664,96 +2682,92 @@
             });
         }
 
-        // Cosa fanno davvero le due righe di confronto (non solo "come si
-        // muove il numero", richiesto dall'utente dopo aver visto solo le
-        // righe sul grafico): Buy & Hold è per definizione un solo
-        // acquisto iniziale, nessun'altra operazione da mostrare. Momentum
-        // invece cambia titoli nel tempo — i "movimenti" sono dedotti
-        // confrontando il paniere (holdings) di un giorno con quello del
-        // giorno prima: nessun file dedicato alle transazioni, la storia
-        // completa è già tutta dentro benchmark_momentum.jsonl.
-        function renderStrategyDetails(buyHoldHistory, momentumHistory) {
-            const buyHoldEl = document.getElementById('aitrader-buyhold-detail');
-            if (buyHoldHistory && buyHoldHistory.length > 0) {
-                const first = buyHoldHistory[0];
-                buyHoldEl.innerHTML =
-                    `<strong>Buy &amp; Hold SPY:</strong> ha comprato SPY il ${escapeHtml(first.date)} ` +
-                    `a $${Number(first.anchor_price).toFixed(2)} e lo tiene da allora — per come è definita ` +
-                    `questa strategia, non farà nessun'altra operazione.`;
-            } else {
-                buyHoldEl.innerHTML = '<strong>Buy &amp; Hold SPY:</strong> ancora nessun dato.';
-            }
+        // Dashboard operazioni: due elenchi già pronti all'uso, calcolati
+        // in Python (data/ai_trader/trades_real.json da src/trade_history.py,
+        // trades_momentum.json da benchmark.derive_momentum_trades) — questa
+        // funzione si limita a disegnarli, nessun abbinamento acquisto/
+        // vendita rifatto qui in JavaScript.
+        //
+        // "Reale" ha pl_usd (guadagno/perdita in dollari, da fill veri
+        // Alpaca) oltre a pl_pct; Momentum ha solo return_pct (percentuale):
+        // mostrare un $ per Momentum sarebbe fuorviante, perché il peso di
+        // ogni titolo cambia ogni volta che il paniere si restringe o si
+        // allarga (vedi commento su update_momentum in src/benchmark.py) —
+        // showUsd distingue i due casi riga per riga.
+        function _plBadgeHtml(pct, usd) {
+            if (pct == null) return '<span class="badge badge-FLAT">—</span>';
+            const cls = pct >= 0 ? 'badge-UP' : 'badge-DOWN';
+            const pctTxt = `${pct >= 0 ? '+' : ''}${Number(pct).toFixed(2)}%`;
+            const usdTxt = usd != null
+                ? ` (${usd >= 0 ? '+' : '-'}$${Math.abs(Number(usd)).toFixed(2)})` : '';
+            return `<span class="badge ${cls}">${pctTxt}${usdTxt}</span>`;
+        }
 
-            const holdingsEl = document.getElementById('aitrader-momentum-holdings');
-            const movesEl = document.getElementById('aitrader-momentum-moves');
-            if (!momentumHistory || momentumHistory.length === 0) {
-                holdingsEl.innerHTML = '<strong>Momentum:</strong> ancora nessun dato.';
-                movesEl.innerHTML = '';
-                return;
-            }
+        function _qtyTxt(qty) {
+            if (qty == null) return '';
+            const n = Number(qty);
+            return ` · ${n} ${n === 1 ? 'azione' : 'azioni'}`;
+        }
 
-            const latest = momentumHistory[momentumHistory.length - 1];
-            const holdings = latest.holdings || {};
-            const symbols = Object.keys(holdings).sort();
-            if (symbols.length === 0) {
-                holdingsEl.innerHTML =
-                    '<strong>Momentum tiene oggi:</strong> tutta in contanti — nessun titolo ' +
-                    'dell\'universo ha un rendimento a 20 giorni positivo.';
-            } else {
-                const latestPrices = latest.prices || {};
-                const chips = symbols.map(s => {
-                    const price = latestPrices[s];
-                    const priceTxt = price != null ? ` · $${Number(price).toFixed(2)}` : '';
-                    return `<span class="badge badge-FLAT">${escapeHtml(s)} ${(holdings[s] * 100).toFixed(1)}%${priceTxt}</span>`;
-                }).join(' ');
-                holdingsEl.innerHTML =
-                    `<strong>Momentum tiene oggi</strong> (${symbols.length} titoli, equal-weight,
-                    prezzo d'ingresso tra parentesi):` +
-                    `<div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px;">${chips}</div>`;
-            }
-
-            // Prezzo del movimento: per un BUY è il prezzo d'ingresso del
-            // titolo appena entrato nel paniere; per un SELL è il prezzo di
-            // uscita del titolo appena uscito — entrambi salvati nello
-            // stesso campo "prices" del record di QUEL giorno (vedi
-            // src/benchmark.py: exited_today viene incluso apposta, non solo
-            // i nuovi titoli, altrimenti il prezzo di vendita andrebbe
-            // perso per sempre).
-            const moves = [];
-            for (let i = 1; i < momentumHistory.length; i++) {
-                const prevHoldings = momentumHistory[i - 1].holdings || {};
-                const currHoldings = momentumHistory[i].holdings || {};
-                const dayPrices = momentumHistory[i].prices || {};
-                const date = momentumHistory[i].date;
-                for (const symbol of Object.keys(currHoldings)) {
-                    if (!(symbol in prevHoldings)) moves.push({ date, symbol, action: 'BUY', price: dayPrices[symbol] });
-                }
-                for (const symbol of Object.keys(prevHoldings)) {
-                    if (!(symbol in currHoldings)) moves.push({ date, symbol, action: 'SELL', price: dayPrices[symbol] });
-                }
-            }
-            moves.reverse();
-
-            if (moves.length === 0) {
-                movesEl.innerHTML = paperListMessage(
-                    'Nessun movimento ancora: solo il primo giorno registrato finora, si vedranno da domani in poi.',
-                    false
-                );
-            } else {
-                movesEl.innerHTML = moves.slice(0, 30).map(m => `
-                    <div class="paper-item">
-                        <div class="paper-item-summary" style="cursor:default;">
-                            <span class="paper-item-heading">
-                                <span class="paper-item-title">${escapeHtml(m.symbol)}</span>
-                                <span class="paper-item-sub">${escapeHtml(m.date)}${m.price != null ? ' · $' + Number(m.price).toFixed(2) : ''}</span>
-                            </span>
-                            <span class="paper-item-headline">
-                                <span class="badge ${decisionBadgeClass(m.action)}">${m.action}</span>
-                            </span>
-                        </div>
+        function _openTradeRow(t, showUsd) {
+            const entryTxt = t.entry_price != null ? `$${Number(t.entry_price).toFixed(2)}` : '—';
+            const markTxt = (t.mark_price ?? t.entry_price) != null
+                ? `$${Number(t.mark_price ?? t.entry_price).toFixed(2)}` : '—';
+            return `
+                <div class="paper-item">
+                    <div class="paper-item-summary" style="cursor:default;">
+                        <span class="paper-item-heading">
+                            <span class="paper-item-title">${escapeHtml(t.symbol || '-')}</span>
+                            <span class="paper-item-sub">dal ${escapeHtml(t.entry_date || '-')}${_qtyTxt(t.qty)} · ${entryTxt} → ${markTxt}</span>
+                        </span>
+                        <span class="paper-item-headline">
+                            ${_plBadgeHtml(t.pl_pct ?? t.return_pct, showUsd ? t.pl_usd : null)}
+                        </span>
                     </div>
-                `).join('');
-            }
+                </div>
+            `;
+        }
+
+        function _closedTradeRow(t, showUsd) {
+            const entryTxt = t.entry_price != null ? `$${Number(t.entry_price).toFixed(2)}` : '—';
+            const exitTxt = t.exit_price != null ? `$${Number(t.exit_price).toFixed(2)}` : '—';
+            return `
+                <div class="paper-item">
+                    <div class="paper-item-summary" style="cursor:default;">
+                        <span class="paper-item-heading">
+                            <span class="paper-item-title">${escapeHtml(t.symbol || '-')}</span>
+                            <span class="paper-item-sub">${escapeHtml(t.entry_date || '-')} ${entryTxt}${_qtyTxt(t.qty)} → ${escapeHtml(t.exit_date || '-')} ${exitTxt}</span>
+                        </span>
+                        <span class="paper-item-headline">
+                            ${_plBadgeHtml(t.pl_pct ?? t.return_pct, showUsd ? t.pl_usd : null)}
+                        </span>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderTradeDashboards(realTrades, momentumTrades) {
+            const real = realTrades || { open: [], closed: [] };
+            const momentum = momentumTrades || { open: [], closed: [] };
+
+            const realOpenEl = document.getElementById('aitrader-real-open');
+            const realClosedEl = document.getElementById('aitrader-real-closed');
+            const momOpenEl = document.getElementById('aitrader-momentum-open');
+            const momClosedEl = document.getElementById('aitrader-momentum-closed');
+
+            realOpenEl.innerHTML = (real.open || []).length === 0
+                ? paperListMessage('Nessuna posizione aperta.', false)
+                : real.open.map(t => _openTradeRow(t, true)).join('');
+            realClosedEl.innerHTML = (real.closed || []).length === 0
+                ? paperListMessage('Nessuna operazione chiusa ancora.', false)
+                : real.closed.slice(0, 30).map(t => _closedTradeRow(t, true)).join('');
+
+            momOpenEl.innerHTML = (momentum.open || []).length === 0
+                ? paperListMessage('Nessuna posizione aperta.', false)
+                : momentum.open.map(t => _openTradeRow(t, false)).join('');
+            momClosedEl.innerHTML = (momentum.closed || []).length === 0
+                ? paperListMessage('Nessuna operazione chiusa ancora.', false)
+                : momentum.closed.slice(0, 30).map(t => _closedTradeRow(t, false)).join('');
         }
 
         async function fetchPaperAccount() {

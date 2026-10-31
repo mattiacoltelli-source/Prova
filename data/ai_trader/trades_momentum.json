@@ -1,0 +1,103 @@
+{
+  "closed": [],
+  "open": [
+    {
+      "entry_date": "2026-10-31",
+      "entry_price": 344.6300048828125,
+      "mark_price": 344.6300048828125,
+      "return_pct": 0.0,
+      "symbol": "AAPL"
+    },
+    {
+      "entry_date": "2026-10-31",
+      "entry_price": 3.059999942779541,
+      "mark_price": 3.059999942779541,
+      "return_pct": 0.0,
+      "symbol": "AMC"
+    },
+    {
+      "entry_date": "2026-10-31",
+      "entry_price": 319.1099853515625,
+      "mark_price": 319.1099853515625,
+      "return_pct": 0.0,
+      "symbol": "AXP"
+    },
+    {
+      "entry_date": "2026-10-31",
+      "entry_price": 68.29000091552734,
+      "mark_price": 68.29000091552734,
+      "return_pct": 0.0,
+      "symbol": "CVNA"
+    },
+    {
+      "entry_date": "2026-10-31",
+      "entry_price": 94.08000183105469,
+      "mark_price": 94.08000183105469,
+      "return_pct": 0.0,
+      "symbol": "KO"
+    },
+    {
+      "entry_date": "2026-10-31",
+      "entry_price": 1417.5400390625,
+      "mark_price": 1417.5400390625,
+      "return_pct": 0.0,
+      "symbol": "LLY"
+    },
+    {
+      "entry_date": "2026-10-31",
+      "entry_price": 638.010009765625,
+      "mark_price": 638.010009765625,
+      "return_pct": 0.0,
+      "symbol": "MA"
+    },
+    {
+      "entry_date": "2026-10-31",
+      "entry_price": 38.66999816894531,
+      "mark_price": 38.66999816894531,
+      "return_pct": 0.0,
+      "symbol": "NKE"
+    },
+    {
+      "entry_date": "2026-10-31",
+      "entry_price": 40.0,
+      "mark_price": 40.0,
+      "return_pct": 0.0,
+      "symbol": "NVO"
+    },
+    {
+      "entry_date": "2026-10-31",
+      "entry_price": 57.0099983215332,
+      "mark_price": 57.0099983215332,
+      "return_pct": 0.0,
+      "symbol": "PYPL"
+    },
+    {
+      "entry_date": "2026-10-31",
+      "entry_price": 16.760000228881836,
+      "mark_price": 16.760000228881836,
+      "return_pct": 0.0,
+      "symbol": "SOFI"
+    },
+    {
+      "entry_date": "2026-10-31",
+      "entry_price": 399.80999755859375,
+      "mark_price": 399.80999755859375,
+      "return_pct": 0.0,
+      "symbol": "TSLA"
+    },
+    {
+      "entry_date": "2026-10-31",
+      "entry_price": 413.5899963378906,
+      "mark_price": 413.5899963378906,
+      "return_pct": 0.0,
+      "symbol": "V"
+    },
+    {
+      "entry_date": "2026-10-31",
+      "entry_price": 123.51000213623047,
+      "mark_price": 123.51000213623047,
+      "return_pct": 0.0,
+      "symbol": "WMT"
+    }
+  ]
+}
