@@ -565,17 +565,17 @@
             margin-top: 4px;
         }
 
-        /* ===== Ri-tema la sola pagina Trading AI sui colori/font esatti
-           dell'artefatto approvato (richiesto dall'utente, 2026-11: il primo
-           giro aveva riusato l'accento ciano già esistente del sito invece
-           dei colori dell'artefatto — "lo voglio uguale"). Scoperto su
-           #page-aitrader: ridefinisce solo i token che i componenti
-           condivisi (asset-card, stat-value, horizon-filter-btn, badge
-           pl-positive/negative...) già leggono via var(--...), quindi si
-           ri-tematizzano da soli in cascata. Tech e Approfondimenti restano
-           sul ciano/font di sistema originali: non sono dentro questo id,
-           quindi questi override non li toccano. */
-        #page-aitrader {
+        /* ===== Ri-tema tutta l'app sui colori/font esatti dell'artefatto
+           approvato (richiesto dall'utente, 2026-11: prima solo Trading AI
+           era stata ritematizzata — "lo voglio uguale" — poi richiesto
+           esplicitamente anche per Tech e Approfondimenti, "deve essere
+           coerente con la simulazione AI"). Scoperto sui tre contenitori di
+           pagina: ridefinisce solo i token che i componenti condivisi
+           (asset-card, stat-value, horizon-filter-btn, badge, paper-item...)
+           già leggono via var(--...), quindi si ri-tematizzano da soli in
+           cascata — stesso meccanismo per tutte e tre le pagine, nessuna
+           duplicazione di regole component-per-component. */
+        #page-aitrader, #page-tech, #page-explore {
             --bg-color: #0a0d12;
             --card-bg: #12161d;
             --bg-color-2: #1a2029;
@@ -601,14 +601,16 @@
             letter-spacing: -0.02em;
             line-height: 1.02;
         }
-        #page-aitrader .asset-title {
+        #page-aitrader .asset-title, #page-tech .asset-title, #page-explore .asset-title {
             font-family: 'Outfit', sans-serif;
             font-size: 16px;
             font-weight: 700;
             letter-spacing: normal;
         }
         #page-aitrader .pos-row__sym, #page-aitrader .trade-row__sym, #page-aitrader .agent-card__title,
-        #page-aitrader .paper-item-title, #page-aitrader td[data-label="Titolo"] {
+        #page-aitrader .paper-item-title, #page-aitrader td[data-label="Titolo"],
+        #page-tech .paper-item-title, #page-tech td[data-label="Titolo"],
+        #page-explore .paper-item-title, #page-explore td[data-label="Titolo"] {
             font-family: 'Outfit', sans-serif;
         }
         /* L'icona dell'agente usava un ciano fisso legato al vecchio accento:
@@ -720,7 +722,7 @@
             gap: 7px;
             font-size: 0.78rem;
             color: var(--accent-yellow);
-            background: rgba(245, 185, 66, 0.12);
+            background: rgba(251, 191, 36, 0.12);
             border-radius: var(--radius-md);
             padding: 8px 10px;
             margin: -2px 0 12px;
@@ -768,7 +770,7 @@
         }
 
         .badge-accuracy {
-            background-color: rgba(61, 220, 154, 0.15);
+            background-color: rgba(52, 211, 153, 0.15);
             color: var(--accent-green);
             padding: 5px 11px;
             border-radius: var(--radius-pill);
@@ -1096,9 +1098,9 @@
             font-family: var(--font-mono);
         }
 
-        .badge-UP { background-color: rgba(61, 220, 154, 0.2); color: var(--accent-green); }
-        .badge-DOWN { background-color: rgba(248, 113, 113, 0.2); color: var(--accent-red); }
-        .badge-FLAT { background-color: rgba(245, 185, 66, 0.2); color: var(--accent-yellow); }
+        .badge-UP { background-color: rgba(52, 211, 153, 0.2); color: var(--accent-green); }
+        .badge-DOWN { background-color: rgba(251, 113, 133, 0.2); color: var(--accent-red); }
+        .badge-FLAT { background-color: rgba(251, 191, 36, 0.2); color: var(--accent-yellow); }
 
         /* Trading AI è la parte core dell'app (richiesto dall'utente il
            2026-11-02): un pulsante grande che occupa la maggior parte della
@@ -1187,17 +1189,17 @@
         }
 
         .cycle-molto_estesa, .cycle-estesa {
-            background-color: rgba(248, 113, 113, 0.2);
+            background-color: rgba(251, 113, 133, 0.2);
             color: var(--accent-red);
         }
 
         .cycle-neutrale, .cycle-sconosciuta {
-            background-color: rgba(245, 185, 66, 0.2);
+            background-color: rgba(251, 191, 36, 0.2);
             color: var(--accent-yellow);
         }
 
         .cycle-compressa, .cycle-molto_compressa {
-            background-color: rgba(61, 220, 154, 0.2);
+            background-color: rgba(52, 211, 153, 0.2);
             color: var(--accent-green);
         }
 
@@ -1239,7 +1241,7 @@
         }
 
         .driver-chip {
-            background-color: rgba(56, 182, 217, 0.1);
+            background-color: rgba(79, 124, 255, 0.1);
             color: var(--accent-signal);
             padding: 4px 10px;
             border-radius: var(--radius-pill);
@@ -1250,7 +1252,7 @@
         .risk-note {
             font-size: 0.82rem;
             color: var(--accent-yellow);
-            background-color: rgba(245, 185, 66, 0.08);
+            background-color: rgba(251, 191, 36, 0.08);
             border-radius: var(--radius-md);
             padding: 10px 12px;
             margin-top: 10px;
@@ -2233,12 +2235,12 @@
         // prezzo e media mobile nel grafico: colpo d'occhio coerente tra
         // badge testuale e grafico sulla stessa fase.
         const CYCLE_PHASE_CHART_COLOR = {
-            molto_estesa: '#f87171',
-            estesa: '#f87171',
-            neutrale: '#f5b942',
-            sconosciuta: '#f5b942',
-            compressa: '#3ddc9a',
-            molto_compressa: '#3ddc9a',
+            molto_estesa: '#fb7185',
+            estesa: '#fb7185',
+            neutrale: '#fbbf24',
+            sconosciuta: '#fbbf24',
+            compressa: '#34d399',
+            molto_compressa: '#34d399',
         };
 
         // Icone SVG coerenti con lo stile già in uso in header/info-panel
@@ -4246,7 +4248,7 @@
                         {
                             label: 'Prezzo Iniziale',
                             data: priceStart,
-                            borderColor: '#38b6d9',
+                            borderColor: '#4f7cff',
                             borderDash: [5, 5],
                             tension: 0.1,
                             pointRadius: showLegend ? 3 : 2
@@ -4254,8 +4256,8 @@
                         {
                             label: 'Prezzo Target Reale',
                             data: priceTarget,
-                            borderColor: '#3ddc9a',
-                            backgroundColor: 'rgba(61, 220, 154, 0.1)',
+                            borderColor: '#34d399',
+                            backgroundColor: 'rgba(52, 211, 153, 0.1)',
                             fill: true,
                             tension: 0.1,
                             pointRadius: showLegend ? 3 : 2
@@ -4266,11 +4268,11 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: { display: showLegend, labels: { color: '#8a94a8', font: { size: 10 } } }
+                        legend: { display: showLegend, labels: { color: '#8b94a3', font: { size: 10 } } }
                     },
                     scales: {
-                        x: { ticks: { color: '#8a94a8', font: { size: showLegend ? 9 : 8 } }, grid: { color: 'rgba(255,255,255,0.05)' } },
-                        y: { ticks: { color: '#8a94a8', font: { size: showLegend ? 9 : 8 } }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                        x: { ticks: { color: '#8b94a3', font: { size: showLegend ? 9 : 8 } }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                        y: { ticks: { color: '#8b94a3', font: { size: showLegend ? 9 : 8 } }, grid: { color: 'rgba(255,255,255,0.05)' } }
                     }
                 }
             });
@@ -4304,7 +4306,7 @@
             const labels = weekly.map(p => p.date);
             const priceData = weekly.map(p => p.close);
             const maData = weekly.map(p => p.ma);
-            const fillColor = CYCLE_PHASE_CHART_COLOR[cyclePhase] || '#8a94a8';
+            const fillColor = CYCLE_PHASE_CHART_COLOR[cyclePhase] || '#8b94a3';
 
             const key = `robotics-chart-${assetKey}`;
             if (chartInstances[key]) {
@@ -4319,7 +4321,7 @@
                         {
                             label: 'Prezzo (settimanale)',
                             data: priceData,
-                            borderColor: '#38b6d9',
+                            borderColor: '#4f7cff',
                             backgroundColor: fillColor + '26',
                             borderWidth: 1.4,
                             pointRadius: 0,
@@ -4329,7 +4331,7 @@
                         {
                             label: `Media mobile ${seriesData.ma_weeks || 200} sett.`,
                             data: maData,
-                            borderColor: '#f5b942',
+                            borderColor: '#fbbf24',
                             borderDash: [5, 4],
                             borderWidth: 1.4,
                             pointRadius: 0,
@@ -4343,11 +4345,11 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: { display: true, labels: { color: '#8a94a8', font: { size: 10 }, boxWidth: 14 } }
+                        legend: { display: true, labels: { color: '#8b94a3', font: { size: 10 }, boxWidth: 14 } }
                     },
                     scales: {
-                        x: { ticks: { color: '#8a94a8', font: { size: 8 }, maxTicksLimit: 8 }, grid: { color: 'rgba(255,255,255,0.05)' } },
-                        y: { ticks: { color: '#8a94a8', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                        x: { ticks: { color: '#8b94a3', font: { size: 8 }, maxTicksLimit: 8 }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                        y: { ticks: { color: '#8b94a3', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.05)' } }
                     }
                 }
             });
@@ -4402,8 +4404,8 @@
             const datasets = [{
                 label: `Accuratezza (ultime ${ACCURACY_ROLLING_WINDOW})`,
                 data: values,
-                borderColor: '#3ddc9a',
-                backgroundColor: 'rgba(61, 220, 154, 0.15)',
+                borderColor: '#34d399',
+                backgroundColor: 'rgba(52, 211, 153, 0.15)',
                 fill: true,
                 tension: 0.25,
                 pointRadius: 0,
@@ -4419,7 +4421,7 @@
                 datasets.push({
                     label: `Baseline persistenza (${persistence.pct}%)`,
                     data: labels.map(() => Number(persistence.pct)),
-                    borderColor: '#8a94a8',
+                    borderColor: '#8b94a3',
                     borderDash: [5, 4],
                     borderWidth: 1.5,
                     pointRadius: 0,
@@ -4437,7 +4439,7 @@
                     plugins: {
                         legend: {
                             display: true,
-                            labels: { color: '#8a94a8', font: { size: 9 }, boxWidth: 12, padding: 10 }
+                            labels: { color: '#8b94a3', font: { size: 9 }, boxWidth: 12, padding: 10 }
                         },
                         tooltip: {
                             callbacks: {
@@ -4453,12 +4455,12 @@
                     },
                     scales: {
                         x: {
-                            ticks: { color: '#8a94a8', font: { size: 8 }, maxTicksLimit: 7, maxRotation: 0 },
+                            ticks: { color: '#8b94a3', font: { size: 8 }, maxTicksLimit: 7, maxRotation: 0 },
                             grid: { display: false }
                         },
                         y: {
                             min: 0, max: 100,
-                            ticks: { color: '#8a94a8', font: { size: 8 }, callback: (v) => v + '%' },
+                            ticks: { color: '#8b94a3', font: { size: 8 }, callback: (v) => v + '%' },
                             grid: { color: 'rgba(255,255,255,0.05)' }
                         }
                     }
