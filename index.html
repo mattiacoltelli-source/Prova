@@ -1147,6 +1147,21 @@
             </div>
         </details>
 
+        <!-- Spostato qui in cima (richiesto dall'utente il 2026-11-02): lo
+             switch non controlla più solo la dashboard operazioni più in
+             basso, ma anche i box numerici subito sotto — ha senso vederlo
+             prima di loro, non dopo. -->
+        <p style="font-size:11px;color:var(--text-dim);margin:0 0 8px;">
+            Scegli quale strategia guardare: i numeri sotto, il grafico e la dashboard delle
+            operazioni più in basso seguono questa scelta. "Momentum" è solo un confronto — regole
+            fisse senza AI, stessi titoli e stesso capitale dell'esperimento reale, nessun ordine
+            vero, nessun costo (vedi "Come funziona questa pagina?" sopra).
+        </p>
+        <div class="horizon-filter" id="aitrader-strategy-filter">
+            <button class="horizon-filter-btn active" data-strategy="real" onclick="setTradeStrategyFilter('real')">AI reale</button>
+            <button class="horizon-filter-btn" data-strategy="momentum" onclick="setTradeStrategyFilter('momentum')">Momentum</button>
+        </div>
+
         <p id="aitrader-stats-label" style="font-size:0.78rem;color:var(--text-dim);font-weight:600;margin:0 0 6px;">
             Numeri di: AI reale
         </p>
@@ -1187,15 +1202,9 @@
         </div>
 
         <p style="font-size:11px;color:var(--text-dim);margin:16px 0 8px;">
-            Operazioni della strategia selezionata: quando è entrata/uscita, a che prezzo, quanto
-            ha guadagnato o perso. "Momentum" è solo un confronto — regole fisse senza AI, stessi
-            titoli e stesso capitale dell'esperimento reale, nessun ordine vero, nessun costo (vedi
-            "Come funziona questa pagina?" sopra).
+            Operazioni della strategia selezionata (switch in cima alla pagina): quando è
+            entrata/uscita, a che prezzo, quanto ha guadagnato o perso.
         </p>
-        <div class="horizon-filter" id="aitrader-strategy-filter">
-            <button class="horizon-filter-btn active" data-strategy="real" onclick="setTradeStrategyFilter('real')">AI reale</button>
-            <button class="horizon-filter-btn" data-strategy="momentum" onclick="setTradeStrategyFilter('momentum')">Momentum</button>
-        </div>
         <div>
             <div class="asset-card" id="aitrader-real-trades-card" data-strategy="real">
                 <div class="asset-header">
