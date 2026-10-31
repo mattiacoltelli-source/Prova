@@ -24,6 +24,14 @@ def _isolate(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "PAPER_ORDERS_FILE", str(tmp_path / "orders.jsonl"))
     monkeypatch.setattr(config, "PAPER_ACCOUNT_FILE", str(tmp_path / "account.json"))
     monkeypatch.setenv("ANTHROPIC_API_KEY", "fake-key")
+    # _update_benchmarks (src/benchmark.py) gira dopo ogni setup/daily: senza
+    # questo no-op, ogni test di run_setup/run_daily farebbe una vera
+    # chiamata di rete a Yahoo Finance (lenta, flaky, contro il principio
+    # "nessuna chiamata di rete reale" dichiarato in cima a questo file). I
+    # test dedicati all'integrazione sotto sovrascrivono di nuovo questi due
+    # mock per verificare che vengano chiamati davvero.
+    monkeypatch.setattr(ai_trader_run.benchmark, "update_buy_hold", lambda *a, **k: None)
+    monkeypatch.setattr(ai_trader_run.benchmark, "update_momentum", lambda *a, **k: None)
 
 
 # ─── budget.py: tetto mensile in dollari ────────────────────────────────────
@@ -606,3 +614,66 @@ def test_budget_file_corrotto_blocca_la_spesa_invece_di_azzerarla(tmp_path, monk
     bad_file.write_text("{corrotto")
     assert budget.get_trader_spent_usd() == config.AI_TRADER_MONTHLY_BUDGET_USD
     assert budget.trader_has_budget() is False
+
+
+# ─── _update_benchmarks: aggancio a benchmark.py, mai bloccante ────────────
+
+
+def test_run_setup_chiama_i_due_benchmark(tmp_path, monkeypatch):
+    _isolate(tmp_path, monkeypatch)
+    calls = []
+    monkeypatch.setattr(ai_trader_run.benchmark, "update_buy_hold", lambda *a, **k: calls.append("buyhold"))
+    monkeypatch.setattr(ai_trader_run.benchmark, "update_momentum", lambda *a, **k: calls.append("momentum"))
+
+    with patch("src.ai_trader_run.paper_trading.get_positions", return_value=[]), \
+         patch("src.ai_trader_run.paper_trading.get_account", return_value={"equity": "99000.0"}), \
+         patch("src.ai_trader_run.paper_trading.snapshot_account"), \
+         patch("src.ai_trader_run.paper_trading.get_portfolio_history", return_value={"timestamp": [], "equity": []}):
+        ai_trader_run.run_setup(dry_run=False)
+
+    assert calls == ["buyhold", "momentum"]
+
+
+def test_run_daily_chiama_i_due_benchmark(tmp_path, monkeypatch):
+    _isolate(tmp_path, monkeypatch)
+    end_date = (__import__("datetime").date.today() + __import__("datetime").timedelta(days=30)).isoformat()
+    with open(config.AI_TRADER_EXPERIMENT_FILE, "w", encoding="utf-8") as fh:
+        json.dump({"start_date": "2026-01-01", "end_date": end_date, "status": "running"}, fh)
+
+    calls = []
+    monkeypatch.setattr(ai_trader_run.benchmark, "update_buy_hold", lambda *a, **k: calls.append("buyhold"))
+    monkeypatch.setattr(ai_trader_run.benchmark, "update_momentum", lambda *a, **k: calls.append("momentum"))
+
+    with patch("src.ai_trader_run.paper_trading.get_positions", return_value=[]), \
+         patch("src.ai_trader_run.paper_trading.place_order", return_value={"id": "x", "status": "accepted"}), \
+         patch("src.ai_trader_run.paper_trading.get_account",
+               return_value={"equity": "100000", "buying_power": "90000"}), \
+         patch("src.ai_trader_run.paper_trading.snapshot_account"), \
+         patch("src.ai_trader_run.paper_trading.get_portfolio_history", return_value={"timestamp": [], "equity": []}), \
+         patch("src.ai_trader.decide_all", return_value=[]):
+        ai_trader_run.run_daily(dry_run=False)
+
+    assert calls == ["buyhold", "momentum"]
+
+
+def test_un_benchmark_fallito_non_blocca_laltro_ne_il_trading_reale(tmp_path, monkeypatch):
+    """Resilienza: i due benchmark sono richieste di rete indipendenti dal
+    trading reale — se una fallisce (Yahoo giù, ticker senza dati),
+    l'esperimento vero deve comunque aggiornarsi e l'altro benchmark deve
+    comunque essere provato."""
+    _isolate(tmp_path, monkeypatch)
+    momentum_calls = []
+    monkeypatch.setattr(ai_trader_run.benchmark, "update_buy_hold",
+                         lambda *a, **k: (_ for _ in ()).throw(RuntimeError("Yahoo giù")))
+    monkeypatch.setattr(ai_trader_run.benchmark, "update_momentum",
+                         lambda *a, **k: momentum_calls.append(1))
+
+    with patch("src.ai_trader_run.paper_trading.get_positions", return_value=[]), \
+         patch("src.ai_trader_run.paper_trading.get_account", return_value={"equity": "99000.0"}), \
+         patch("src.ai_trader_run.paper_trading.snapshot_account"), \
+         patch("src.ai_trader_run.paper_trading.get_portfolio_history", return_value={"timestamp": [], "equity": []}):
+        ai_trader_run.run_setup(dry_run=False)  # non deve sollevare
+
+    assert momentum_calls == [1]  # provato comunque, nonostante l'altro sia fallito
+    experiment = ai_trader_run.load_experiment()
+    assert experiment is not None and experiment["status"] == "running"

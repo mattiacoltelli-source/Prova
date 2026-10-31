@@ -36,6 +36,12 @@ dry_run qui non chiama MAI i modelli pagati (a differenza di un dry_run che
 si limitasse a non scrivere su disco): un giudizio AI costa soldi reali nel
 momento stesso in cui viene fatto, non quando il risultato viene salvato —
 "test sicuro" deve significare zero chiamate, non solo zero file scritti.
+
+Dopo ogni setup/daily (_update_benchmarks), aggiorna anche le due righe di
+confronto del grafico Trading AI (src/benchmark.py: Buy & Hold SPY e una
+strategia Momentum a regole fisse, senza AI) — a parte, in try/except
+indipendenti dal resto: un loro fallimento non deve mai bloccare un ordine
+vero.
 """
 from __future__ import annotations
 
@@ -45,7 +51,7 @@ import json
 import os
 import sys
 
-from . import ai_trader, budget, config, paper_trading, storage
+from . import ai_trader, benchmark, budget, config, paper_trading, storage
 
 
 def _cancel_resting_orders(symbol: str) -> None:
@@ -138,6 +144,22 @@ def _save_portfolio_history_snapshot(start_date: str) -> None:
         fh.write("\n")
 
 
+def _update_benchmarks(today: dt.date, experiment: dict) -> None:
+    """Le due righe di confronto del grafico (src/benchmark.py): Buy & Hold
+    SPY e una strategia Momentum a regole fisse, senza AI. Ciascuna in un
+    try/except separato dall'altra e da tutto il resto di questo modulo —
+    sono un confronto indicativo mostrato sul grafico, mai devono poter
+    bloccare un ordine vero o l'aggiornamento della curva equity reale."""
+    try:
+        benchmark.update_buy_hold(today, experiment)
+    except Exception as exc:  # noqa: BLE001 - mai fatale per il trading reale
+        print(f"Benchmark Buy & Hold non aggiornato oggi (non bloccante): {exc}")
+    try:
+        benchmark.update_momentum(today, experiment)
+    except Exception as exc:  # noqa: BLE001 - mai fatale per il trading reale
+        print(f"Benchmark Momentum non aggiornato oggi (non bloccante): {exc}")
+
+
 def load_experiment() -> dict | None:
     if not os.path.exists(config.AI_TRADER_EXPERIMENT_FILE):
         return None
@@ -195,6 +217,7 @@ def run_setup(dry_run: bool) -> None:
     paper_trading.snapshot_account(account, paper_trading.get_positions())
     _record_equity(experiment["start_date"], experiment["start_equity_usd"])
     _save_portfolio_history_snapshot(experiment["start_date"])
+    _update_benchmarks(start_date, experiment)
     print(
         f"Esperimento avviato: {experiment['start_date']} -> {experiment['end_date']}, "
         f"equity di partenza ${experiment['start_equity_usd']:.2f}"
@@ -247,6 +270,7 @@ def run_daily(dry_run: bool) -> None:
         experiment["finished_at"] = today.isoformat()
         _save_experiment(experiment)
         _record_equity(today.isoformat(), experiment["final_equity_usd"])
+        _update_benchmarks(today, experiment)
         print(
             f"Esperimento scaduto il {end_date.isoformat()}: nessun nuovo ordine, "
             f"equity finale ${experiment['final_equity_usd']:.2f}"
@@ -312,6 +336,7 @@ def run_daily(dry_run: bool) -> None:
     paper_trading.snapshot_account(account, positions)
     _record_equity(today.isoformat(), float(account["equity"]))
     _save_portfolio_history_snapshot(experiment["start_date"])
+    _update_benchmarks(today, experiment)
     print(
         f"Run giornaliero completato: equity ${account['equity']}, {len(positions)} posizioni aperte, "
         f"spesa AI questo mese ${budget.get_trader_spent_usd():.4f} / ${config.AI_TRADER_MONTHLY_BUDGET_USD:.2f}"

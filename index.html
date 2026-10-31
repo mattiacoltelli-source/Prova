@@ -1112,7 +1112,11 @@
                 altri — dentro un tetto di spesa fisso al mese, calcolato sui token reali usati.<br><br>
                 <strong>Sicurezza:</strong> ogni posizione viene chiusa comunque se perde più
                 dell'8%, indipendentemente dal giudizio AI del giorno. Pagina di sola lettura: nessuna
-                operazione manuale è possibile da qui, è tutto gestito dal sistema in automatico.
+                operazione manuale è possibile da qui, è tutto gestito dal sistema in automatico.<br><br>
+                <strong>Righe di confronto nel grafico:</strong> "Buy &amp; Hold SPY" e "Momentum" non
+                sono altre strategie reali in corso, solo un termine di paragone calcolato ogni giorno
+                dai soli prezzi pubblici (nessun ordine, nessun costo AI) — vedi la didascalia sotto il
+                grafico.
             </div>
         </details>
 
@@ -1145,6 +1149,12 @@
             <div class="chart-container">
                 <canvas id="aitrader-equity-chart"></canvas>
             </div>
+            <p style="font-size:11px;color:var(--text-dim);margin:8px 0 0;">
+                Le due righe sottili sono un confronto, non altre strategie reali in corso:
+                "Buy &amp; Hold SPY" = se il capitale iniziale fosse finito tutto sull'indice S&amp;P 500 e non fosse più stato toccato;
+                "Momentum" = una strategia a regole fisse senza AI, stessi titoli e stesso capitale.
+                Tocca il loro nome in legenda per nasconderle.
+            </p>
         </div>
 
         <div class="asset-card" style="margin-top:16px;">
@@ -2455,12 +2465,14 @@
         async function _loadAiTraderExperimentAndDecisions() {
             const now = new Date();
             const budgetFile = `data/_state/ai_trader_budget_${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}.json`;
-            const [experiment, equityRes, decisionsRes, budgetState, portfolioHistoryRaw] = await Promise.all([
+            const [experiment, equityRes, decisionsRes, budgetState, portfolioHistoryRaw, buyHoldRes, momentumRes] = await Promise.all([
                 fetchJsonNoStore('data/ai_trader/experiment.json'),
                 parseJsonl('data/ai_trader/equity_history.jsonl'),
                 parseJsonl('data/ai_trader/decisions.jsonl'),
                 fetchJsonNoStore(budgetFile),
                 fetchJsonNoStore('data/ai_trader/portfolio_history.json'),
+                parseJsonl('data/ai_trader/benchmark_buyhold.jsonl'),
+                parseJsonl('data/ai_trader/benchmark_momentum.jsonl'),
             ]);
 
             const notStartedCard = document.getElementById('aitrader-not-started');
@@ -2510,7 +2522,7 @@
                 daysEl.innerText = 'Concluso';
             }
 
-            renderAiTraderEquityChart(history, experiment);
+            renderAiTraderEquityChart(history, experiment, buyHoldRes.data, momentumRes.data);
 
             const decisionsList = document.getElementById('aitrader-decisions-list');
             const decisions = [...decisionsRes.data]
@@ -2547,7 +2559,20 @@
             await _loadAiTraderExperimentAndDecisions();
         }
 
-        function renderAiTraderEquityChart(history, experiment) {
+        // Riallinea una serie {date, equity_usd} alla stessa lista di
+        // etichette (date) del grafico principale: le due righe di
+        // confronto (src/benchmark.py) vengono scritte solo nei giorni in
+        // cui gira il workflow (giorni feriali), mentre la curva Alpaca può
+        // includere anche i weekend — senza questo riallineamento le serie
+        // sfaserebbero sull'asse X. null sui giorni mancanti + spanGaps
+        // nel dataset (sotto) disegna comunque una linea continua.
+        function _alignEquityToLabels(records, labels) {
+            const byDate = {};
+            for (const r of records) byDate[r.date] = r.equity_usd;
+            return labels.map(date => (date in byDate ? byDate[date] : null));
+        }
+
+        function renderAiTraderEquityChart(history, experiment, buyHoldHistory, momentumHistory) {
             const canvasId = 'aitrader-equity-chart';
             if (history.length === 0) {
                 showEmptyChart(canvasId, 'Ancora nessun punto registrato.');
@@ -2564,29 +2589,57 @@
                 chartInstances[canvasId].destroy();
             }
 
+            const datasets = [
+                {
+                    label: 'Equity',
+                    data: equityData,
+                    borderColor: '#38b6d9',
+                    backgroundColor: 'rgba(56, 182, 217, 0.1)',
+                    fill: true,
+                    tension: 0.1,
+                    pointRadius: 2
+                },
+                {
+                    label: 'Partenza',
+                    data: labels.map(() => startEquity),
+                    borderColor: '#8a94a8',
+                    borderDash: [5, 5],
+                    pointRadius: 0
+                }
+            ];
+
+            // Due righe di confronto sottili, volutamente poco invasive
+            // (richiesto dall'utente): "se invece avessi fatto..." — non
+            // decisioni reali, nessun ordine, nessun costo AI (vedi
+            // src/benchmark.py). Cliccando il loro nome in legenda si
+            // nascondono/mostrano (comportamento già nativo di Chart.js,
+            // nessun controllo in più da aggiungere).
+            if (buyHoldHistory && buyHoldHistory.length > 0) {
+                datasets.push({
+                    label: 'Buy & Hold SPY',
+                    data: _alignEquityToLabels(buyHoldHistory, labels),
+                    borderColor: '#e0a33e',
+                    borderWidth: 1,
+                    pointRadius: 0,
+                    tension: 0.1,
+                    spanGaps: true
+                });
+            }
+            if (momentumHistory && momentumHistory.length > 0) {
+                datasets.push({
+                    label: 'Momentum (regole fisse)',
+                    data: _alignEquityToLabels(momentumHistory, labels),
+                    borderColor: '#b07cdb',
+                    borderWidth: 1,
+                    pointRadius: 0,
+                    tension: 0.1,
+                    spanGaps: true
+                });
+            }
+
             chartInstances[canvasId] = new Chart(ctx, {
                 type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        {
-                            label: 'Equity',
-                            data: equityData,
-                            borderColor: '#38b6d9',
-                            backgroundColor: 'rgba(56, 182, 217, 0.1)',
-                            fill: true,
-                            tension: 0.1,
-                            pointRadius: 2
-                        },
-                        {
-                            label: 'Partenza',
-                            data: labels.map(() => startEquity),
-                            borderColor: '#8a94a8',
-                            borderDash: [5, 5],
-                            pointRadius: 0
-                        }
-                    ]
-                },
+                data: { labels: labels, datasets: datasets },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,

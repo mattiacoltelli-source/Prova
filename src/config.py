@@ -688,6 +688,26 @@ AI_TRADER_EQUITY_HISTORY_FILE = f"{AI_TRADER_DIR}/equity_history.jsonl"
 # un giorno).
 AI_TRADER_PORTFOLIO_HISTORY_FILE = f"{AI_TRADER_DIR}/portfolio_history.json"
 
+# Due righe di confronto sullo stesso grafico del Trading AI (src/benchmark.py),
+# richieste dall'utente dopo aver visto una proposta di ChatGPT: calcolate
+# SOLO da prezzi pubblici Yahoo Finance, zero chiamate AI, zero ordini reali,
+# zero costo aggiuntivo sul budget mensile. Partono dalla stessa data e dallo
+# stesso capitale di experiment.json, per restare un confronto onesto.
+AI_TRADER_BUYHOLD_FILE = f"{AI_TRADER_DIR}/benchmark_buyhold.jsonl"
+AI_TRADER_MOMENTUM_FILE = f"{AI_TRADER_DIR}/benchmark_momentum.jsonl"
+# ETF che replica l'S&P 500: la scelta più leggibile per un confronto "se
+# avessi solo comprato l'indice" (stesso simbolo già usato altrove nel
+# progetto, vedi INDEX_ASSETS sopra).
+AI_TRADER_BENCHMARK_SYMBOL = "SPY"
+# Rendimento sugli ultimi N giorni di borsa per classificare il momentum di
+# ogni titolo — finestra classica per un segnale "momentum" di breve periodo,
+# compatibile con i ~3 mesi di storico richiesti a Yahoo in benchmark.py.
+AI_TRADER_MOMENTUM_LOOKBACK_DAYS = 20
+# Stesso tetto di diversificazione dell'esperimento reale (AI_TRADER_MAX_POSITIONS),
+# non un numero diverso: altrimenti un confronto "più diversificato vince
+# sempre di meno in un mercato in salita" non sarebbe più onesto.
+AI_TRADER_MOMENTUM_TOP_N = AI_TRADER_MAX_POSITIONS
+
 
 def snapshot_file(asset: str) -> str:
     return f"{asset_dir(asset)}/snapshot.json"
