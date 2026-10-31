@@ -2425,14 +2425,32 @@
             return 'badge-FLAT';
         }
 
+        // Converte la risposta grezza di GET /v2/account/portfolio/history
+        // (array paralleli timestamp/equity, epoch in secondi — vedi
+        // src/paper_trading.py:get_portfolio_history) nella stessa forma
+        // {date, equity_usd} usata dal grafico. null nell'array equity (può
+        // succedere, vedi commento su AI_TRADER_PORTFOLIO_HISTORY_FILE in
+        // config.py) viene saltato invece di disegnare un buco falso.
+        function convertPortfolioHistory(raw) {
+            if (!raw || !Array.isArray(raw.timestamp) || !Array.isArray(raw.equity)) return null;
+            const points = [];
+            for (let i = 0; i < raw.timestamp.length; i++) {
+                const eq = raw.equity[i];
+                if (eq === null || eq === undefined) continue;
+                points.push({ date: new Date(raw.timestamp[i] * 1000).toISOString().slice(0, 10), equity_usd: eq });
+            }
+            return points.length > 0 ? points : null;
+        }
+
         async function _loadAiTraderExperimentAndDecisions() {
             const now = new Date();
             const budgetFile = `data/_state/ai_trader_budget_${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}.json`;
-            const [experiment, equityRes, decisionsRes, budgetState] = await Promise.all([
+            const [experiment, equityRes, decisionsRes, budgetState, portfolioHistoryRaw] = await Promise.all([
                 fetchJsonNoStore('data/ai_trader/experiment.json'),
                 parseJsonl('data/ai_trader/equity_history.jsonl'),
                 parseJsonl('data/ai_trader/decisions.jsonl'),
                 fetchJsonNoStore(budgetFile),
+                fetchJsonNoStore('data/ai_trader/portfolio_history.json'),
             ]);
 
             const notStartedCard = document.getElementById('aitrader-not-started');
@@ -2454,7 +2472,12 @@
             notStartedCard.style.display = 'none';
             chartCard.style.display = '';
 
-            const history = equityRes.data;
+            // Preferita la curva calcolata da Alpaca stesso (gap-free sui
+            // giorni di mercato chiuso) alla nostra accumulazione manuale —
+            // quest'ultima resta come riserva se il file non c'è ancora o
+            // la chiamata ad Alpaca fallisce (vedi commento su
+            // AI_TRADER_PORTFOLIO_HISTORY_FILE in config.py).
+            const history = convertPortfolioHistory(portfolioHistoryRaw) || equityRes.data;
             const startEquity = experiment.start_equity_usd;
             const latestEquity = history.length > 0
                 ? history[history.length - 1].equity_usd
