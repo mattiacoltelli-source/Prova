@@ -126,6 +126,12 @@
             font-size: 0.9rem;
             font-weight: 700;
             cursor: pointer;
+            /* Area di tocco minima 44px (vedi .horizon-filter-btn): col solo
+               padding restava a ~33px. */
+            min-height: 44px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
             transition: filter var(--transition-fast), transform 80ms ease;
         }
 
@@ -145,13 +151,39 @@
             box-shadow: var(--shadow-card);
         }
 
+        /* Il banner del portafoglio paper mostra importi in valuta
+           ("$370.802,67"), molto più lunghi dei valori brevi della
+           dashboard principale ("41.5%", "205") che questo stesso
+           componente mostra altrove: a 3 colonne su schermi stretti anche
+           col clamp su .stat-value il numero va a capo a metà cifra
+           (es. "$370.802," / "67"), leggibile ma brutto da vedere. Sotto i
+           480px le 3 statistiche del solo portafoglio paper si impilano su
+           una colonna, dove ogni valore ha tutta la larghezza per stare su
+           una riga; la dashboard principale (3 colonne corte) resta
+           invariata. */
+        @media (max-width: 480px) {
+            #page-paper .summary-banner {
+                grid-template-columns: 1fr;
+                gap: 14px;
+            }
+        }
+
         .stat-box {
             display: flex;
             flex-direction: column;
+            /* Senza questo, su una colonna stretta (es. "Potere d'acquisto:
+               $370.802,67" nel portafoglio paper) il valore numerico, che
+               non ha spazi su cui andare a capo, impone alla cella grid una
+               larghezza minima pari al proprio contenuto: la grid si allarga
+               oltre il contenitore e html,body{overflow-x:hidden} taglia
+               silenziosamente la parte eccedente — bug reale visto dal vivo
+               su 390px, dato illeggibile e non raggiungibile nemmeno con lo
+               scroll. */
+            min-width: 0;
         }
 
         .stat-label {
-            font-size: 0.7rem;
+            font-size: 0.78rem;
             line-height: 1.35;
             /* Riserva sempre lo spazio di 2 righe: se su uno schermo stretto
                una sola delle tre label va a capo (es. "Accuratezza"), i tre
@@ -169,17 +201,22 @@
 
         .stat-value {
             font-family: var(--font-mono);
-            font-size: 1.5rem;
+            /* clamp invece di un rem fisso: un valore corto ("205") sta
+               benissimo a 1.5rem, ma uno lungo in valuta ("$370.802,67" nel
+               portafoglio paper) deve restringersi sugli schermi stretti
+               invece di sforare la colonna (vedi commento su .stat-box). */
+            font-size: clamp(1.05rem, 4.6vw, 1.5rem);
             font-weight: 700;
             letter-spacing: -0.01em;
             margin-top: 5px;
             font-variant-numeric: tabular-nums;
+            overflow-wrap: break-word;
         }
 
         /* L'accuratezza AI è la metrica più importante della pagina:
            leggermente più grande delle altre due per gerarchia visiva,
            senza rompere il layout a 3 colonne uguali. */
-        #stat-accuracy { font-size: 1.7rem; }
+        #stat-accuracy { font-size: clamp(1.15rem, 5vw, 1.7rem); }
 
         .stat-value.green { color: var(--accent-green); }
         .stat-value.accent { color: var(--accent-signal); }
@@ -218,6 +255,15 @@
             cursor: pointer;
             white-space: nowrap;
             flex-shrink: 0;
+            /* min-height 44px = area di tocco minima consigliata per dito su
+               mobile: col solo padding verticale il pulsante restava a
+               ~29px. inline-flex per ricentrare il testo nella pillola più
+               alta senza toccare il padding orizzontale (che definisce la
+               forma della pillola). */
+            min-height: 44px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
             transition: border-color var(--transition-fast), color var(--transition-fast), background var(--transition-fast);
         }
 
@@ -287,7 +333,7 @@
             display: none;
             align-items: flex-start;
             gap: 7px;
-            font-size: 0.72rem;
+            font-size: 0.78rem;
             color: var(--accent-yellow);
             background: rgba(245, 185, 66, 0.12);
             border-radius: var(--radius-md);
@@ -376,7 +422,7 @@
 
         .horizon-label {
             display: block;
-            font-size: 0.7rem;
+            font-size: 0.78rem;
             font-weight: 700;
             color: var(--text-muted);
             text-align: center;
@@ -479,7 +525,7 @@
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             color: var(--text-dim);
             font-weight: 700;
-            font-size: 0.7rem;
+            font-size: 0.78rem;
             text-transform: uppercase;
             letter-spacing: 0.04em;
         }
@@ -523,6 +569,13 @@
             font-size: 0.85rem;
             cursor: pointer;
             text-align: center;
+            /* 44px minimo indipendentemente dal fatto che l'etichetta vada
+               o meno a capo (vedi .tab-label-short sotto): un bersaglio di
+               tocco non deve dipendere da quante righe occupa il testo. */
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             transition: all var(--transition-fast);
         }
 
@@ -530,6 +583,19 @@
             background-color: rgba(56, 182, 217, 0.15);
             border-color: var(--accent-signal);
             color: var(--accent-signal);
+        }
+
+        /* Su schermi stretti 3 delle 4 etichette ("Tech (breve termine)",
+           "Trend strutturali", "Portafoglio Paper") andavano a capo su 2
+           righe per mancanza di spazio (~83px per tab a 390px), mentre
+           "Report" no: barra dei tab con altezze diverse riga per riga, la
+           prima cosa visibile della pagina. Sotto i 480px si mostra una
+           forma corta su una riga sola per tutte e 4; dagli 480px in su
+           resta l'etichetta descrittiva intera. */
+        .tab-label-short { display: none; }
+        @media (max-width: 480px) {
+            .tab-label-long { display: none; }
+            .tab-label-short { display: inline; }
         }
 
         /* Badge fase del ciclo (trend_analysis.classify_cycle_phase):
@@ -576,7 +642,7 @@
 
         .cagr-cell .cagr-label {
             display: block;
-            font-size: 0.68rem;
+            font-size: 0.78rem;
             color: var(--text-dim);
             text-transform: uppercase;
             letter-spacing: 0.03em;
@@ -617,7 +683,7 @@
         }
 
         .trend-generated-at {
-            font-size: 0.72rem;
+            font-size: 0.78rem;
             color: var(--text-dim);
             margin-top: 12px;
             text-align: right;
@@ -782,10 +848,10 @@
     </header>
 
     <div class="page-tabs">
-        <button class="page-tab active" id="tab-btn-tech" onclick="switchPage('tech')">Tech (breve termine)</button>
-        <button class="page-tab" id="tab-btn-robotics" onclick="switchPage('robotics')">Trend strutturali</button>
+        <button class="page-tab active" id="tab-btn-tech" onclick="switchPage('tech')"><span class="tab-label-long">Tech (breve termine)</span><span class="tab-label-short">Tech</span></button>
+        <button class="page-tab" id="tab-btn-robotics" onclick="switchPage('robotics')"><span class="tab-label-long">Trend strutturali</span><span class="tab-label-short">Trend</span></button>
         <button class="page-tab" id="tab-btn-report" onclick="switchPage('report')">Report</button>
-        <button class="page-tab" id="tab-btn-paper" onclick="switchPage('paper')">Portafoglio Paper</button>
+        <button class="page-tab" id="tab-btn-paper" onclick="switchPage('paper')"><span class="tab-label-long">Portafoglio Paper</span><span class="tab-label-short">Paper</span></button>
     </div>
 
     <div id="page-tech">
