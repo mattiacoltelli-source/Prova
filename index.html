@@ -138,56 +138,47 @@
         .refresh-btn:hover { filter: brightness(1.1); }
         .refresh-btn:active { transform: scale(0.96); }
 
+        /* "Pillole" in riga (etichetta+valore affiancati) invece di 3
+           colonne: chiesto dall'utente dopo aver visto la versione impilata
+           verticalmente ("rispetta le spaziature giuste, ma lo voglio in
+           linea"). flex-wrap invece di un breakpoint fisso: ogni pillola
+           (.stat-box, white-space:nowrap) è un blocco indivisibile — se lo
+           spazio in riga finisce, l'intera pillola va a capo da sola, mai
+           il valore staccato dalla propria etichetta, a qualunque
+           larghezza/zoom testo (stesso principio del fix di poco fa, ma
+           senza bisogno di un secondo layout "impilato" sotto una soglia:
+           qui il contenuto è sempre breve — percentuali, conteggi — quindi
+           basta lasciare che vada a capo da sola). Il portafoglio paper
+           invece ha valori lunghi in valuta ("$370.802,67"): per quello
+           resta il layout impilato a riga piena sotto i 480px, vedi
+           l'override scoped più sotto — qui una pillola nowrap con un
+           valore così lungo rischierebbe di sforare su schermi stretti con
+           testo ingrandito, lo stesso bug già risolto una volta oggi. */
         .summary-banner {
             background: linear-gradient(160deg, var(--card-bg) 0%, var(--bg-color-2) 100%);
             border: 1px solid var(--card-border);
             border-radius: var(--radius-lg);
             padding: 14px 20px;
-            /* width:fit-content invece di stretch sull'intera larghezza della
-               card: a colonne 1fr i 3 numeri sono già centrati CIASCUNO
-               dentro la propria colonna, ma le 3 colonne insieme restano
-               stirate da bordo a bordo — su schermi larghi (e in parte su
-               mobile) il gruppo non si legge come un blocco unico centrato,
-               solo come 3 pezzi distanziati. Colonne a misura di contenuto
-               + il blocco centrato con margin:auto risolvono entrambe le
-               cose. Verificato (Playwright) senza overflow fino a 320px di
-               viewport, il più stretto comune. */
             width: fit-content;
             max-width: 100%;
             margin: 0 auto 20px;
-            display: grid;
-            grid-template-columns: repeat(3, auto);
+            display: flex;
+            flex-wrap: wrap;
             justify-content: center;
-            gap: 10px 28px;
-            text-align: center;
+            align-items: baseline;
+            gap: 8px 28px;
             box-shadow: var(--shadow-card);
         }
 
         .stat-box {
             display: flex;
-            flex-direction: column;
-            /* Senza questo, su una colonna stretta (es. "Potere d'acquisto:
-               $370.802,67" nel portafoglio paper) il valore numerico, che
-               non ha spazi su cui andare a capo, impone alla cella grid una
-               larghezza minima pari al proprio contenuto: la grid si allarga
-               oltre il contenitore e html,body{overflow-x:hidden} taglia
-               silenziosamente la parte eccedente — bug reale visto dal vivo
-               su 390px, dato illeggibile e non raggiungibile nemmeno con lo
-               scroll. */
-            min-width: 0;
+            align-items: baseline;
+            gap: 8px;
+            white-space: nowrap;
         }
 
         .stat-label {
             font-size: 0.78rem;
-            line-height: 1.35;
-            /* Riserva sempre lo spazio di 2 righe: se su uno schermo stretto
-               una sola delle tre label va a capo (es. "Accuratezza"), i tre
-               valori numerici sotto restano comunque allineati alla stessa
-               altezza invece di sfalsarsi. */
-            min-height: calc(1.35em * 2);
-            display: flex;
-            align-items: flex-end;
-            justify-content: center;
             color: var(--text-dim);
             text-transform: uppercase;
             letter-spacing: 0.06em;
@@ -196,22 +187,15 @@
 
         .stat-value {
             font-family: var(--font-mono);
-            /* clamp invece di un rem fisso: un valore corto ("205") sta
-               benissimo a 1.5rem, ma uno lungo in valuta ("$370.802,67" nel
-               portafoglio paper) deve restringersi sugli schermi stretti
-               invece di sforare la colonna (vedi commento su .stat-box). */
-            font-size: clamp(1.05rem, 4.6vw, 1.5rem);
+            font-size: 1.15rem;
             font-weight: 700;
             letter-spacing: -0.01em;
-            margin-top: 5px;
             font-variant-numeric: tabular-nums;
-            overflow-wrap: break-word;
         }
 
         /* L'accuratezza AI è la metrica più importante della pagina:
-           leggermente più grande delle altre due per gerarchia visiva,
-           senza rompere il layout a 3 colonne uguali. */
-        #stat-accuracy { font-size: clamp(1.15rem, 5vw, 1.7rem); }
+           leggermente più grande delle altre due per gerarchia visiva. */
+        #stat-accuracy { font-size: 1.3rem; }
 
         .stat-value.green { color: var(--accent-green); }
         .stat-value.accent { color: var(--accent-signal); }
@@ -219,71 +203,48 @@
         .pl-positive { color: var(--accent-green); }
         .pl-negative { color: var(--accent-red); }
 
-        /* Sotto i 480px OGNI .summary-banner (dashboard principale inclusa,
-           non solo il portafoglio paper) passa da "numeri affiancati" a una
-           mini lista di conto: etichetta a sinistra, valore a destra, righe
-           separate da un filo sottile.
-
-           Non è solo un vezzo estetico: con testo di sistema ingrandito
-           (impostazione di accessibilità comune su Android, ~130%) 3
-           colonne affiancate non ci stanno più senza andare a capo — grid
-           "auto" non può restringersi sotto il proprio contenuto, quindi il
-           banner torna a tutta larghezza esattamente come PRIMA del fix di
-           questa stessa sessione (bug segnalato dall'utente, riprodotto dal
-           vivo contro il sito pubblico forzando lo zoom testo al 130% su
-           Chrome: il riquadro tornava edge-to-edge). Impilato verticalmente
-           invece non ha questo limite: ogni riga usa tutta la larghezza
-           per sé, quindi un'etichetta più larga per via del testo
-           ingrandito ha sempre spazio a sufficienza. Era già così per il
-           portafoglio paper (dove i VALORI sono lunghi, es. "$370.802,67");
-           ora vale anche per la dashboard principale (dove sono le
-           ETICHETTE a poter diventare troppo larghe con testo ingrandito).
-           Da 480px in su resta il gruppo compatto centrato (nessun problema
-           di spazio lì).
-
-           Questo blocco DEVE stare dopo .stat-box/.stat-label/.stat-value
-           sopra, non prima: stessa specificità (una sola classe), quindi a
-           parità di specificità vince l'ultima regola nel file, media query
-           o no — bug reale appena trovato (il blocco stava prima: a
-           qualunque larghezza/zoom .stat-box{flex-direction:column} di
-           quella base vinceva comunque sul flex-direction:row qui sotto,
-           quindi "etichetta sopra, valore sotto" invece di "etichetta a
-           sinistra, valore a destra" anche dentro gli 480px). */
+        /* Solo il portafoglio paper (valori lunghi in valuta): sotto i
+           480px resta impilato a riga piena invece delle pillole in linea
+           di sopra — etichetta a sinistra, valore a destra, tutta la
+           larghezza della card per riga. #page-paper ha più specificità
+           (id+classe) della regola base sopra, quindi vince sempre, in
+           qualunque ordine nel file. */
         @media (max-width: 480px) {
-            .summary-banner {
-                grid-template-columns: 1fr;
-                justify-content: stretch;
-                /* width:fit-content/max-width del banner base (qui sopra) è
-                   pensato per il gruppo orizzontale di 3 numeri a riposo —
-                   qui invece ogni riga usa tutta la larghezza per mettere
-                   etichetta a sinistra e valore a destra (vedi .stat-box
-                   sotto): senza riportarlo a piena larghezza, fit-content la
-                   restringerebbe al contenuto più corto e romperebbe lo
-                   spazio tra etichetta e valore. */
+            #page-paper .summary-banner {
+                flex-wrap: nowrap;
+                flex-direction: column;
                 width: 100%;
                 gap: 0;
                 padding: 6px 16px;
             }
-            .stat-box {
-                flex-direction: row;
-                align-items: baseline;
+            #page-paper .stat-box {
                 justify-content: space-between;
                 gap: 10px;
                 padding: 12px 0;
                 border-bottom: 1px solid var(--card-border);
                 min-width: 0;
             }
-            .stat-box:last-child { border-bottom: none; }
-            .stat-label {
-                min-height: 0;
-                text-align: left;
-                white-space: normal;
-            }
-            .stat-value {
-                margin-top: 0;
+            #page-paper .stat-box:last-child { border-bottom: none; }
+            #page-paper .stat-label { white-space: normal; }
+            /* white-space:normal + overflow-wrap: il valore eredita
+               nowrap da .stat-box (pensato per le pillole brevi della
+               dashboard principale) — un valore lungo in valuta con testo
+               di sistema ingrandito non ci stava più e veniva tagliato dal
+               bordo della card (visto dal vivo: "$370.802,6" con il "7"
+               finale perso). Qui può andare a capo come rete di sicurezza,
+               stesso principio già usato altrove in questo file. */
+            #page-paper .stat-value {
                 font-size: 1.05rem;
+                white-space: normal;
+                overflow-wrap: break-word;
+                /* Senza questo il valore, come figlio flex di .stat-box,
+                   resta largo almeno quanto il proprio contenuto
+                   (min-width:auto di default) e overflow-wrap non scatta
+                   mai: lo spazio sembra non bastare ma il browser non lo fa
+                   davvero andare a capo. Stesso principio già in .stat-box
+                   stesso più sopra nel file, qui serve sul figlio. */
+                min-width: 0;
             }
-            #stat-accuracy { font-size: 1.15rem; }
         }
 
         .horizon-filter {
