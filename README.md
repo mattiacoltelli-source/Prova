@@ -493,10 +493,16 @@ differenza del Portafoglio paper sopra) sullo stesso conto Alpaca paper, su
 un universo più ampio dei soli 4 ASSETS.
 
 **Universo**: `config.SCANNER_STOCKS` meno i 2 ticker di Tokyo (6481.T,
-6324.T — non tradabili su Alpaca, broker USA).
+6324.T — non tradabili su Alpaca, broker USA). Dal 2026-11-02 include
+anche 10 titoli fuori dal tech (XOM, NEE, UNH, PG, O, LIN, HON, VZ, PGR,
+RTX — energia, utility, salute, beni di consumo, REIT, materiali,
+industriale, telecom, assicurazioni, difesa), aggiunti perché il paniere
+era quasi tutto tech/growth o speculativo e le tre strategie di
+confronto, pescando tutte da qui, rischiavano di muoversi insieme sullo
+stesso fattore di rischio invece di essere un test davvero diversificato.
 
 **Segnale ibrido**, pensato per restare dentro un tetto di spesa fisso pur
-coprendo ~48 titoli/giorno:
+coprendo ~58 titoli/giorno:
 - NVDA/AAPL/AMD/MU: previsione AI 1 giorno già generata da "Genera
   previsioni" — costo zero aggiuntivo.
 - Titoli che lo Scanner segnala come anomali quel giorno (fino a
@@ -508,7 +514,14 @@ coprendo ~48 titoli/giorno:
 enforcement lato codice (`budget.trader_has_budget()`/`record_trader_call_cost()`)
 sui token REALI restituiti da Anthropic, non su una stima — se il tetto
 viene raggiunto, i nuovi giudizi AI del mese tornano HOLD senza chiamare il
-modello.
+modello. **Avviso nella pagina** (card "Agente AI", non una notifica
+esterna): oltre `config.AI_TRADER_BUDGET_ALERT_THRESHOLD_PCT` (80%) la
+barra budget diventa gialla e appare il testo d'avviso — richiesto
+dall'utente per sapere, guardando l'app, quando il budget si sta
+esaurendo prima che smetta di dare nuovi giudizi. Per alzare il tetto
+(nessun meccanismo automatico: serve un bot a due vie non giustificato
+per una modifica che tocca soldi veri) lo si chiede in chat come ogni
+altro parametro di questo file.
 
 **Dimensione posizione**: cifra fissa a scaglioni sull'equity ATTUALE del
 conto, non più un unico importo fisso sempre uguale

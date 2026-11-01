@@ -542,6 +542,23 @@ PAPER_ACCOUNT_FILE = "data/paper/account.json"
 # dell'utente ("aggiungi titoli tu per arrivare a 50"), con un taglio più
 # speculativo/alta volatilità — il tipo di titolo per cui un segnale di
 # volume/gap anomalo è davvero utile, a differenza di un blue chip stabile.
+#
+# +10 titoli il 2026-11-02, motivo opposto ai 19 sopra: l'utente ha notato
+# (durante un'analisi delle tre strategie di trading che pescano da questo
+# stesso universo) che il paniere era quasi tutto tech/growth o
+# speculativo — le tre strategie rischiavano di muoversi insieme sullo
+# stesso fattore di rischio invece di essere un confronto davvero
+# diversificato. Aggiunti 10 titoli da settori ASSENTI o scarsi, scelti
+# per avere driver economici indipendenti dal tech (tassi, petrolio,
+# consumi stabili), non per il segnale scanner: energia (XOM), utility
+# (NEE), salute/assicurazioni (UNH), beni di consumo (PG), immobiliare/REIT
+# (O), materiali industriali (LIN), industriale (HON), telecom (VZ),
+# assicurazioni (PGR — Berkshire Hathaway scartato: "BRK.B" non è un
+# ticker valido su Yahoo Finance, la fonte prezzi di questo progetto, che
+# vuole "BRK-B" con il trattino; per non introdurre un formato diverso da
+# quello eventualmente richiesto da Alpaca per gli ordini veri sullo
+# stesso simbolo, scelto un ticker senza questa ambiguità), difesa/
+# aerospazio (RTX).
 SCANNER_STOCKS = [
     # Watchlist "Warren Buffett" dell'utente
     "ABNB", "V", "BAC", "AXP", "MA", "WMT", "CAT", "NVO", "NKE", "SPCX",
@@ -554,6 +571,8 @@ SCANNER_STOCKS = [
     # Aggiunti da Claude
     "RIVN", "SOFI", "PLTR", "MARA", "RIOT", "IONQ", "SMCI", "PLUG", "COIN",
     "GME", "AMC", "CVNA", "UPST", "LCID", "ARM", "INTC", "MSTR", "CRWD", "NIO",
+    # Diversificazione fuori dal tech (2026-11-02)
+    "XOM", "NEE", "UNH", "PG", "O", "LIN", "HON", "VZ", "PGR", "RTX",
 ]
 
 # Ticker Yahoo Finance per le crypto: formato con trattino (BTC-USD), non lo
@@ -739,6 +758,18 @@ AI_TRADER_MAX_SONNET_CALLS_PER_DAY = 15
 # conto Alpaca è in dollari, e la differenza è comunque più piccola del
 # margine di sicurezza già incluso nella cifra).
 AI_TRADER_MONTHLY_BUDGET_USD = 3.5
+
+# Soglia di avviso nella card "Agente AI" della pagina (non enforcement:
+# resta budget.trader_has_budget() sul 100%, nessun codice Python legge
+# questo valore) — richiesto dall'utente il 2026-11-02 dopo aver saputo
+# che il budget può esaurirsi a metà mese in silenzio: oltre questa
+# percentuale la barra budget diventa gialla e compare un avviso testuale
+# nella card. Scartata una notifica Telegram automatica con un bottone
+# "aumenta": servirebbe un bot a due vie (un server che ascolta le
+# risposte) per una modifica che tocca soldi veri — troppa infrastruttura
+# nuova per il beneficio. Per alzare il tetto, l'utente lo chiede in chat
+# come ogni altro parametro di questo file.
+AI_TRADER_BUDGET_ALERT_THRESHOLD_PCT = 80.0
 
 # Prezzo per milione di token, usato da budget.py per calcolare il costo
 # reale di ogni chiamata dai token restituiti da Anthropic. Fonte: listino
