@@ -561,19 +561,34 @@ chiusura manuale di `setup`), l'eventuale coppia nativa ancora aperta viene
 annullata prima — altrimenti resterebbe un ordine orfano che punta ad azioni
 già vendute.
 
-**Salute della fonte prezzi** (`src/data_health.py`): richiesto dall'utente
-il 2026-11-02 — "se i dati di Yahoo cambiano forma senza preavviso e non
-danno più esiti, voglio che sia segnalato" (un bug reale di questo tipo è
-già successo in questo progetto, mai un errore esplicito). Scanner
-(`market_scanner.scan()`) e strategie di confronto
-(`benchmark._update_strategy()`, Momentum/Mean Reversion) fanno fetch
-Yahoo indipendenti: entrambi contano quanti titoli dell'universo non hanno
-dato un prezzo utilizzabile quel giorno e sovrascrivono
-`data/_state/data_health_{scanner,benchmark}.json`. Oltre
-`config.DATA_HEALTH_FAILURE_RATE_ALERT_THRESHOLD` (20%) — un singolo
-ticker illiquido è normale, 20%+ insieme nello stesso giorno è più
-probabilmente la fonte rotta — un banner in cima a ogni pagina lo segnala,
-letto una volta all'avvio indipendentemente dalla scheda aperta.
+**Salute delle fonti dati/API** (`src/data_health.py`): richiesto
+dall'utente il 2026-11-02, prima per i soli prezzi — "se i dati di Yahoo
+cambiano forma senza preavviso e non danno più esiti, voglio che sia
+segnalato" (un bug reale di questo tipo è già successo in questo
+progetto, mai un errore esplicito) — poi esteso a qualsiasi API esterna:
+"se qualche API non va, è segnalato? Fai in modo che sia segnalato".
+Quattro fetch esterni indipendenti, ciascuno con il proprio stato in
+`data/_state/data_health_{source}.json` (sovrascritto ogni giorno, non
+uno storico):
+- `scanner` (`market_scanner.scan()`) e `benchmark`
+  (`benchmark._update_strategy()`, Momentum/Mean Reversion): fetch Yahoo
+  Finance indipendenti, contano i titoli senza un prezzo utilizzabile.
+- `ai_judgment` (`ai_trader.decide_all()`): giudizi AI falliti sull'API
+  Anthropic (non contati: HOLD per budget mensile esaurito, già segnalato
+  a parte dalla card budget, e titoli senza riga scanner quel giorno, non
+  un fallimento dell'API).
+- `alpaca_orders` (`ai_trader_run.run_daily()`): ordini reali rifiutati da
+  Alpaca (un fallimento catastrofico — conto irraggiungibile, chiavi
+  scadute — fa comunque fallire l'intero job e scatta già la notifica
+  Telegram esistente sul fallimento del workflow; questo copre invece i
+  rifiuti per singolo ordine che il codice assorbe per non bloccare gli
+  altri titoli).
+
+Oltre `config.DATA_HEALTH_FAILURE_RATE_ALERT_THRESHOLD` (20%) — un
+singolo titolo/ordine isolato è normale, 20%+ insieme nello stesso giorno
+è più probabilmente la fonte/API rotta che N casi isolati — un banner in
+cima a ogni pagina lo segnala, letto una volta all'avvio indipendentemente
+dalla scheda aperta.
 
 **Due modalità** di
 [Actions → "Trading automatico AI"](https://github.com/mattiacoltelli-source/Prova/actions/workflows/ai_trader.yml):

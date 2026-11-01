@@ -57,7 +57,7 @@ import json
 import os
 import sys
 
-from . import ai_trader, benchmark, budget, config, paper_trading, storage, trade_history
+from . import ai_trader, benchmark, budget, config, data_health, paper_trading, storage, trade_history
 
 
 def _cancel_resting_orders(symbol: str) -> None:
@@ -412,12 +412,19 @@ def run_daily(dry_run: bool) -> None:
     # tradabile quel giorno, buying power finito a metà, qualunque motivo)
     # interromperebbe l'intero ciclo — tutti i titoli successivi nella
     # lista non verrebbero mai processati quel giorno, anche se le loro
-    # decisioni sono già state registrate in decisions.jsonl sopra.
+    # decisioni sono già state registrate in decisions.jsonl sopra. Gli
+    # ordini falliti vengono comunque raccolti per data_health sotto: un
+    # singolo titolo sospeso è normale, molti insieme nello stesso giorno
+    # segnalano più probabilmente un problema con Alpaca stessa (non solo
+    # con i singoli titoli).
+    attempted_orders = 0
+    failed_orders: list[str] = []
     for decision in decisions:
         symbol = decision["symbol"]
         action = decision["decision"]
         try:
             if action == "SELL" and symbol in open_symbols:
+                attempted_orders += 1
                 position = next(p for p in positions if p["symbol"] == symbol)
                 _sell_to_close(position)
                 open_symbols.discard(symbol)
@@ -429,6 +436,7 @@ def run_daily(dry_run: bool) -> None:
                     continue
                 if deployed_usd + position_notional > max_deployed_usd:
                     continue
+                attempted_orders += 1
                 order = paper_trading.place_order(
                     symbol=symbol, side="buy", notional=position_notional
                 )
@@ -439,7 +447,13 @@ def run_daily(dry_run: bool) -> None:
                 deployed_usd += position_notional
                 print(f"BUY {symbol} — {decision['reasoning_short']}")
         except Exception as exc:  # noqa: BLE001 - un titolo alla volta, mai fatale
+            failed_orders.append(symbol)
             print(f"Ordine non eseguito per {symbol} (continuo con gli altri titoli): {exc}")
+
+    try:
+        data_health.record_fetch_health("alpaca_orders", attempted_orders, failed_orders)
+    except Exception:  # noqa: BLE001 - lo stato di salute non deve mai bloccare un ordine vero
+        pass
 
     account = paper_trading.get_account()
     positions = paper_trading.get_positions()

@@ -260,6 +260,72 @@ def test_decide_all_instrada_sonnet_su_flagged_e_rispetta_il_tetto_giornaliero(t
     assert sonnet_count == 1
 
 
+def test_decide_all_registra_lo_stato_di_salute_dati(tmp_path, monkeypatch):
+    """decide_all() deve scrivere data_health_ai_judgment.json con solo i
+    simboli davvero passati per una chiamata Anthropic falliti (non quelli
+    saltati per budget esaurito o riga scanner mancante) — src/data_health.py,
+    richiesto dall'utente il 2026-11-02 ("se qualche API non va, voglio che
+    sia segnalato")."""
+    _isolate(tmp_path, monkeypatch)
+    monkeypatch.setattr(config, "DATA_DIR", str(tmp_path / "data"))
+    monkeypatch.setattr(config, "ASSETS", [])
+    monkeypatch.setattr(config, "SCANNER_STOCKS", ["RIVN", "SOFI", "PLTR"])
+
+    scanner_file = tmp_path / "scanner.json"
+    scanner_file.write_text(json.dumps({
+        "generated_at": dt.datetime.now(dt.timezone.utc).isoformat(),
+        "thresholds": {},
+        "results": [
+            {"symbol": "RIVN", "flagged": False, "price": 10, "currency": "USD"},
+            {"symbol": "SOFI", "flagged": False, "price": 8, "currency": "USD"},
+            # PLTR assente: nessuna riga scanner, saltato — non conta come
+            # fallimento dell'API, "attempted" deve essere 2, non 3.
+        ],
+    }))
+    monkeypatch.setattr(config, "SCANNER_FILE", str(scanner_file))
+
+    def fake_scanner_decision(symbol, row, thresholds, model):
+        if symbol == "SOFI":
+            raise RuntimeError("401 Unauthorized")
+        return {"symbol": symbol, "model_used": model, "decision": "HOLD", "reasoning_short": "x", "cost_usd": 0.0}
+
+    with patch("src.ai_trader.scanner_symbol_decision", side_effect=fake_scanner_decision):
+        ai_trader.decide_all()
+
+    with open(f"{config.STATE_DIR}/data_health_ai_judgment.json", encoding="utf-8") as fh:
+        health = json.load(fh)
+    assert health["total"] == 2
+    assert health["failed_symbols"] == ["SOFI"]
+
+
+def test_decide_all_skipped_budget_non_conta_come_errore_api(tmp_path, monkeypatch):
+    """Un HOLD per budget esaurito non è un fallimento dell'API (già
+    segnalato a parte dalla card budget) — non deve far scattare l'allarme
+    salute dati."""
+    _isolate(tmp_path, monkeypatch)
+    monkeypatch.setattr(config, "DATA_DIR", str(tmp_path / "data"))
+    monkeypatch.setattr(config, "ASSETS", [])
+    monkeypatch.setattr(config, "SCANNER_STOCKS", ["RIVN"])
+    monkeypatch.setattr(config, "AI_TRADER_MONTHLY_BUDGET_USD", 0.0)
+
+    scanner_file = tmp_path / "scanner.json"
+    scanner_file.write_text(json.dumps({
+        "generated_at": dt.datetime.now(dt.timezone.utc).isoformat(),
+        "thresholds": {},
+        "results": [{"symbol": "RIVN", "flagged": False, "price": 10, "currency": "USD"}],
+    }))
+    monkeypatch.setattr(config, "SCANNER_FILE", str(scanner_file))
+
+    with patch("src.ai_trader.anthropic.Anthropic") as mock_client_cls:
+        ai_trader.decide_all()
+    mock_client_cls.assert_not_called()
+
+    with open(f"{config.STATE_DIR}/data_health_ai_judgment.json", encoding="utf-8") as fh:
+        health = json.load(fh)
+    assert health["failed_symbols"] == []
+    assert health["alert"] is False
+
+
 def test_decide_all_salta_simboli_senza_riga_scanner(tmp_path, monkeypatch):
     _isolate(tmp_path, monkeypatch)
     monkeypatch.setattr(config, "DATA_DIR", str(tmp_path / "data"))
@@ -701,6 +767,43 @@ def test_daily_buy_entra_se_resta_sotto_il_35_percento(tmp_path, monkeypatch):
         ai_trader_run.run_daily(dry_run=False)
 
     mock_place.assert_called_once_with(symbol="RIVN", side="buy", notional=2500.0)
+
+
+def test_daily_registra_lo_stato_di_salute_ordini_alpaca(tmp_path, monkeypatch):
+    """Un ordine rifiutato da Alpaca deve finire in
+    data_health_alpaca_orders.json, non solo stampato nei log — src/data_health.py,
+    richiesto dall'utente il 2026-11-02 ("se qualche API non va, voglio
+    che sia segnalato")."""
+    _isolate(tmp_path, monkeypatch)
+    end_date = (__import__("datetime").date.today() + __import__("datetime").timedelta(days=30)).isoformat()
+    with open(config.AI_TRADER_EXPERIMENT_FILE, "w", encoding="utf-8") as fh:
+        json.dump({"start_date": "2026-01-01", "end_date": end_date, "status": "running"}, fh)
+
+    decisions = [
+        {"symbol": "RIVN", "decision": "BUY", "reasoning_short": "x", "model_used": "haiku", "cost_usd": 0.0},
+        {"symbol": "SOFI", "decision": "BUY", "reasoning_short": "x", "model_used": "haiku", "cost_usd": 0.0},
+    ]
+    ok_resp = {"id": "ord-ok", "symbol": "SOFI", "status": "accepted"}
+
+    def fake_place_order(symbol, **kwargs):
+        if symbol == "RIVN":
+            raise paper_trading.AlpacaError("422 titolo sospeso")
+        return ok_resp
+
+    with patch("src.ai_trader_run.paper_trading.get_positions", return_value=[]), \
+         patch("src.ai_trader_run.paper_trading.place_order", side_effect=fake_place_order), \
+         patch("src.ai_trader_run.paper_trading.place_oco_exit_order"), \
+         patch("src.ai_trader_run.paper_trading.get_account",
+               return_value={"equity": "100000", "buying_power": "50000"}), \
+         patch("src.ai_trader_run.paper_trading.snapshot_account"), \
+         patch("src.ai_trader_run.paper_trading.get_portfolio_history", return_value={"timestamp": [], "equity": []}), \
+         patch("src.ai_trader.decide_all", return_value=decisions):
+        ai_trader_run.run_daily(dry_run=False)
+
+    with open(f"{config.STATE_DIR}/data_health_alpaca_orders.json", encoding="utf-8") as fh:
+        health = json.load(fh)
+    assert health["total"] == 2
+    assert health["failed_symbols"] == ["RIVN"]
 
 
 # ─── Resilienza: un titolo/una posizione con problemi non blocca gli altri ──

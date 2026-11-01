@@ -18,7 +18,7 @@ import re
 
 import anthropic
 
-from . import budget, config, storage
+from . import budget, config, data_health, storage
 
 
 class DecisionParseError(RuntimeError):
@@ -206,6 +206,10 @@ def scanner_symbol_decision(symbol: str, row: dict, thresholds: dict, model: str
             "decision": "HOLD",
             "reasoning_short": f"Errore nel giudizio AI, HOLD per sicurezza: {exc}",
             "cost_usd": round(cost_usd, 6),
+            # Campo esplicito invece di dedurlo da "Errore" nel testo
+            # (fragile, si romperebbe se il messaggio cambiasse): usato da
+            # decide_all() per data_health, vedi commento lì.
+            "error": True,
         }
     return {
         "symbol": symbol,
@@ -263,21 +267,37 @@ def decide_all() -> list[dict]:
                     "cost_usd": 0.0,
                 })
 
+    # Simboli effettivamente passati per una chiamata all'API Anthropic
+    # (hanno una riga scanner quel giorno), non l'intero non_core: i saltati
+    # per riga scanner mancante non sono un fallimento dell'API, non vanno
+    # contati nel tasso di errore qui sotto.
+    attempted = 0
+    failed_judgment: list[str] = []
     for symbol in non_core:
         row = scanner_by_symbol.get(symbol)
         if row is None:
             continue
+        attempted += 1
         model = config.AI_TRADER_SONNET_MODEL if symbol in sonnet_symbols else config.AI_TRADER_HAIKU_MODEL
         try:
-            decisions.append(scanner_symbol_decision(symbol, row, thresholds, model))
+            decision = scanner_symbol_decision(symbol, row, thresholds, model)
         except Exception as exc:  # noqa: BLE001 - un titolo alla volta, mai fatale
-            decisions.append({
+            decision = {
                 "symbol": symbol,
                 "model_used": model,
                 "decision": "HOLD",
+                "error": True,
                 "reasoning_short": f"Errore imprevisto nel giudizio AI, HOLD per sicurezza: {exc}",
                 "cost_usd": 0.0,
-            })
+            }
+        decisions.append(decision)
+        if decision.get("error"):
+            failed_judgment.append(symbol)
+
+    try:
+        data_health.record_fetch_health("ai_judgment", attempted, failed_judgment)
+    except Exception:  # noqa: BLE001 - lo stato di salute non deve mai bloccare il giudizio vero
+        pass
 
     return decisions
 
