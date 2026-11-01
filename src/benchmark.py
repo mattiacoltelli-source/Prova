@@ -1,7 +1,8 @@
 """Strategie di confronto per la pagina Trading AI, calcolate SOLO da prezzi
-pubblici Yahoo Finance (stessa fonte di market_scanner.py) — zero chiamate
-AI, zero ordini reali su Alpaca, zero costo aggiuntivo sul budget mensile.
-Entrambe partono dalla stessa data e dallo stesso capitale di
+pubblici (Yahoo Finance, con fallback Twelve Data — data_sources/prices.py,
+stessa fonte usata altrove nel progetto) — zero chiamate AI, zero ordini
+reali su Alpaca, zero costo aggiuntivo sul budget mensile. Entrambe
+partono dalla stessa data e dallo stesso capitale di
 data/ai_trader/experiment.json, per restare un confronto onesto a parità di
 condizioni con l'esperimento reale.
 
@@ -22,6 +23,17 @@ il resto resta in contanti, stesso tetto di rischio di AI reale:
 Condividono la stessa implementazione (_update_strategy sotto), parametrica
 su file di stato, finestra, tetto di posizioni e direzione della
 classifica — non due copie quasi identiche del codice.
+
+Punteggio tecnico (richiesto dall'utente il 2026-11-02, "non voglio filtri
+rigidi"): dentro la lista già filtrata per rendimento sopra (chi sale per
+Momentum, chi scende per Mean Reversion — invariata), ogni titolo prende
+una fascia di priorità (alta/media/bassa) da quanti criteri tecnici
+soddisfa (RSI, posizione/direzione delle medie mobili, volume relativo —
+vedi _momentum_technical_score/_meanrev_technical_score e le relative
+costanti in config.py). La fascia RIORDINA, non filtra: un titolo in
+fascia bassa resta comunque candidato, solo più in fondo alla lista — mai
+un paniere vuoto per motivi tecnici quando ci sono candidati validi per
+rendimento.
 
 update_momentum/update_mean_reversion sono pensate per essere chiamate da
 ai_trader_run.py dentro un try/except separato dalla logica di trading
@@ -50,35 +62,117 @@ from __future__ import annotations
 
 import datetime as dt
 
-from . import config, data_health, storage
-from .data_sources import http
-
-YAHOO_UA = {"User-Agent": "Mozilla/5.0 (predictive-agent research script)"}
-TIMEOUT = 15
-
+from . import config, data_health, storage, technicals
+from .data_sources import prices
+from .data_sources.prices import DailyBar
 
 class BenchmarkError(RuntimeError):
     pass
 
 
-def _fetch_closes(symbol: str) -> list[float]:
-    """Storico di ~3 mesi di chiusure giornaliere (l'ultima è il prezzo
-    corrente, anche a mercato aperto — stesso comportamento di
-    market_scanner.fetch_symbol). Margine ampio sopra la finestra più lunga
-    usata dalle strategie sotto (AI_TRADER_MOMENTUM_LOOKBACK_DAYS), per
-    restare coperti anche con qualche giorno di festività di mercato in
-    mezzo."""
-    url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}"
-    resp = http.get(url, params={"range": "3mo", "interval": "1d"}, headers=YAHOO_UA, timeout=TIMEOUT)
-    resp.raise_for_status()
-    results = resp.json().get("chart", {}).get("result")
-    if not results:
-        raise BenchmarkError(f"Nessun dato Yahoo per {symbol}")
-    quote = results[0].get("indicators", {}).get("quote", [{}])[0]
-    closes = [c for c in (quote.get("close") or []) if c is not None]
-    if len(closes) < 2:
+def _fetch_bars(symbol: str) -> list[DailyBar]:
+    """Storico di ~1 anno di borsa (data/chiusura/volume/massimo/minimo),
+    con fallback Yahoo -> Twelve Data (prices.fetch_daily_history, già
+    usato altrove nel progetto — non più una chiamata Yahoo diretta e
+    senza riserva come prima). Era ~3 mesi fino al 2026-11-02: bastavano
+    per il rendimento sul lookback delle strategie sotto, ma non per la
+    SMA 200 del punteggio tecnico (richiede ~200 barre). L'ultima barra è
+    il prezzo corrente, anche a mercato aperto."""
+    bars = prices.fetch_daily_history(symbol, range_="1y")
+    if len(bars) < 2:
         raise BenchmarkError(f"Storico insufficiente per {symbol}")
-    return closes
+    return bars
+
+
+def _sma_rising(bars: list[DailyBar], period: int = 50) -> bool | None:
+    """SMA(period) di oggi sopra quella di AI_TRADER_SMA_RISING_LOOKBACK_DAYS
+    giorni fa: la DIREZIONE della media, non solo la sua posizione rispetto
+    al prezzo. None se lo storico non copre uno dei due punti — mai preso
+    come "non crescente", solo come "non calcolabile" (il chiamante lo
+    conta 0 punti, non un punto contro)."""
+    lookback = config.AI_TRADER_SMA_RISING_LOOKBACK_DAYS
+    if len(bars) <= lookback:
+        return None
+    sma_today = technicals.compute_sma(bars, period)
+    sma_prior = technicals.compute_sma(bars[:-lookback], period)
+    if sma_today is None or sma_prior is None:
+        return None
+    return sma_today > sma_prior
+
+
+def _momentum_technical_score(bars: list[DailyBar]) -> int:
+    """Quanti dei 5 criteri di precedenza Momentum sono soddisfatti (0-5) —
+    vedi commento su config.AI_TRADER_MOMENTUM_RSI_RANGE per il perché di
+    un punteggio semplice invece di una somma pesata. Un criterio non
+    calcolabile (storico corto) non conta, non esclude."""
+    score = 0
+    last_close = bars[-1]["close"]
+
+    rsi = technicals.compute_rsi(bars)
+    low, high = config.AI_TRADER_MOMENTUM_RSI_RANGE
+    if rsi is not None and low <= rsi <= high:
+        score += 1
+
+    sma50 = technicals.compute_sma(bars, 50)
+    if sma50 is not None and last_close > sma50:
+        score += 1
+
+    if _sma_rising(bars, 50):
+        score += 1
+
+    sma200 = technicals.compute_sma(bars, 200)
+    if sma200 is not None and last_close > sma200:
+        score += 1
+
+    relvol = technicals.compute_relative_volume(bars)
+    if relvol is not None and relvol >= config.AI_TRADER_MOMENTUM_RELVOL_THRESHOLD:
+        score += 1
+
+    return score
+
+
+def _meanrev_technical_score(bars: list[DailyBar]) -> int:
+    """Quanti dei 4 criteri di precedenza Mean Reversion sono soddisfatti
+    (0-4) — stesso principio di _momentum_technical_score sopra."""
+    score = 0
+    last_close = bars[-1]["close"]
+
+    rsi = technicals.compute_rsi(bars)
+    if rsi is not None and rsi < config.AI_TRADER_MEANREV_RSI_THRESHOLD:
+        score += 1
+
+    sma200 = technicals.compute_sma(bars, 200)
+    if sma200 is not None and last_close > sma200:
+        score += 1
+
+    if _sma_rising(bars, 50):
+        score += 1
+
+    relvol = technicals.compute_relative_volume(bars)
+    if relvol is not None and relvol >= config.AI_TRADER_MEANREV_RELVOL_THRESHOLD:
+        score += 1
+
+    return score
+
+
+def _momentum_tier(score: int) -> int:
+    """0=bassa, 1=media, 2=alta — soglie decise con l'utente sul massimo di
+    5 punti di _momentum_technical_score."""
+    if score >= 4:
+        return 2
+    if score >= 2:
+        return 1
+    return 0
+
+
+def _meanrev_tier(score: int) -> int:
+    """Come _momentum_tier, sul massimo di 4 punti di
+    _meanrev_technical_score."""
+    if score >= 3:
+        return 2
+    if score >= 1:
+        return 1
+    return 0
 
 
 def _already_recorded_today(filepath: str, today_str: str) -> bool:
@@ -111,6 +205,7 @@ def _update_strategy(
         return
 
     prices_today: dict[str, float] = {}
+    bars_by_symbol: dict[str, list[DailyBar]] = {}
     rank: list[tuple[str, float]] = []
     failed_symbols: list[str] = []
     # Un titolo alla volta, mai fatale per gli altri (stesso principio di
@@ -124,11 +219,13 @@ def _update_strategy(
     # segnale che la fonte si è rotta (vedi config.DATA_HEALTH_FAILURE_RATE_ALERT_THRESHOLD).
     for symbol in _universe():
         try:
-            closes = _fetch_closes(symbol)
+            bars = _fetch_bars(symbol)
         except Exception:  # noqa: BLE001 - un titolo alla volta, mai fatale
             failed_symbols.append(symbol)
             continue
+        closes = [b["close"] for b in bars]
         prices_today[symbol] = closes[-1]
+        bars_by_symbol[symbol] = bars
         if len(closes) > lookback_days:
             pct = closes[-1] / closes[-1 - lookback_days] - 1
             rank.append((symbol, pct))
@@ -158,9 +255,25 @@ def _update_strategy(
 
     rank.sort(key=lambda pair: pair[1], reverse=not pick_fallen)
     if pick_fallen:
-        selected = [symbol for symbol, pct in rank if pct < 0][:top_n]
+        eligible = [symbol for symbol, pct in rank if pct < 0]
+        tier_fn = _meanrev_tier
+        score_fn = _meanrev_technical_score
     else:
-        selected = [symbol for symbol, pct in rank if pct > 0][:top_n]
+        eligible = [symbol for symbol, pct in rank if pct > 0]
+        tier_fn = _momentum_tier
+        score_fn = _momentum_technical_score
+    # Punteggio tecnico come PRECEDENZA dentro la lista già filtrata per
+    # rendimento sopra, non come filtro in più: eligible non perde né
+    # guadagna nessun simbolo qui, viene solo riordinato. sorted() è
+    # stabile anche con reverse=True, quindi a parità di fascia l'ordine
+    # resta quello di "eligible" (il rendimento sul lookback, come prima
+    # di questa modifica) — un titolo ipercomprato/senza conferme tecniche
+    # non esce mai dalla lista, scende solo più in basso. Richiesto
+    # dall'utente il 2026-11-02: "non voglio filtri rigidi... gli altri
+    # titoli devono comunque poter essere selezionati se hanno un buon
+    # rendimento."
+    tiered = sorted(eligible, key=lambda s: tier_fn(score_fn(bars_by_symbol[s])), reverse=True)
+    selected = tiered[:top_n]
     # Non più il 100% del capitale diviso equal-weight tra i selezionati:
     # stesso tetto del 35% di AI reale (config.AI_TRADER_MAX_EXPOSURE_PCT),
     # il resto resta in contanti — "troppo rischioso" investire tutto ogni

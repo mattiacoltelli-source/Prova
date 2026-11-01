@@ -103,6 +103,16 @@ def _sma(values: list[float], period: int) -> float | None:
     return sum(values[-period:]) / period
 
 
+def compute_sma(bars: list[DailyBar], period: int = 50) -> float | None:
+    """Media mobile semplice sulle ultime `period` chiusure, valore grezzo
+    (non solo il confronto breve/lunga di compute_sma_trend sotto) — serve
+    a chi deve sapere DOVE sta la media, non solo se è sopra o sotto
+    un'altra media (es. prezzo vs SMA, o SMA di oggi vs SMA di N giorni fa
+    per capirne la direzione). None se lo storico è insufficiente."""
+    closes = [b["close"] for b in bars]
+    return _sma(closes, period)
+
+
 def _ema_series(values: list[float], period: int) -> list[float] | None:
     """Serie di EMA su `values`: il primo valore è seminato con la SMA
     delle prime `period` osservazioni (pratica standard), poi ricorsivo con

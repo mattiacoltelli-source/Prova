@@ -821,7 +821,8 @@ AI_TRADER_PORTFOLIO_HISTORY_FILE = f"{AI_TRADER_DIR}/portfolio_history.json"
 AI_TRADER_MOMENTUM_FILE = f"{AI_TRADER_DIR}/benchmark_momentum.jsonl"
 # Rendimento sugli ultimi N giorni di borsa per classificare il momentum di
 # ogni titolo — finestra classica per un segnale "momentum" di breve periodo,
-# compatibile con i ~3 mesi di storico richiesti a Yahoo in benchmark.py.
+# ben dentro l'anno di storico richiesto in benchmark.py (serve per la SMA
+# 200 del punteggio tecnico sotto, non solo per questo rendimento).
 AI_TRADER_MOMENTUM_LOOKBACK_DAYS = 20
 # Stesso tetto di diversificazione dell'esperimento reale (AI_TRADER_MAX_POSITIONS),
 # non un numero diverso: altrimenti un confronto "più diversificato vince
@@ -842,6 +843,26 @@ AI_TRADER_MOMENTUM_TOP_N = AI_TRADER_MAX_POSITIONS
 AI_TRADER_MEANREV_FILE = f"{AI_TRADER_DIR}/benchmark_meanrev.jsonl"
 AI_TRADER_MEANREV_LOOKBACK_DAYS = 5
 AI_TRADER_MEANREV_TOP_N = AI_TRADER_MAX_POSITIONS
+
+# Punteggio tecnico per dare PRECEDENZA, non per escludere (richiesto
+# dall'utente il 2026-11-02: "non voglio filtri rigidi... i titoli devono
+# avere la precedenza nella selezione [ma] gli altri devono comunque poter
+# essere selezionati"). Applicato DOPO il filtro di rendimento già esistente
+# sopra (candidati invariati), riordina solo chi è già candidato — non
+# aggiunge né toglie nessuno. Ogni criterio vale 1 punto nel conteggio di
+# benchmark._momentum_technical_score()/_meanrev_technical_score(), nessun
+# peso differenziato (così due indicatori correlati, es. prezzo>SMA50 e
+# SMA50 crescente, non pesano più di uno isolato). Un indicatore non
+# calcolabile (storico troppo corto) vale 0 punti, mai esclusione.
+AI_TRADER_MOMENTUM_RSI_RANGE = (50.0, 75.0)
+AI_TRADER_MOMENTUM_RELVOL_THRESHOLD = 1.2
+AI_TRADER_MEANREV_RSI_THRESHOLD = 40.0
+AI_TRADER_MEANREV_RELVOL_THRESHOLD = 1.2
+# Quanti giorni di borsa indietro per capire se la SMA 50 è "crescente"
+# (SMA 50 di oggi sopra quella di questa finestra fa) — usato da entrambe
+# le strategie. Una settimana di borsa, stessa finestra corta già scelta
+# per il lookback di Mean Reversion sopra.
+AI_TRADER_SMA_RISING_LOOKBACK_DAYS = 5
 
 # Snapshot (sovrascritti ad ogni run, non uno storico — stesso principio di
 # AI_TRADER_PORTFOLIO_HISTORY_FILE sopra) dell'elenco di operazioni

@@ -622,10 +622,11 @@ concurrency group `paper-order` con "Ordine paper trading" (sotto) perché
 entrambi scrivono sulla stessa catena hash di `data/paper/orders.jsonl`.
 
 **Due strategie di confronto, zero costo AI** (`src/benchmark.py`, richieste
-dall'utente nel tempo): calcolate ogni giorno dai soli prezzi pubblici
-Yahoo Finance, nessun giudizio AI, nessun ordine reale — condividono la
-stessa implementazione parametrica (`_update_strategy`), diverse solo per
-finestra e direzione della classifica.
+dall'utente nel tempo): calcolate ogni giorno da prezzi pubblici con
+fallback Yahoo Finance -> Twelve Data (`data_sources/prices.py`), nessun
+giudizio AI, nessun ordine reale — condividono la stessa implementazione
+parametrica (`_update_strategy`), diverse solo per finestra e direzione
+della classifica.
 - **Momentum**: tiene equal-weight chi ha il MIGLIOR rendimento negli
   ultimi `AI_TRADER_MOMENTUM_LOOKBACK_DAYS` (20) giorni di borsa, fino a
   `AI_TRADER_MOMENTUM_TOP_N` posizioni — continuazione del trend.
@@ -635,6 +636,31 @@ finestra e direzione della classifica.
   ipervenduto di breve periodo, non un trend di fondo) giorni — scommessa
   sul ritorno verso la media, non sulla continuazione. Mai compra chi è
   salito, esattamente come Momentum non compra mai chi è sceso.
+
+**Punteggio tecnico come precedenza, non filtro** (2026-11-02, richiesto
+dall'utente: "non voglio filtri rigidi... gli altri titoli devono comunque
+poter essere selezionati se hanno un buon rendimento"): dentro la lista
+già filtrata per rendimento sopra (invariata), ogni candidato prende una
+fascia (alta/media/bassa) da quanti criteri tecnici soddisfa — un conteggio
+semplice, non una somma pesata, così indicatori correlati (es. prezzo>SMA50
+e SMA50 crescente) non pesano più di uno isolato:
+- Momentum (`_momentum_technical_score`, max 5): RSI(14) tra
+  `AI_TRADER_MOMENTUM_RSI_RANGE` (50-75), prezzo>SMA50, SMA50 crescente
+  (vs `AI_TRADER_SMA_RISING_LOOKBACK_DAYS` giorni fa), prezzo>SMA200,
+  volume relativo ≥ `AI_TRADER_MOMENTUM_RELVOL_THRESHOLD` (1,2).
+- Mean Reversion (`_meanrev_technical_score`, max 4): RSI(14) <
+  `AI_TRADER_MEANREV_RSI_THRESHOLD` (40), prezzo>SMA200, SMA50 crescente,
+  volume relativo ≥ `AI_TRADER_MEANREV_RELVOL_THRESHOLD` (1,2).
+
+La fascia riordina la lista di candidati (già filtrata per rendimento),
+non la riduce: i primi `top_n` di questo nuovo ordine vengono selezionati,
+ma un titolo in fascia bassa resta comunque candidato — se non c'è
+nessuno in fascia più alta a contendergli lo slot, entra comunque. Un
+indicatore non calcolabile (storico troppo corto) vale 0 punti, mai
+un'esclusione automatica. Richiede ~1 anno di storico per titolo (prima
+~3 mesi, sufficienti solo per il rendimento sul lookback, non per la SMA
+200) — da qui il passaggio da una chiamata Yahoo diretta e senza riserva a
+`prices.fetch_daily_history`, condivisa con il resto del progetto.
 
 Entrambe scrivono il proprio storico a 3 prezzi (`data/ai_trader/
 benchmark_momentum.jsonl`/`benchmark_meanrev.jsonl` — entry/mark/exit
