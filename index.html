@@ -554,6 +554,18 @@
             align-items: center;
             justify-content: center;
             transition: border-color var(--transition-fast), color var(--transition-fast), background var(--transition-fast);
+            /* Niente cerchio grigio di tocco del browser (Chrome Android):
+               senza questa riga il default -webkit-tap-highlight-color
+               disegna un flash semi-trasparente sotto il dito, l'esatto
+               motivo per cui lo switch sembrava "un sito" invece che un
+               toggle nativo (richiesto dall'utente il 2026-11-02). Proprietà
+               puramente visiva, nessun effetto su scroll/layout — niente a
+               che vedere con i tentativi fallliti di bloccare il
+               pull-to-refresh sopra. -webkit-touch-callout disattiva anche
+               il menu "copia/condividi" che un tap lungo aprirebbe su un
+               bottone, altro dettaglio da sito non da app. */
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
         }
 
         .horizon-filter-btn:hover:not(.active) {
