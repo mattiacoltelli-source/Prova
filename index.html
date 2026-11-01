@@ -1263,7 +1263,13 @@
             100% { background-position: 0 0; }
         }
 
-        .table-message { text-align: center; color: var(--text-muted); padding: 14px 6px; }
+        /* Senza un font-size proprio, questi messaggi ("Nessuna posizione
+           aperta.", "Esperimento non ancora avviato.", righe vuote delle
+           tabelle, ecc.) ereditavano il 16px di default del browser — più
+           grande di tutto il resto del testo secondario in pagina (12px),
+           l'unico punto rimasto fuori dalla scala dopo la consolidazione dei
+           token (segnalato dall'utente su schermo reale, 2026-11-01). */
+        .table-message { text-align: center; color: var(--text-muted); padding: 14px 6px; font-size: var(--text-xs); }
         .table-message.is-error { color: var(--accent-yellow); }
         .table-message .icon { vertical-align: -3px; margin-right: 5px; }
 
