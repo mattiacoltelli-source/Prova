@@ -102,6 +102,12 @@
             --accent-signal-contrast: #4568d6;
             --accent-info: #38b6d9;
             --accent-momentum: #a78bfa;
+            /* Terza strategia di confronto (Mean Reversion, 2026-11): un
+               arancio, non il giallo semantico già usato per gli avvisi
+               (--accent-yellow sotto) — tre colori nettamente distinguibili
+               su sfondo scuro per blu/viola/arancio, stesso principio delle
+               palette qualitative standard a 3 categorie. */
+            --accent-meanrev: #fb923c;
             --accent-green: #34d399;
             --accent-red: #fb7185;
             --accent-yellow: #fbbf24;
@@ -1508,11 +1514,13 @@
                 <strong>Sicurezza:</strong> ogni posizione viene chiusa comunque se perde più
                 dell'8%, indipendentemente dal giudizio AI del giorno. Pagina di sola lettura: nessuna
                 operazione manuale è possibile da qui, è tutto gestito dal sistema in automatico.<br><br>
-                <strong>Riga "Momentum" nel grafico e dashboard operazioni sotto:</strong> non è
-                un'altra strategia reale in corso, solo un termine di paragone a regole fisse (senza
-                AI) calcolato ogni giorno dai soli prezzi pubblici — nessun ordine, nessun costo. La
-                dashboard sotto il grafico mostra le operazioni vere (acquisto/vendita, prezzo,
-                guadagno/perdita) sia dell'AI reale sia di questo confronto.
+                <strong>Righe "Momentum" e "Mean Reversion" nel grafico e dashboard operazioni
+                sotto:</strong> non sono altre strategie reali in corso, solo due termini di paragone
+                a regole fisse (senza AI) calcolati ogni giorno dai soli prezzi pubblici — nessun
+                ordine, nessun costo. Filosofie opposte: Momentum tiene chi sale di più, Mean
+                Reversion chi scende di più, scommettendo sul ritorno verso la media invece che sulla
+                continuazione del trend. La dashboard sotto il grafico mostra le operazioni vere
+                (acquisto/vendita, prezzo, guadagno/perdita) di tutte e tre.
             </div>
         </details>
 
@@ -1524,6 +1532,7 @@
             <div class="horizon-filter" id="aitrader-strategy-filter">
                 <button class="horizon-filter-btn active" data-strategy="real" onclick="setTradeStrategyFilter('real')">AI reale</button>
                 <button class="horizon-filter-btn" data-strategy="momentum" onclick="setTradeStrategyFilter('momentum')">Momentum</button>
+                <button class="horizon-filter-btn" data-strategy="meanrev" onclick="setTradeStrategyFilter('meanrev')">Mean Reversion</button>
             </div>
 
             <!-- Testo tenuto in vita per compatibilità con applyTradeStrategyFilter()
@@ -1557,10 +1566,11 @@
                 <canvas id="aitrader-equity-chart"></canvas>
             </div>
             <p style="font-size:var(--text-xs);color:var(--text-dim);margin:8px 0 0;">
-                La linea piena è la strategia selezionata in cima, quella sottile tratteggiata è l'altra,
-                per confronto. "Momentum" non è un'altra strategia reale in corso: regole fisse senza AI,
-                stessi titoli e stesso capitale dell'esperimento. Tocca un nome in legenda per
-                nasconderlo — le operazioni vere di entrambe sono nella dashboard sotto.
+                La linea piena è la strategia selezionata in cima, le altre due restano sottili e
+                tratteggiate per confronto. "Momentum" e "Mean Reversion" non sono altre strategie reali
+                in corso: regole fisse senza AI, stessi titoli e stesso capitale dell'esperimento —
+                filosofie opposte, la prima segue chi sale, la seconda compra chi scende. Tocca un nome in
+                legenda per nasconderlo — le operazioni vere di tutte e tre sono nella dashboard sotto.
             </p>
         </div>
 
@@ -1607,6 +1617,16 @@
                 <div class="asset-card" style="margin-bottom:16px;">
                     <div class="asset-header"><span class="asset-title">Vendite recenti</span></div>
                     <div class="trade-list" id="aitrader-momentum-closed"></div>
+                </div>
+            </div>
+            <div id="aitrader-meanrev-trades-card" data-strategy="meanrev" style="display:none;">
+                <div class="asset-card" style="margin-bottom:16px;">
+                    <div class="asset-header"><span class="asset-title">Posizioni</span></div>
+                    <div class="pos-list" id="aitrader-meanrev-open"></div>
+                </div>
+                <div class="asset-card" style="margin-bottom:16px;">
+                    <div class="asset-header"><span class="asset-title">Vendite recenti</span></div>
+                    <div class="trade-list" id="aitrader-meanrev-closed"></div>
                 </div>
             </div>
         </div>
@@ -2919,7 +2939,7 @@
         // ridisegnare card rischio + grafico equity a ogni cambio di switch,
         // senza rifare le chiamate di rete).
         let aiTraderAccountCache = null;
-        let aiTraderOpenCounts = { real: 0, momentum: 0 };
+        let aiTraderOpenCounts = { real: 0, momentum: 0, meanrev: 0 };
         let aiTraderChartCache = null;
 
         async function fetchJsonNoStore(url) {
@@ -2984,15 +3004,17 @@
         async function _loadAiTraderExperimentAndDecisions() {
             const now = new Date();
             const budgetFile = `data/_state/ai_trader_budget_${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}.json`;
-            const [experiment, equityRes, decisionsRes, budgetState, portfolioHistoryRaw, momentumRes, realTrades, momentumTrades] = await Promise.all([
+            const [experiment, equityRes, decisionsRes, budgetState, portfolioHistoryRaw, momentumRes, meanrevRes, realTrades, momentumTrades, meanrevTrades] = await Promise.all([
                 fetchJsonNoStore('data/ai_trader/experiment.json'),
                 parseJsonl('data/ai_trader/equity_history.jsonl'),
                 parseJsonl('data/ai_trader/decisions.jsonl'),
                 fetchJsonNoStore(budgetFile),
                 fetchJsonNoStore('data/ai_trader/portfolio_history.json'),
                 parseJsonl('data/ai_trader/benchmark_momentum.jsonl'),
+                parseJsonl('data/ai_trader/benchmark_meanrev.jsonl'),
                 fetchJsonNoStore('data/ai_trader/trades_real.json'),
                 fetchJsonNoStore('data/ai_trader/trades_momentum.json'),
+                fetchJsonNoStore('data/ai_trader/trades_meanrev.json'),
             ]);
 
             const notStartedCard = document.getElementById('aitrader-not-started');
@@ -3028,17 +3050,23 @@
                 ? momentumHistory[momentumHistory.length - 1].equity_usd
                 : startEquity;
 
+            const meanrevHistory = meanrevRes.data;
+            const latestMeanrevEquity = meanrevHistory.length > 0
+                ? meanrevHistory[meanrevHistory.length - 1].equity_usd
+                : startEquity;
+
             // I box in alto (Equity attuale/Guadagno-perdita) cambiano
             // insieme allo switch sotto (richiesto dall'utente il
             // 2026-11-02: prima mostravano sempre e solo l'AI reale,
             // indipendentemente da quale dashboard operazioni era
             // selezionata — confusione reale, l'utente si aspettava che
             // cambiassero insieme). "Giorni rimasti" invece resta uguale
-            // per entrambe: stessa finestra temporale dell'esperimento,
+            // per tutte e tre: stessa finestra temporale dell'esperimento,
             // non ha un equivalente "per strategia".
             aiTraderStatsByStrategy = {
                 real: _computeAiTraderStats(latestEquity, startEquity),
                 momentum: _computeAiTraderStats(latestMomentumEquity, startEquity),
+                meanrev: _computeAiTraderStats(latestMeanrevEquity, startEquity),
             };
             _renderAiTraderStatBoxes(aiTraderStatsByStrategy[currentTradeStrategyFilter]);
 
@@ -3055,8 +3083,8 @@
             // (chiamata in fondo a renderTradeDashboards sotto), che legge da
             // questa cache — non chiamarlo anche qui: altrimenti Chart.js lo
             // disegnerebbe due volte di seguito a ogni caricamento.
-            aiTraderChartCache = { history, experiment, momentumHistory: momentumRes.data };
-            renderTradeDashboards(realTrades, momentumTrades);
+            aiTraderChartCache = { history, experiment, momentumHistory: momentumRes.data, meanrevHistory: meanrevRes.data };
+            renderTradeDashboards(realTrades, momentumTrades, meanrevTrades);
 
             const decisionsList = document.getElementById('aitrader-decisions-list');
             // Stesso meccanismo di Vendite recenti/Storico ordini (richiesto
@@ -3110,7 +3138,12 @@
             return labels.map(date => (date in byDate ? byDate[date] : null));
         }
 
-        function renderAiTraderEquityChart(history, experiment, momentumHistory) {
+        function _hexToRgba(hex, alpha) {
+            const n = parseInt(hex.slice(1), 16);
+            return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
+        }
+
+        function renderAiTraderEquityChart(history, experiment, momentumHistory, meanrevHistory) {
             const canvasId = 'aitrader-equity-chart';
             if (history.length === 0) {
                 showEmptyChart(canvasId, 'Ancora nessun punto registrato.');
@@ -3156,50 +3189,60 @@
                 chartInstances[canvasId].destroy();
             }
 
-            // Quale delle due è "a fuoco" (piena, spessa, con area colorata)
+            // Quale delle tre è "a fuoco" (piena, spessa, con area colorata)
             // segue lo switch in cima alla pagina, non è fisso su "AI reale"
             // come prima (richiesto dall'utente, 2026-11): il colore di
             // ciascuna riga resta però legato alla sua identità (AI reale
-            // sempre ciano, Momentum sempre viola, stessa convenzione della
-            // legenda) — solo spessore/riempimento/tratteggio cambiano con
-            // la selezione, mai il colore, altrimenti la legenda mentirebbe.
-            const primaryIsReal = currentTradeStrategyFilter === 'real';
+            // sempre blu, Momentum sempre viola, Mean Reversion sempre
+            // arancio, stessa convenzione della legenda) — solo spessore/
+            // riempimento/tratteggio cambiano con la selezione, mai il
+            // colore, altrimenti la legenda mentirebbe.
+            //
+            // I dataset si costruiscono in un array via push invece di
+            // indici fissi (0/1/2): con tre strategie comparabili, un indice
+            // hardcoded per la legenda si sarebbe disallineato se una delle
+            // tre non avesse ancora dati (storico assente quel giorno).
+            const strategy = currentTradeStrategyFilter;
             const momentumAligned = (momentumHistory && momentumHistory.length > 0)
                 ? _alignEquityToLabels(momentumHistory, labels) : null;
+            const meanrevAligned = (meanrevHistory && meanrevHistory.length > 0)
+                ? _alignEquityToLabels(meanrevHistory, labels) : null;
 
-            const realDataset = {
-                label: 'AI reale',
-                data: equityData,
-                borderColor: '#4f7cff',
-                backgroundColor: primaryIsReal ? 'rgba(79, 124, 255, 0.12)' : 'transparent',
-                borderWidth: primaryIsReal ? 2.4 : 1.4,
-                borderDash: primaryIsReal ? [] : [4, 3],
-                fill: primaryIsReal,
-                tension: 0.15,
-                pointRadius: 0,
-                order: primaryIsReal ? 1 : 2,
-            };
-            const datasets = [realDataset];
-
-            // Riga di confronto, volutamente poco invasiva quando non è
-            // quella selezionata (richiesto dall'utente): "se invece avessi
-            // fatto..." — non decisioni reali, nessun ordine, nessun costo
-            // AI (vedi src/benchmark.py). Nascondibile dalla legenda sotto
-            // (nostra, non quella nativa di Chart.js — vedi _renderAiTraderChartLegend).
-            if (momentumAligned) {
-                datasets.push({
-                    label: 'Momentum (regole fisse)',
-                    data: momentumAligned,
-                    borderColor: '#a78bfa',
-                    backgroundColor: !primaryIsReal ? 'rgba(167, 139, 250, 0.12)' : 'transparent',
-                    borderWidth: !primaryIsReal ? 2.4 : 1.4,
-                    borderDash: !primaryIsReal ? [] : [4, 3],
-                    fill: !primaryIsReal,
+            function _strategyDataset(key, label, data, color) {
+                const isPrimary = strategy === key;
+                return {
+                    label,
+                    data,
+                    borderColor: color,
+                    backgroundColor: isPrimary ? _hexToRgba(color, 0.12) : 'transparent',
+                    borderWidth: isPrimary ? 2.4 : 1.4,
+                    borderDash: isPrimary ? [] : [4, 3],
+                    fill: isPrimary,
                     tension: 0.15,
                     pointRadius: 0,
-                    order: !primaryIsReal ? 1 : 2,
-                    spanGaps: true
-                });
+                    order: isPrimary ? 1 : 2,
+                    spanGaps: true,
+                };
+            }
+
+            const datasets = [];
+            const legendItems = [];
+
+            datasets.push(_strategyDataset('real', 'AI reale', equityData, '#4f7cff'));
+            legendItems.push({ label: 'AI reale', color: '#4f7cff', datasetIndex: datasets.length - 1, active: strategy === 'real' });
+
+            // Righe di confronto, volutamente poco invasive quando non sono
+            // quelle selezionate (richiesto dall'utente): "se invece avessi
+            // fatto..." — non decisioni reali, nessun ordine, nessun costo
+            // AI (vedi src/benchmark.py). Nascondibili dalla legenda sotto
+            // (nostra, non quella nativa di Chart.js — vedi _renderAiTraderChartLegend).
+            if (momentumAligned) {
+                datasets.push(_strategyDataset('momentum', 'Momentum (regole fisse)', momentumAligned, '#a78bfa'));
+                legendItems.push({ label: 'Momentum', color: '#a78bfa', datasetIndex: datasets.length - 1, active: strategy === 'momentum' });
+            }
+            if (meanrevAligned) {
+                datasets.push(_strategyDataset('meanrev', 'Mean Reversion (regole fisse)', meanrevAligned, '#fb923c'));
+                legendItems.push({ label: 'Mean Reversion', color: '#fb923c', datasetIndex: datasets.length - 1, active: strategy === 'meanrev' });
             }
 
             datasets.push({
@@ -3236,7 +3279,7 @@
                 }
             });
 
-            _renderAiTraderChartLegend(chartInstances[canvasId], primaryIsReal, !!momentumAligned);
+            _renderAiTraderChartLegend(chartInstances[canvasId], legendItems);
         }
 
         // Legenda a pallini sopra il grafico (stesso linguaggio
@@ -3245,15 +3288,12 @@
         // (identità fissa, come le linee), il testo di quella selezionata è
         // in evidenza, e toccare un nome nasconde/mostra la sua riga —
         // stessa funzione che offriva la legenda nativa prima, non persa.
-        function _renderAiTraderChartLegend(chart, primaryIsReal, hasMomentum) {
+        // items arriva già pronto da renderAiTraderEquityChart (stessa lista
+        // usata per costruire i dataset, datasetIndex sempre allineato anche
+        // quando una strategia non ha ancora dati quel giorno).
+        function _renderAiTraderChartLegend(chart, items) {
             const el = document.getElementById('aitrader-chart-legend');
             if (!el) return;
-            const items = [
-                { label: 'AI reale', color: '#4f7cff', datasetIndex: 0, active: primaryIsReal },
-            ];
-            if (hasMomentum) {
-                items.push({ label: 'Momentum', color: '#a78bfa', datasetIndex: 1, active: !primaryIsReal });
-            }
             el.innerHTML = items.map(it => `
                 <span class="aitrader-chart-legend__item${it.active ? ' active' : ''}" data-dataset-index="${it.datasetIndex}">
                     <span class="aitrader-chart-legend__dot" style="background:${it.color}"></span>${escapeHtml(it.label)}
@@ -3406,7 +3446,7 @@
         // viene popolato una volta sola in _loadAiTraderExperimentAndDecisions,
         // qui si legge solo quale dei due mostrare.
         let currentTradeStrategyFilter = 'real';
-        let aiTraderStatsByStrategy = { real: null, momentum: null };
+        let aiTraderStatsByStrategy = { real: null, momentum: null, meanrev: null };
 
         function _computeAiTraderStats(latestEquity, startEquity) {
             const pl = latestEquity - startEquity;
@@ -3433,14 +3473,15 @@
 
         // Card "Esposizione & rischio": capitale impiegato per "AI reale"
         // viene dal conto Alpaca vero (cash/equity in aiTraderAccountCache,
-        // popolato da loadAiTraderPositionsAndOrders); per "Momentum" non
-        // esiste un conto/cash, è una strategia sintetica sempre investita
-        // per costruzione su tutto il paniere (vedi update_momentum in
-        // src/benchmark.py) — quindi 100% appena ha posizioni aperte, 0%
-        // altrimenti. Lo stop-loss indipendente esiste solo per "AI reale"
-        // (src/ai_trader.py), Momentum segue solo regole fisse di
-        // ribilanciamento: qui lo si dice invece di mostrare un numero che
-        // non si applica.
+        // popolato da loadAiTraderPositionsAndOrders); per "Momentum" e
+        // "Mean Reversion" non esiste un conto/cash, sono strategie
+        // sintetiche equal-weight sempre investite per costruzione su tutto
+        // il paniere selezionato (vedi update_momentum/update_mean_reversion
+        // in src/benchmark.py) — quindi 100% appena hanno posizioni aperte,
+        // 0% altrimenti. Lo stop-loss indipendente esiste solo per "AI
+        // reale" (src/ai_trader.py), le altre due seguono solo regole
+        // fisse di ribilanciamento: qui lo si dice invece di mostrare un
+        // numero che non si applica.
         function _renderAiTraderRiskCard() {
             const strategy = currentTradeStrategyFilter;
             const openCount = aiTraderOpenCounts[strategy] || 0;
@@ -3452,7 +3493,7 @@
                 if (equity > 0 && !Number.isNaN(cash)) {
                     deployedPct = Math.max(0, Math.min(100, ((equity - cash) / equity) * 100));
                 }
-            } else if (strategy === 'momentum') {
+            } else if (strategy === 'momentum' || strategy === 'meanrev') {
                 deployedPct = openCount > 0 ? 100 : 0;
             }
             document.getElementById('aitrader-risk-deployed-val').innerText = `${deployedPct.toFixed(0)}%`;
@@ -3468,27 +3509,35 @@
                 : '— (regole fisse)';
         }
 
+        const AITRADER_STRATEGY_LABELS = { real: 'AI reale', momentum: 'Momentum', meanrev: 'Mean Reversion' };
+
         function applyTradeStrategyFilter() {
-            document.querySelectorAll('#aitrader-real-trades-card, #aitrader-momentum-trades-card').forEach(card => {
+            document.querySelectorAll('#aitrader-real-trades-card, #aitrader-momentum-trades-card, #aitrader-meanrev-trades-card').forEach(card => {
                 card.style.display = card.dataset.strategy === currentTradeStrategyFilter ? '' : 'none';
             });
             document.getElementById('aitrader-stats-label').innerText =
-                `Numeri di: ${currentTradeStrategyFilter === 'real' ? 'AI reale' : 'Momentum'}`;
+                `Numeri di: ${AITRADER_STRATEGY_LABELS[currentTradeStrategyFilter]}`;
             _renderAiTraderStatBoxes(aiTraderStatsByStrategy[currentTradeStrategyFilter]);
             _renderAiTraderRiskCard();
             if (aiTraderChartCache) {
-                renderAiTraderEquityChart(aiTraderChartCache.history, aiTraderChartCache.experiment, aiTraderChartCache.momentumHistory);
+                renderAiTraderEquityChart(
+                    aiTraderChartCache.history, aiTraderChartCache.experiment,
+                    aiTraderChartCache.momentumHistory, aiTraderChartCache.meanrevHistory
+                );
             }
         }
 
-        function renderTradeDashboards(realTrades, momentumTrades) {
+        function renderTradeDashboards(realTrades, momentumTrades, meanrevTrades) {
             const real = realTrades || { open: [], closed: [] };
             const momentum = momentumTrades || { open: [], closed: [] };
+            const meanrev = meanrevTrades || { open: [], closed: [] };
 
             const realOpenEl = document.getElementById('aitrader-real-open');
             const realClosedEl = document.getElementById('aitrader-real-closed');
             const momOpenEl = document.getElementById('aitrader-momentum-open');
             const momClosedEl = document.getElementById('aitrader-momentum-closed');
+            const meanrevOpenEl = document.getElementById('aitrader-meanrev-open');
+            const meanrevClosedEl = document.getElementById('aitrader-meanrev-closed');
 
             realOpenEl.innerHTML = (real.open || []).length === 0
                 ? paperListMessage('Nessuna posizione aperta.', false)
@@ -3504,7 +3553,18 @@
                 ? paperListMessage('Nessuna operazione chiusa ancora.', false)
                 : _expandableRows(momentum.closed.map(t => _closedTradeRow(t, false)), 'mom-closed', _moreBtnHtml);
 
-            aiTraderOpenCounts = { real: (real.open || []).length, momentum: (momentum.open || []).length };
+            meanrevOpenEl.innerHTML = (meanrev.open || []).length === 0
+                ? paperListMessage('Nessuna posizione aperta.', false)
+                : meanrev.open.map(t => _openTradeRow(t, false)).join('');
+            meanrevClosedEl.innerHTML = (meanrev.closed || []).length === 0
+                ? paperListMessage('Nessuna operazione chiusa ancora.', false)
+                : _expandableRows(meanrev.closed.map(t => _closedTradeRow(t, false)), 'meanrev-closed', _moreBtnHtml);
+
+            aiTraderOpenCounts = {
+                real: (real.open || []).length,
+                momentum: (momentum.open || []).length,
+                meanrev: (meanrev.open || []).length,
+            };
             applyTradeStrategyFilter();
         }
 
