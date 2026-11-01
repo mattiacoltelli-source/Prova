@@ -4781,32 +4781,39 @@
                 .join(', ');
         }
 
-        // Avviso "fonte dati rotta" (src/data_health.py): due stati
-        // separati (scanner e benchmark) perché sono due fetch Yahoo
-        // indipendenti nel backend — se uno dei due supera la soglia di
-        // oggi, un unico banner in cima alla pagina lo segnala, qualunque
-        // sia la scheda aperta. fetchJsonNoStore ritorna null su 404 (il
-        // file non esiste ancora finché un run non l'ha scritto almeno
-        // una volta) — nessun avviso in quel caso, non un errore.
+        // Avviso "fonte/API rotta" (src/data_health.py): uno stato per
+        // ogni fetch esterno indipendente nel backend (due a Yahoo Finance,
+        // uno all'API Anthropic per i giudizi AI, uno ad Alpaca per gli
+        // ordini reali) — se uno qualsiasi supera la soglia di oggi, un
+        // unico banner in cima alla pagina lo segnala, qualunque sia la
+        // scheda aperta. fetchJsonNoStore ritorna null su 404 (il file non
+        // esiste ancora finché un run non l'ha scritto almeno una volta) —
+        // nessun avviso in quel caso, non un errore.
+        const DATA_HEALTH_SOURCES = [
+            { file: 'data_health_scanner.json', label: 'Scanner (prezzi Yahoo)' },
+            { file: 'data_health_benchmark.json', label: 'Momentum/Mean Reversion (prezzi Yahoo)' },
+            { file: 'data_health_ai_judgment.json', label: 'Giudizi AI (Anthropic)' },
+            { file: 'data_health_alpaca_orders.json', label: 'Ordini reali (Alpaca)' },
+        ];
+
         async function _checkDataHealthAndWarn() {
-            const [scannerHealth, benchmarkHealth] = await Promise.all([
-                fetchJsonNoStore('data/_state/data_health_scanner.json'),
-                fetchJsonNoStore('data/_state/data_health_benchmark.json'),
-            ]);
+            const healthResults = await Promise.all(
+                DATA_HEALTH_SOURCES.map(src => fetchJsonNoStore(`data/_state/${src.file}`))
+            );
             const problems = [];
-            if (scannerHealth && scannerHealth.alert) {
-                problems.push(`Scanner: ${scannerHealth.failed_count}/${scannerHealth.total} titoli senza risultato`);
-            }
-            if (benchmarkHealth && benchmarkHealth.alert) {
-                problems.push(`Momentum/Mean Reversion: ${benchmarkHealth.failed_count}/${benchmarkHealth.total} titoli senza risultato`);
-            }
+            DATA_HEALTH_SOURCES.forEach((src, i) => {
+                const health = healthResults[i];
+                if (health && health.alert) {
+                    problems.push(`${src.label}: ${health.failed_count}/${health.total} senza risultato`);
+                }
+            });
             const banner = document.getElementById('data-health-banner');
             if (problems.length === 0) {
                 banner.style.display = 'none';
                 return;
             }
             document.getElementById('data-health-banner-text').innerText =
-                `Dati di mercato incompleti oggi (${problems.join(' · ')}) — possibile problema con la fonte prezzi.`;
+                `Qualcosa non ha funzionato bene oggi (${problems.join(' · ')}) — possibile problema con una fonte dati o un'API esterna.`;
             banner.style.display = 'flex';
         }
         _checkDataHealthAndWarn();
