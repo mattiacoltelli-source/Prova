@@ -726,16 +726,32 @@ AI_TRADER_MOMENTUM_LOOKBACK_DAYS = 20
 # sempre di meno in un mercato in salita" non sarebbe più onesto.
 AI_TRADER_MOMENTUM_TOP_N = AI_TRADER_MAX_POSITIONS
 
+# Terza strategia di confronto, "Mean Reversion" (richiesta dall'utente,
+# 2026-11: "si riesce a fare una terza strategia... ha senso?" — proposta e
+# approvata come opposto filosofico di Momentum: compra chi è SCESO di più,
+# non chi è salito, scommettendo sul ritorno verso la media invece che sulla
+# continuazione del trend). Stessa architettura di Momentum sopra (stesso
+# modulo benchmark.py, stesso file di stato a 3 prezzi, zero costo AI, zero
+# ordini reali) — solo la direzione della classifica e la finestra sono
+# diverse: 5 giorni di borsa, non 20, perché un ipervenduto di breve periodo
+# è il segnale classico per questo tipo di strategia (è la stessa finestra
+# corta implicita in un RSI a 2-5 periodi), mentre 20 giorni misurerebbe un
+# trend di fondo, non un eccesso di breve da cui rimbalzare.
+AI_TRADER_MEANREV_FILE = f"{AI_TRADER_DIR}/benchmark_meanrev.jsonl"
+AI_TRADER_MEANREV_LOOKBACK_DAYS = 5
+AI_TRADER_MEANREV_TOP_N = AI_TRADER_MAX_POSITIONS
+
 # Snapshot (sovrascritti ad ogni run, non uno storico — stesso principio di
 # AI_TRADER_PORTFOLIO_HISTORY_FILE sopra) dell'elenco di operazioni
 # chiuse/aperte di ciascuna strategia, ricalcolati da zero ogni giorno da
 # ai_trader_run.py: trades_real.json dalle esecuzioni vere su Alpaca
-# (src/trade_history.py), trades_momentum.json dallo storico di
-# benchmark_momentum.jsonl (benchmark.derive_momentum_trades). Il frontend
-# legge solo questi due file, non deve mai ricostruire l'abbinamento
+# (src/trade_history.py), trades_momentum.json/trades_meanrev.json dallo
+# storico dei rispettivi benchmark_*.jsonl (benchmark.derive_strategy_trades).
+# Il frontend legge solo questi file, non deve mai ricostruire l'abbinamento
 # acquisto/vendita da solo in JavaScript.
 AI_TRADER_REAL_TRADES_FILE = f"{AI_TRADER_DIR}/trades_real.json"
 AI_TRADER_MOMENTUM_TRADES_FILE = f"{AI_TRADER_DIR}/trades_momentum.json"
+AI_TRADER_MEANREV_TRADES_FILE = f"{AI_TRADER_DIR}/trades_meanrev.json"
 
 
 def snapshot_file(asset: str) -> str:

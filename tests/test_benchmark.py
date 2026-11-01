@@ -8,6 +8,8 @@ from __future__ import annotations
 import datetime as dt
 from unittest.mock import patch
 
+import pytest
+
 from src import benchmark, config, storage
 
 
@@ -38,6 +40,9 @@ def _isolate(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "AI_TRADER_MOMENTUM_FILE", str(tmp_path / "momentum.jsonl"))
     monkeypatch.setattr(config, "AI_TRADER_MOMENTUM_LOOKBACK_DAYS", 2)
     monkeypatch.setattr(config, "AI_TRADER_MOMENTUM_TOP_N", 2)
+    monkeypatch.setattr(config, "AI_TRADER_MEANREV_FILE", str(tmp_path / "meanrev.jsonl"))
+    monkeypatch.setattr(config, "AI_TRADER_MEANREV_LOOKBACK_DAYS", 2)
+    monkeypatch.setattr(config, "AI_TRADER_MEANREV_TOP_N", 2)
     monkeypatch.setattr(config, "SCANNER_STOCKS", ["AAA", "BBB", "CCC"])
     monkeypatch.setattr(config, "AI_TRADER_EXCLUDED_TICKERS", [])
 
@@ -269,3 +274,112 @@ def test_derive_momentum_trades_entry_price_non_cambia_tra_chiusura_e_riapertura
 
 def test_derive_momentum_trades_storico_vuoto_non_crasha():
     assert benchmark.derive_momentum_trades([]) == {"closed": [], "open": []}
+
+
+# ─── update_mean_reversion — opposto filosofico di Momentum: tiene chi è ────
+# sceso di più, mai chi è salito (stessa _update_strategy, pick_fallen=True).
+
+
+def test_meanrev_primo_giorno_sceglie_i_peggiori_top_n_senza_perdita_di_ieri(tmp_path, monkeypatch):
+    _isolate(tmp_path, monkeypatch)
+    closes_by_symbol = {
+        "AAA": [100.0, 100.0, 90.0],   # -10%, il peggiore: scelto
+        "BBB": [100.0, 100.0, 95.0],   # -5%, secondo peggiore: scelto
+        "CCC": [100.0, 100.0, 110.0],  # +10%, salito: escluso (mai comprato)
+    }
+    with patch("src.benchmark.http.get", side_effect=_momentum_fake_get(closes_by_symbol)):
+        benchmark.update_mean_reversion(dt.date(2026, 10, 31), _EXPERIMENT)
+
+    rec = storage.read_all(config.AI_TRADER_MEANREV_FILE)[0]
+    assert rec["equity_usd"] == 100000.0
+    assert rec["holdings"] == {"AAA": 0.5, "BBB": 0.5}
+    assert rec["entry_prices"] == {"AAA": 90.0, "BBB": 95.0}
+    assert rec["exit_prices"] == {}
+
+
+def test_meanrev_nessun_titolo_sceso_va_tutto_in_contanti(tmp_path, monkeypatch):
+    """Specchio di test_momentum_nessun_titolo_con_momentum_positivo_va_tutto_in_contanti:
+    qui è il caso opposto, nessun titolo sceso -> niente da comprare."""
+    _isolate(tmp_path, monkeypatch)
+    closes_by_symbol = {
+        "AAA": [100.0, 100.0, 105.0],
+        "BBB": [100.0, 100.0, 110.0],
+        "CCC": [100.0, 100.0, 101.0],
+    }
+    with patch("src.benchmark.http.get", side_effect=_momentum_fake_get(closes_by_symbol)):
+        benchmark.update_mean_reversion(dt.date(2026, 10, 31), _EXPERIMENT)
+
+    rec = storage.read_all(config.AI_TRADER_MEANREV_FILE)[0]
+    assert rec["holdings"] == {}
+    assert rec["entry_prices"] == {}
+
+
+def test_meanrev_secondo_giorno_segna_a_mercato_il_paniere_di_ieri(tmp_path, monkeypatch):
+    _isolate(tmp_path, monkeypatch)
+    storage.append_record(config.AI_TRADER_MEANREV_FILE, {
+        "date": "2026-10-31", "equity_usd": 100000.0,
+        "holdings": {"AAA": 1.0}, "entry_prices": {"AAA": 90.0},
+        "mark_prices": {"AAA": 90.0}, "exit_prices": {},
+    })
+    # AAA continua a scendere (ancora la peggiore): resta in portafoglio.
+    closes_by_symbol = {
+        "AAA": [100.0, 90.0, 81.0],
+        "BBB": [100.0, 100.0, 102.0],
+        "CCC": [100.0, 100.0, 103.0],
+    }
+    with patch("src.benchmark.http.get", side_effect=_momentum_fake_get(closes_by_symbol)):
+        benchmark.update_mean_reversion(dt.date(2026, 11, 1), _EXPERIMENT)
+
+    rec = storage.read_all(config.AI_TRADER_MEANREV_FILE)[1]
+    # (81/90 - 1) = -10% -> 100000 * 0.9
+    assert rec["equity_usd"] == 90000.0
+    assert rec["entry_prices"]["AAA"] == 90.0  # invariato, non è entrata oggi
+    assert rec["mark_prices"]["AAA"] == 81.0
+
+
+def test_meanrev_stesso_giorno_e_idempotente_nessuna_chiamata_di_rete(tmp_path, monkeypatch):
+    _isolate(tmp_path, monkeypatch)
+    storage.append_record(config.AI_TRADER_MEANREV_FILE, {
+        "date": "2026-10-31", "equity_usd": 100000.0,
+        "holdings": {}, "entry_prices": {}, "mark_prices": {}, "exit_prices": {},
+    })
+
+    def boom(*a, **k):
+        raise AssertionError("non deve fare nessuna richiesta di rete: oggi è già registrato")
+
+    with patch("src.benchmark.http.get", side_effect=boom):
+        benchmark.update_mean_reversion(dt.date(2026, 10, 31), _EXPERIMENT)
+
+    assert len(storage.read_all(config.AI_TRADER_MEANREV_FILE)) == 1
+
+
+def test_meanrev_momentum_isolati_su_file_separati(tmp_path, monkeypatch):
+    """Le due strategie non devono mai scriversi a vicenda nello stesso file
+    — stesso universo e stesso giorno, ma selezione opposta (chi scende per
+    Mean Reversion è escluso da Momentum e viceversa)."""
+    _isolate(tmp_path, monkeypatch)
+    closes_by_symbol = {
+        "AAA": [100.0, 100.0, 110.0],
+        "BBB": [100.0, 100.0, 90.0],
+        "CCC": [100.0, 100.0, 105.0],
+    }
+    with patch("src.benchmark.http.get", side_effect=_momentum_fake_get(closes_by_symbol)):
+        benchmark.update_momentum(dt.date(2026, 10, 31), _EXPERIMENT)
+        benchmark.update_mean_reversion(dt.date(2026, 10, 31), _EXPERIMENT)
+
+    momentum_rec = storage.read_all(config.AI_TRADER_MOMENTUM_FILE)[0]
+    meanrev_rec = storage.read_all(config.AI_TRADER_MEANREV_FILE)[0]
+    assert momentum_rec["holdings"] == {"AAA": 0.5, "CCC": 0.5}
+    assert meanrev_rec["holdings"] == {"BBB": 1.0}
+
+
+def test_derive_meanrev_trades_usa_la_stessa_logica_di_derive_strategy_trades():
+    history = [
+        {"date": "2026-10-31", "holdings": {"BBB": 1.0},
+         "entry_prices": {"BBB": 90.0}, "mark_prices": {"BBB": 90.0}, "exit_prices": {}},
+        {"date": "2026-11-01", "holdings": {},
+         "entry_prices": {}, "mark_prices": {}, "exit_prices": {"BBB": 95.0}},
+    ]
+    result = benchmark.derive_meanrev_trades(history)
+    assert result["open"] == []
+    assert result["closed"][0]["return_pct"] == pytest.approx((95.0 / 90.0 - 1) * 100, abs=0.01)

@@ -551,6 +551,30 @@ di oggi invece di usarli come se fossero freschi; il workflow condivide il
 concurrency group `paper-order` con "Ordine paper trading" (sotto) perché
 entrambi scrivono sulla stessa catena hash di `data/paper/orders.jsonl`.
 
+**Due strategie di confronto, zero costo AI** (`src/benchmark.py`, richieste
+dall'utente nel tempo): calcolate ogni giorno dai soli prezzi pubblici
+Yahoo Finance, nessun giudizio AI, nessun ordine reale — condividono la
+stessa implementazione parametrica (`_update_strategy`), diverse solo per
+finestra e direzione della classifica.
+- **Momentum**: tiene equal-weight chi ha il MIGLIOR rendimento negli
+  ultimi `AI_TRADER_MOMENTUM_LOOKBACK_DAYS` (20) giorni di borsa, fino a
+  `AI_TRADER_MOMENTUM_TOP_N` posizioni — continuazione del trend.
+- **Mean Reversion** (2026-11, opposto filosofico di Momentum): tiene
+  equal-weight chi ha il PEGGIOR rendimento negli ultimi
+  `AI_TRADER_MEANREV_LOOKBACK_DAYS` (5, una finestra più corta: un
+  ipervenduto di breve periodo, non un trend di fondo) giorni — scommessa
+  sul ritorno verso la media, non sulla continuazione. Mai compra chi è
+  salito, esattamente come Momentum non compra mai chi è sceso.
+
+Entrambe scrivono il proprio storico a 3 prezzi (`data/ai_trader/
+benchmark_momentum.jsonl`/`benchmark_meanrev.jsonl` — entry/mark/exit
+separati, stesso principio di `equity_history.jsonl`) e il proprio elenco
+di operazioni chiuse/aperte (`trades_momentum.json`/`trades_meanrev.json`,
+`benchmark.derive_strategy_trades`, condivisa). Lo switch in cima alla
+pagina Trading AI sceglie quale delle tre linee (AI reale, Momentum, Mean
+Reversion) è in primo piano sul grafico e quale dashboard operazioni è
+visibile; le altre due restano sottili e tratteggiate per confronto.
+
 ## Scanner di mercato
 
 Modulo separato e indipendente dal motore predittivo (nessuna previsione,

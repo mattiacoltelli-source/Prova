@@ -25,8 +25,10 @@ def _isolate(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "PAPER_ORDERS_FILE", str(tmp_path / "orders.jsonl"))
     monkeypatch.setattr(config, "PAPER_ACCOUNT_FILE", str(tmp_path / "account.json"))
     monkeypatch.setattr(config, "AI_TRADER_MOMENTUM_FILE", str(tmp_path / "benchmark_momentum.jsonl"))
+    monkeypatch.setattr(config, "AI_TRADER_MEANREV_FILE", str(tmp_path / "benchmark_meanrev.jsonl"))
     monkeypatch.setattr(config, "AI_TRADER_REAL_TRADES_FILE", str(tmp_path / "trades_real.json"))
     monkeypatch.setattr(config, "AI_TRADER_MOMENTUM_TRADES_FILE", str(tmp_path / "trades_momentum.json"))
+    monkeypatch.setattr(config, "AI_TRADER_MEANREV_TRADES_FILE", str(tmp_path / "trades_meanrev.json"))
     monkeypatch.setenv("ANTHROPIC_API_KEY", "fake-key")
     # _update_benchmarks e _update_trade_dashboards girano dopo ogni
     # setup/daily: senza questi no-op, ogni test di run_setup/run_daily
@@ -36,6 +38,7 @@ def _isolate(tmp_path, monkeypatch):
     # sovrascrivono di nuovo questi mock per verificare che vengano
     # chiamati davvero.
     monkeypatch.setattr(ai_trader_run.benchmark, "update_momentum", lambda *a, **k: None)
+    monkeypatch.setattr(ai_trader_run.benchmark, "update_mean_reversion", lambda *a, **k: None)
     monkeypatch.setattr(ai_trader_run, "_update_trade_dashboards", lambda *a, **k: None)
     # Il controllo weekend/festività (_is_us_market_day) non deve rendere
     # flaky i test esistenti a seconda del giorno reale in cui gira la
@@ -899,3 +902,45 @@ def test_update_trade_dashboards_momentum_fallito_non_blocca_reale(tmp_path, mon
     import os as os_module
     assert os_module.path.exists(config.AI_TRADER_REAL_TRADES_FILE)  # scritto comunque
     assert not os_module.path.exists(config.AI_TRADER_MOMENTUM_TRADES_FILE)  # mai arrivato a scriverlo
+
+
+def test_update_trade_dashboards_scrive_anche_mean_reversion(tmp_path, monkeypatch):
+    """Specchio di test_update_trade_dashboards_scrive_i_due_file_json: ora
+    sono tre file, non due — stesso principio, terza strategia."""
+    real_update_trade_dashboards = ai_trader_run._update_trade_dashboards
+    _isolate(tmp_path, monkeypatch)
+    experiment = {"start_date": "2026-10-31", "start_equity_usd": 100000.0}
+    from src import storage as storage_module
+    storage_module.append_record(config.AI_TRADER_MEANREV_FILE, {
+        "date": "2026-10-31", "equity_usd": 100000.0,
+        "holdings": {"SOFI": 1.0}, "entry_prices": {"SOFI": 15.0},
+        "mark_prices": {"SOFI": 15.0}, "exit_prices": {},
+    })
+
+    with patch("src.ai_trader_run.paper_trading.get_activities", return_value=[]), \
+         patch("src.ai_trader_run.paper_trading.get_positions", return_value=[]):
+        real_update_trade_dashboards(experiment)
+
+    with open(config.AI_TRADER_MEANREV_TRADES_FILE, encoding="utf-8") as fh:
+        meanrev_trades = json.load(fh)
+    assert len(meanrev_trades["open"]) == 1
+    assert meanrev_trades["open"][0]["symbol"] == "SOFI"
+
+
+def test_update_trade_dashboards_mean_reversion_fallito_non_blocca_le_altre(tmp_path, monkeypatch):
+    real_update_trade_dashboards = ai_trader_run._update_trade_dashboards
+    _isolate(tmp_path, monkeypatch)
+    experiment = {"start_date": "2026-10-31", "start_equity_usd": 100000.0}
+    # Stesso trucco di test_update_trade_dashboards_momentum_fallito_non_blocca_reale:
+    # un file corrotto, non assente (assente torna [] senza errore).
+    with open(config.AI_TRADER_MEANREV_FILE, "w", encoding="utf-8") as fh:
+        fh.write("{non è jsonl valido")
+
+    with patch("src.ai_trader_run.paper_trading.get_activities", return_value=[]), \
+         patch("src.ai_trader_run.paper_trading.get_positions", return_value=[]):
+        real_update_trade_dashboards(experiment)  # non deve sollevare
+
+    import os as os_module
+    assert os_module.path.exists(config.AI_TRADER_REAL_TRADES_FILE)  # scritto comunque
+    assert os_module.path.exists(config.AI_TRADER_MOMENTUM_TRADES_FILE)  # scritto comunque
+    assert not os_module.path.exists(config.AI_TRADER_MEANREV_TRADES_FILE)  # mai arrivato a scriverlo

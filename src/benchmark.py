@@ -1,25 +1,32 @@
-"""Strategia di confronto "Momentum" per la pagina Trading AI, calcolata
-SOLO da prezzi pubblici Yahoo Finance (stessa fonte di market_scanner.py) —
-zero chiamate AI, zero ordini reali su Alpaca, zero costo aggiuntivo sul
-budget mensile. Parte dalla stessa data e dallo stesso capitale di
+"""Strategie di confronto per la pagina Trading AI, calcolate SOLO da prezzi
+pubblici Yahoo Finance (stessa fonte di market_scanner.py) — zero chiamate
+AI, zero ordini reali su Alpaca, zero costo aggiuntivo sul budget mensile.
+Entrambe partono dalla stessa data e dallo stesso capitale di
 data/ai_trader/experiment.json, per restare un confronto onesto a parità di
 condizioni con l'esperimento reale.
 
-Momentum è una strategia quantitativa classica A REGOLE FISSE, senza
-nessun giudizio AI — ogni giorno tiene equal-weight i titoli dell'universo
-scanner (stesso di ai_trader.py) con il miglior rendimento negli ultimi
-AI_TRADER_MOMENTUM_LOOKBACK_DAYS giorni di borsa, fino a un massimo di
-AI_TRADER_MOMENTUM_TOP_N posizioni (stesso tetto di diversificazione
-dell'esperimento reale). Nessun titolo con momentum positivo -> tutta in
-contanti, coerente con una strategia trend-following classica (non compra
-mai "controcorrente").
+Momentum e Mean Reversion sono due strategie quantitative classiche A
+REGOLE FISSE, senza nessun giudizio AI, filosoficamente opposte — ogni
+giorno tengono equal-weight i titoli dell'universo scanner (stesso di
+ai_trader.py) fino a un massimo di posizioni pari al tetto di
+diversificazione dell'esperimento reale:
+- Momentum tiene chi ha il MIGLIOR rendimento recente (continuazione del
+  trend), nessun titolo con momentum positivo -> tutta in contanti.
+- Mean Reversion tiene chi ha il PEGGIOR rendimento recente (scommessa sul
+  ritorno verso la media, non sulla continuazione), nessun titolo sceso ->
+  tutta in contanti. Finestra più corta (vedi
+  AI_TRADER_MEANREV_LOOKBACK_DAYS in config.py): un ipervenduto di breve
+  periodo è il segnale, non un trend di fondo.
+Condividono la stessa implementazione (_update_strategy sotto), parametrica
+su file di stato, finestra, tetto di posizioni e direzione della
+classifica — non due copie quasi identiche del codice.
 
-update_momentum è pensata per essere chiamata da ai_trader_run.py dentro un
-try/except separato dalla logica di trading reale (vedi _update_benchmarks
-lì): un fallimento qui — Yahoo irraggiungibile, un ticker senza dati — non
-deve mai bloccare un ordine vero. Idempotente per giorno: una seconda
-chiamata nello stesso giorno (run manuale ripetuto) non aggiunge un secondo
-punto.
+update_momentum/update_mean_reversion sono pensate per essere chiamate da
+ai_trader_run.py dentro un try/except separato dalla logica di trading
+reale (vedi _update_benchmarks lì): un fallimento qui — Yahoo
+irraggiungibile, un ticker senza dati — non deve mai bloccare un ordine
+vero. Idempotenti per giorno: una seconda chiamata nello stesso giorno (run
+manuale ripetuto) non aggiunge un secondo punto.
 
 Ogni record salvato distingue TRE prezzi diversi per ogni titolo tenuto,
 deliberatamente non un unico campo "prices" (bug reale corretto il
@@ -55,9 +62,10 @@ class BenchmarkError(RuntimeError):
 def _fetch_closes(symbol: str) -> list[float]:
     """Storico di ~3 mesi di chiusure giornaliere (l'ultima è il prezzo
     corrente, anche a mercato aperto — stesso comportamento di
-    market_scanner.fetch_symbol). Margine ampio sopra
-    AI_TRADER_MOMENTUM_LOOKBACK_DAYS per restare coperti anche con qualche
-    giorno di festività di mercato in mezzo."""
+    market_scanner.fetch_symbol). Margine ampio sopra la finestra più lunga
+    usata dalle strategie sotto (AI_TRADER_MOMENTUM_LOOKBACK_DAYS), per
+    restare coperti anche con qualche giorno di festività di mercato in
+    mezzo."""
     url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}"
     resp = http.get(url, params={"range": "3mo", "interval": "1d"}, headers=YAHOO_UA, timeout=TIMEOUT)
     resp.raise_for_status()
@@ -80,17 +88,28 @@ def _universe() -> list[str]:
     return [s for s in config.SCANNER_STOCKS if s not in config.AI_TRADER_EXCLUDED_TICKERS]
 
 
-def update_momentum(today: dt.date, experiment: dict) -> None:
+def _update_strategy(
+    filepath: str,
+    today: dt.date,
+    experiment: dict,
+    lookback_days: int,
+    top_n: int,
+    pick_fallen: bool,
+) -> None:
     """Un punto al giorno: segna a mercato il paniere di IERI con i prezzi di
     OGGI, poi decide il paniere per DOMANI in base al rendimento a
-    AI_TRADER_MOMENTUM_LOOKBACK_DAYS giorni di ogni titolo dell'universo.
-    Nessun giudizio AI, nessun ordine reale: solo prezzi Yahoo e aritmetica."""
+    lookback_days giorni di ogni titolo dell'universo. Nessun giudizio AI,
+    nessun ordine reale: solo prezzi Yahoo e aritmetica.
+
+    pick_fallen=False (Momentum): tiene chi è salito di più, mai chi è sceso.
+    pick_fallen=True (Mean Reversion): tiene chi è sceso di più, mai chi è
+    salito — stessa logica, classifica e condizione invertite."""
     today_str = today.isoformat()
-    if _already_recorded_today(config.AI_TRADER_MOMENTUM_FILE, today_str):
+    if _already_recorded_today(filepath, today_str):
         return
 
     prices_today: dict[str, float] = {}
-    momentum_rank: list[tuple[str, float]] = []
+    rank: list[tuple[str, float]] = []
     # Un titolo alla volta, mai fatale per gli altri (stesso principio di
     # market_scanner.scan()): un ticker illiquido o senza dati quel giorno
     # non deve bloccare il calcolo per tutti gli altri. Se un titolo tenuto
@@ -103,12 +122,11 @@ def update_momentum(today: dt.date, experiment: dict) -> None:
         except Exception:  # noqa: BLE001 - un titolo alla volta, mai fatale
             continue
         prices_today[symbol] = closes[-1]
-        lookback = config.AI_TRADER_MOMENTUM_LOOKBACK_DAYS
-        if len(closes) > lookback:
-            momentum_pct = closes[-1] / closes[-1 - lookback] - 1
-            momentum_rank.append((symbol, momentum_pct))
+        if len(closes) > lookback_days:
+            pct = closes[-1] / closes[-1 - lookback_days] - 1
+            rank.append((symbol, pct))
 
-    existing = storage.read_all(config.AI_TRADER_MOMENTUM_FILE)
+    existing = storage.read_all(filepath)
     last = existing[-1] if existing else {}
     previous_holdings = last.get("holdings", {})
     previous_equity = last.get("equity_usd", experiment["start_equity_usd"])
@@ -126,9 +144,12 @@ def update_momentum(today: dt.date, experiment: dict) -> None:
     else:
         equity_usd = previous_equity
 
-    momentum_rank.sort(key=lambda pair: pair[1], reverse=True)
-    positive = [symbol for symbol, pct in momentum_rank if pct > 0][: config.AI_TRADER_MOMENTUM_TOP_N]
-    new_holdings = {symbol: 1 / len(positive) for symbol in positive} if positive else {}
+    rank.sort(key=lambda pair: pair[1], reverse=not pick_fallen)
+    if pick_fallen:
+        selected = [symbol for symbol, pct in rank if pct < 0][:top_n]
+    else:
+        selected = [symbol for symbol, pct in rank if pct > 0][:top_n]
+    new_holdings = {symbol: 1 / len(selected) for symbol in selected} if selected else {}
 
     exited_today = set(previous_holdings) - set(new_holdings)
     entered_today = set(new_holdings) - set(previous_holdings)
@@ -146,7 +167,7 @@ def update_momentum(today: dt.date, experiment: dict) -> None:
     new_mark_prices = {symbol: prices_today[symbol] for symbol in new_holdings if symbol in prices_today}
     exit_prices = {symbol: prices_today[symbol] for symbol in exited_today if symbol in prices_today}
 
-    storage.append_record(config.AI_TRADER_MOMENTUM_FILE, {
+    storage.append_record(filepath, {
         "date": today_str,
         "equity_usd": round(equity_usd, 2),
         "holdings": new_holdings,
@@ -156,14 +177,31 @@ def update_momentum(today: dt.date, experiment: dict) -> None:
     })
 
 
-def derive_momentum_trades(history: list[dict]) -> dict:
+def update_momentum(today: dt.date, experiment: dict) -> None:
+    _update_strategy(
+        config.AI_TRADER_MOMENTUM_FILE, today, experiment,
+        config.AI_TRADER_MOMENTUM_LOOKBACK_DAYS, config.AI_TRADER_MOMENTUM_TOP_N,
+        pick_fallen=False,
+    )
+
+
+def update_mean_reversion(today: dt.date, experiment: dict) -> None:
+    _update_strategy(
+        config.AI_TRADER_MEANREV_FILE, today, experiment,
+        config.AI_TRADER_MEANREV_LOOKBACK_DAYS, config.AI_TRADER_MEANREV_TOP_N,
+        pick_fallen=True,
+    )
+
+
+def derive_strategy_trades(history: list[dict]) -> dict:
     """Dallo storico giorno-per-giorno (holdings + entry_prices +
     mark_prices + exit_prices) ricostruisce l'elenco delle operazioni:
     chiuse (con rendimento % realizzato) e ancora aperte (con il rendimento
     non realizzato a oggi, rispetto al prezzo di ingresso). Funzione pura,
     nessuna chiamata di rete — ricalcolata da zero ogni giorno da
     ai_trader_run.py, mai accumulata in modo incrementale: lo storico
-    completo è già tutto dentro benchmark_momentum.jsonl."""
+    completo è già tutto dentro il rispettivo benchmark_*.jsonl. Condivisa
+    da Momentum e Mean Reversion: stesso formato di storico per entrambe."""
     open_trades: dict[str, dict] = {}
     closed: list[dict] = []
     for record in history:
@@ -208,3 +246,13 @@ def derive_momentum_trades(history: list[dict]) -> dict:
     closed.sort(key=lambda t: t["exit_date"], reverse=True)
     open_list.sort(key=lambda t: t["entry_date"], reverse=True)
     return {"closed": closed, "open": open_list}
+
+
+# Alias storico: stesso test suite esistente, stesso nome pubblico, ora solo
+# un sottile passacarte verso l'implementazione condivisa sopra.
+def derive_momentum_trades(history: list[dict]) -> dict:
+    return derive_strategy_trades(history)
+
+
+def derive_meanrev_trades(history: list[dict]) -> dict:
+    return derive_strategy_trades(history)

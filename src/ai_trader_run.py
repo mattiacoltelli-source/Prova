@@ -150,16 +150,21 @@ def _save_portfolio_history_snapshot(start_date: str) -> None:
 
 
 def _update_benchmarks(today: dt.date, experiment: dict) -> None:
-    """La strategia di confronto Momentum a regole fisse, senza AI
-    (src/benchmark.py). In try/except separato da tutto il resto di questo
-    modulo — è un confronto indicativo mostrato sul grafico, mai deve poter
-    bloccare un ordine vero o l'aggiornamento della curva equity reale.
-    (Un secondo confronto, "Buy & Hold SPY", è stato tolto il 2026-11-02 su
+    """Le due strategie di confronto a regole fisse, senza AI
+    (src/benchmark.py): Momentum e Mean Reversion, filosoficamente opposte
+    (vedi docstring del modulo). Due try/except indipendenti — un fallimento
+    su una non deve mai impedire l'aggiornamento dell'altra, né bloccare un
+    ordine vero o l'aggiornamento della curva equity reale.
+    (Un terzo confronto, "Buy & Hold SPY", è stato tolto il 2026-11-02 su
     richiesta dell'utente.)"""
     try:
         benchmark.update_momentum(today, experiment)
     except Exception as exc:  # noqa: BLE001 - mai fatale per il trading reale
         print(f"Benchmark Momentum non aggiornato oggi (non bloccante): {exc}")
+    try:
+        benchmark.update_mean_reversion(today, experiment)
+    except Exception as exc:  # noqa: BLE001 - mai fatale per il trading reale
+        print(f"Benchmark Mean Reversion non aggiornato oggi (non bloccante): {exc}")
 
 
 def _update_trade_dashboards(experiment: dict) -> None:
@@ -189,6 +194,16 @@ def _update_trade_dashboards(experiment: dict) -> None:
             fh.write("\n")
     except Exception as exc:  # noqa: BLE001 - mai fatale per il trading reale
         print(f"Elenco operazioni Momentum non aggiornato oggi (non bloccante): {exc}")
+
+    try:
+        history = storage.read_all(config.AI_TRADER_MEANREV_FILE)
+        trades = benchmark.derive_meanrev_trades(history)
+        os.makedirs(config.AI_TRADER_DIR, exist_ok=True)
+        with open(config.AI_TRADER_MEANREV_TRADES_FILE, "w", encoding="utf-8") as fh:
+            json.dump(trades, fh, indent=2, sort_keys=True)
+            fh.write("\n")
+    except Exception as exc:  # noqa: BLE001 - mai fatale per il trading reale
+        print(f"Elenco operazioni Mean Reversion non aggiornato oggi (non bloccante): {exc}")
 
 
 def load_experiment() -> dict | None:
