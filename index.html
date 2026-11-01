@@ -1548,7 +1548,7 @@
                 Esperimento di 6 mesi: trading <strong>completamente automatico</strong> (nessuna
                 approvazione per singolo ordine) su un conto paper Alpaca — denaro finto, nessuna
                 operazione reale è mai possibile da qui. Ogni giorno di mercato il sistema decide da
-                solo se comprare o vendere su ~48 titoli (lo stesso universo della scheda Scanner).<br><br>
+                solo se comprare o vendere su 58 titoli azionari (gli stessi della scheda Scanner, meno due di Tokyo non acquistabili su Alpaca).<br><br>
                 <strong>Segnale ibrido:</strong> per NVDA/AAPL/AMD/MU usa le previsioni AI 1 giorno già
                 generate ogni mattina nella scheda Tech (costo zero aggiuntivo). Per gli altri titoli,
                 un giudizio AI dedicato ogni giorno: più accurato (Claude Sonnet 5.5) sui titoli che lo
@@ -3034,7 +3034,7 @@
 
         // Card "Agente AI" in fondo pagina: stato/modello/budget, letti da
         // dati già recuperati da _loadAiTraderExperimentAndDecisions (nessuna
-        // chiamata in più). "Ogni giorno feriale alle 20:15 UTC" è il cron
+        // chiamata in più). "Ogni giorno feriale alle 22:10 UTC" è il cron
         // reale del workflow (.github/workflows/ai_trader.yml: "15 20 * * 1-5"),
         // non una previsione — stesso principio di AI_TRADER_MONTHLY_BUDGET_USD
         // sopra: un fatto statico della configurazione, mantenuto a mano.
@@ -3062,8 +3062,8 @@
             const sorted = [...(decisions || [])].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
             const lastRun = sorted.length > 0 ? sorted[0].date : null;
             document.getElementById('aitrader-agent-sub').innerText = lastRun
-                ? `Ultimo giro ${lastRun} · ogni giorno feriale alle 20:15 UTC`
-                : 'In attesa del primo giro · ogni giorno feriale alle 20:15 UTC';
+                ? `Ultimo giro ${lastRun} · ogni giorno feriale alle 22:10 UTC`
+                : 'In attesa del primo giro · ogni giorno feriale alle 22:10 UTC';
         }
 
         async function _loadAiTraderExperimentAndDecisions() {
