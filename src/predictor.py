@@ -136,20 +136,40 @@ def build_prompt(
         )
     technicals_block = "\n".join(technical_lines) or "Non disponibili."
 
+    # compute_market_regime() calcola 1g/5g/20g in modo indipendente (gli
+    # servono rispettivamente >=2/6/21 barre di storico): con uno storico
+    # corto il 1g può essere disponibile mentre 5g/20g restano None. Bug
+    # reale trovato in un code review pre-lancio, 2026-11-01: formattare
+    # 5g/20g con ":+.2f" senza controllarli (il blocco si attivava solo sul
+    # 1g) sollevava TypeError — e siccome market_regime è calcolato una
+    # sola volta e riusato per ogni asset/orizzonte del run, il crash si
+    # ripeteva identico per tutti, azzerando le previsioni dell'intero
+    # giorno senza far fallire il job (preso dal blanket except per-asset
+    # di predict_run.py). _fmt_return formatta solo i valori davvero
+    # presenti, mai tutti o niente.
+    def _fmt_return(label: str, value: float | None) -> str | None:
+        return f"{value:+.2f}% ({label})" if value is not None else None
+
     market_regime = market_regime or {}
     regime_lines = []
-    if market_regime.get("spy_return_1d_pct") is not None:
-        regime_lines.append(
-            f"- S&P 500 (SPY): {market_regime['spy_return_1d_pct']:+.2f}% (1g), "
-            f"{market_regime.get('spy_return_5d_pct'):+.2f}% (5g), "
-            f"{market_regime.get('spy_return_20d_pct'):+.2f}% (20g)"
-        )
-    if market_regime.get("qqq_return_1d_pct") is not None:
-        regime_lines.append(
-            f"- Nasdaq 100 (QQQ): {market_regime['qqq_return_1d_pct']:+.2f}% (1g), "
-            f"{market_regime.get('qqq_return_5d_pct'):+.2f}% (5g), "
-            f"{market_regime.get('qqq_return_20d_pct'):+.2f}% (20g)"
-        )
+    spy_parts = [
+        p for p in (
+            _fmt_return("1g", market_regime.get("spy_return_1d_pct")),
+            _fmt_return("5g", market_regime.get("spy_return_5d_pct")),
+            _fmt_return("20g", market_regime.get("spy_return_20d_pct")),
+        ) if p is not None
+    ]
+    if spy_parts:
+        regime_lines.append(f"- S&P 500 (SPY): {', '.join(spy_parts)}")
+    qqq_parts = [
+        p for p in (
+            _fmt_return("1g", market_regime.get("qqq_return_1d_pct")),
+            _fmt_return("5g", market_regime.get("qqq_return_5d_pct")),
+            _fmt_return("20g", market_regime.get("qqq_return_20d_pct")),
+        ) if p is not None
+    ]
+    if qqq_parts:
+        regime_lines.append(f"- Nasdaq 100 (QQQ): {', '.join(qqq_parts)}")
     vix = market_regime.get("vix")
     if vix is not None:
         regime_lines.append(

@@ -119,6 +119,41 @@ def test_generate_prediction_passa_la_persistenza_al_prompt(monkeypatch):
     )
 
 
+# --- market_regime nel prompt: bug reale trovato in un code review -------
+# pre-lancio, 2026-11-01 (vedi predictor.build_prompt). compute_market_regime
+# calcola 1g/5g/20g in modo indipendente (servono rispettivamente >=2/6/21
+# barre di storico): con uno storico corto il 1g può essere disponibile
+# mentre 5g/20g restano None. Formattarli con ":+.2f" senza controllarli
+# sollevava TypeError — e siccome market_regime è condiviso da tutte le
+# previsioni del run, il crash si ripeteva identico per ogni asset/orizzonte,
+# azzerando silenziosamente le previsioni dell'intero giorno.
+
+
+def test_prompt_market_regime_parziale_non_crasha():
+    p = _prompt(market_regime={"spy_return_1d_pct": 0.5, "spy_return_5d_pct": None, "spy_return_20d_pct": None})
+    assert "+0.50% (1g)" in p
+    assert "5g" not in p
+    assert "20g" not in p
+
+
+def test_prompt_market_regime_completo_formattazione_invariata():
+    """La formattazione quando tutti e tre i valori ci sono deve restare
+    identica a prima del fix (nessuna modifica visibile al prompt nel caso
+    normale, solo nel caso parziale che prima crashava)."""
+    p = _flat(_prompt(market_regime={
+        "spy_return_1d_pct": 0.5, "spy_return_5d_pct": 1.2, "spy_return_20d_pct": 2.3,
+        "qqq_return_1d_pct": -0.3, "qqq_return_5d_pct": 0.8, "qqq_return_20d_pct": -1.1,
+    }))
+    assert "S&P 500 (SPY): +0.50% (1g), +1.20% (5g), +2.30% (20g)" in p
+    assert "Nasdaq 100 (QQQ): -0.30% (1g), +0.80% (5g), -1.10% (20g)" in p
+
+
+def test_prompt_market_regime_assente_non_aggiunge_righe():
+    p = _prompt(market_regime=None)
+    assert "S&P 500" not in p
+    assert "Nasdaq 100" not in p
+
+
 def test_last_resolved_outcome_nessun_esito_per_la_coppia():
     assert report.last_resolved_outcome([], "NVDA", "1d") is None
     rows = [{"asset": "NVDA", "horizon": "7d", "actual_class": "UP", "evaluated_at": "2026-10-01T00:00:00Z"}]

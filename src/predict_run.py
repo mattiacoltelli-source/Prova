@@ -108,11 +108,23 @@ def _reference_price(asset: str, bars: list, now_et: dt.datetime) -> tuple[float
     per 7g/1m l'orizzonte finiva ancorato 2-3 giorni più avanti del
     dovuto, ogni lunedì e dopo ogni festività, sballando silenziosamente
     l'accuratezza misurata su quei due orizzonti. Fix: la data di sessione
-    si legge sempre dall'ultima barra storica reale precedente a oggi
-    (stessa fonte usata dal ramo post-apertura), mai da un'aritmetica sul
-    calendario."""
-    today_iso = now_et.date().isoformat()
-    completed = [bar for bar in bars if bar["date"] < today_iso]
+    si legge sempre dall'ultima barra storica reale, mai da un'aritmetica
+    sul calendario.
+
+    Terzo bug reale, stessa famiglia, trovato in un code review pre-lancio
+    2026-11-01: questa funzione escludeva SEMPRE la barra di oggi (filtro
+    proprio, duplicato e divergente da _completed_bars sopra) anche quando
+    il run partiva dopo la chiusura e la barra di oggi era già una
+    chiusura reale e definitiva — in un recupero manuale la sera (già
+    successo il 2026-09-02, vedi predict.yml) il prezzo di riferimento
+    restava quello di ieri, session_date quella di ieri, e target_at per
+    l'orizzonte 1g finiva ancorato a "oggi a mezzanotte UTC": già nel
+    passato al momento stesso della generazione, con un movimento di
+    mercato già completamente noto. Fix: riusa _completed_bars (stessa
+    logica usata per gli indicatori tecnici, già corretta) invece di un
+    filtro proprio — un run dopo la chiusura include oggi, uno prima o
+    durante lo esclude, un'unica fonte di verità per entrambi i casi."""
+    completed = _completed_bars(bars, now_et)
     if not completed:
         raise ValueError(f"Nessuna chiusura storica precedente a oggi per {asset}")
     session_date = dt.date.fromisoformat(completed[-1]["date"])

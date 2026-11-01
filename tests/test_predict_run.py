@@ -219,6 +219,26 @@ def test_reference_price_dopo_l_apertura_usa_ultima_chiusura_storica_non_quella_
     assert session_date == dt.date(2026, 9, 2)
 
 
+# Terzo bug reale, stessa famiglia, trovato in un code review pre-lancio
+# 2026-11-01: _reference_price aveva un proprio filtro ("today_iso",
+# escludi sempre la barra di oggi) divergente da _completed_bars sopra —
+# dopo la chiusura, con la barra di oggi già una chiusura reale, il
+# prezzo di riferimento restava quello di ieri (già successo il
+# 2026-09-02 in un recupero manuale serale, vedi predict.yml). Ora
+# riusa _completed_bars: dopo la chiusura la barra di oggi va inclusa.
+def test_reference_price_dopo_la_chiusura_usa_la_chiusura_di_oggi_non_quella_di_ieri():
+    now_et = dt.datetime(2026, 9, 2, 20, 0, tzinfo=predict_run.config.EASTERN)
+    bars = [
+        {"date": "2026-08-31", "close": 220.0},
+        {"date": "2026-09-01", "close": 224.31},
+        {"date": "2026-09-02", "close": 227.5},  # barra di oggi: chiusura reale, già conclusa
+    ]
+    price, asof, source, session_date = predict_run._reference_price("NVDA", bars=bars, now_et=now_et)
+    assert price == 227.5
+    assert source == "historical_bar"
+    assert session_date == dt.date(2026, 9, 2)
+
+
 def test_target_at_un_giorno_dopo_la_sessione_di_riferimento():
     target = predict_run._target_at(dt.date(2026, 9, 2), horizon_days=1)
     assert target == dt.datetime(2026, 9, 3, tzinfo=dt.timezone.utc)
