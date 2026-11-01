@@ -665,6 +665,26 @@
             border-bottom: 1px solid var(--card-border);
         }
         .pos-row:last-child, .trade-row:last-child { border-bottom: none; }
+        /* display:flex sopra vince sempre su [hidden] a parità di
+           specificità (stesso bug già preso con .page-menu-dropdown,
+           2026-11): qui serve per le righe oltre il limite iniziale delle
+           liste espandibili (vedi _expandableRows). */
+        .trade-row[hidden] { display: none; }
+
+        .list-more-btn {
+            display: block;
+            width: 100%;
+            background: none;
+            border: none;
+            padding: 12px 0;
+            min-height: 44px;
+            font-size: var(--text-sm);
+            font-weight: 600;
+            color: var(--accent-signal);
+            cursor: pointer;
+            text-align: center;
+        }
+        .list-more-btn:hover { filter: brightness(1.2); }
         .pos-row__icon, .trade-row__icon {
             width: 36px;
             height: 36px;
@@ -3309,6 +3329,43 @@
             `;
         }
 
+        // Liste espandibili (Vendite recenti, Storico ordini): richiesto
+        // dall'utente, 2026-11 — su 6 mesi queste liste crescono (Storico
+        // ordini non aveva nessun limite prima d'ora, Vendite recenti ne
+        // aveva uno nascosto a 30 senza modo di vedere il resto). Mostra le
+        // prime LIST_EXPAND_INITIAL righe, nasconde le altre dietro
+        // [hidden] con un pulsante "Mostra altri N" che le rivela — niente
+        // nuova chiamata di rete, i dati sono già tutti arrivati in una
+        // fetch sola, è solo show/hide lato client.
+        const LIST_EXPAND_INITIAL = 8;
+
+        function _expandList(group) {
+            document.querySelectorAll(`[data-expand-group="${group}"]`).forEach(el => { el.hidden = false; });
+            const btn = document.querySelector(`[data-expand-btn="${group}"]`);
+            if (btn) btn.remove();
+        }
+
+        // rowsHtml: array di stringhe html già renderizzate, ciascuna un
+        // singolo elemento radice (div/tr/details — qualunque, basta che il
+        // tag di apertura sia il primo carattere). buttonRowHtml: funzione
+        // (hiddenCount) => html del pulsante, diversa per ogni contenitore
+        // (un <button> semplice per div/details, una <tr><td colspan=…>
+        // per le tabelle) quindi la decide chi chiama.
+        function _expandableRows(rowsHtml, group, buttonRowHtml) {
+            if (rowsHtml.length <= LIST_EXPAND_INITIAL) return rowsHtml.join('');
+            const visible = rowsHtml.slice(0, LIST_EXPAND_INITIAL).join('');
+            const extra = rowsHtml.slice(LIST_EXPAND_INITIAL)
+                .map(h => h.replace(/^(\s*<[a-zA-Z]+)/, `$1 hidden data-expand-group="${group}"`))
+                .join('');
+            return visible + extra + buttonRowHtml(rowsHtml.length - LIST_EXPAND_INITIAL, group);
+        }
+
+        // Pulsante "Mostra altri" per contenitori semplici (div/details, non
+        // tabelle — lì serve una <tr> apposita, vedi loadAiTraderPositionsAndOrders).
+        function _moreBtnHtml(hiddenCount, group) {
+            return `<button class="list-more-btn" data-expand-btn="${group}" onclick="_expandList('${group}')">Mostra altri ${hiddenCount}</button>`;
+        }
+
         function _closedTradeRow(t, showUsd) {
             const entryTxt = t.entry_price != null ? `$${Number(t.entry_price).toFixed(2)}` : '—';
             const exitTxt = t.exit_price != null ? `$${Number(t.exit_price).toFixed(2)}` : '—';
@@ -3434,14 +3491,14 @@
                 : real.open.map(t => _openTradeRow(t, true)).join('');
             realClosedEl.innerHTML = (real.closed || []).length === 0
                 ? paperListMessage('Nessuna operazione chiusa ancora.', false)
-                : real.closed.slice(0, 30).map(t => _closedTradeRow(t, true)).join('');
+                : _expandableRows(real.closed.map(t => _closedTradeRow(t, true)), 'real-closed', _moreBtnHtml);
 
             momOpenEl.innerHTML = (momentum.open || []).length === 0
                 ? paperListMessage('Nessuna posizione aperta.', false)
                 : momentum.open.map(t => _openTradeRow(t, false)).join('');
             momClosedEl.innerHTML = (momentum.closed || []).length === 0
                 ? paperListMessage('Nessuna operazione chiusa ancora.', false)
-                : momentum.closed.slice(0, 30).map(t => _closedTradeRow(t, false)).join('');
+                : _expandableRows(momentum.closed.map(t => _closedTradeRow(t, false)), 'mom-closed', _moreBtnHtml);
 
             aiTraderOpenCounts = { real: (real.open || []).length, momentum: (momentum.open || []).length };
             applyTradeStrategyFilter();
@@ -3492,7 +3549,13 @@
                 ordersBody.innerHTML = tableMessageRow(6, msg, !ordersRes.ok);
                 ordersList.innerHTML = paperListMessage(msg, !ordersRes.ok);
             } else {
-                ordersBody.innerHTML = orders.map(o => `
+                // Storico ordini non aveva nessun limite (richiesto
+                // dall'utente, 2026-11: su 6 mesi può arrivare a centinaia
+                // di righe) — stesso meccanismo "mostra le prime N, il resto
+                // dietro un pulsante" di Vendite recenti (_expandableRows),
+                // con un pulsante dedicato per la tabella (una <tr> con
+                // colspan, non un <button> semplice come nella lista mobile).
+                const tableRows = orders.map(o => `
                     <tr>
                         <td data-label="Inviato">${(o.submitted_at || '').slice(0, 16).replace('T', ' ')}</td>
                         <td data-label="Titolo">${escapeHtml(o.symbol || '-')}</td>
@@ -3501,11 +3564,14 @@
                         <td data-label="Stato"><span class="badge ${orderStatusBadgeClass(o.status)}">${escapeHtml(o.status || '-')}</span></td>
                         <td data-label="Prezzo fill">${o.filled_avg_price ? formatMoney(o.filled_avg_price) : '—'}</td>
                     </tr>
-                `).join('');
+                `);
+                ordersBody.innerHTML = _expandableRows(tableRows, 'orders-table', (hiddenCount, group) =>
+                    `<tr data-expand-btn="${group}"><td colspan="6"><button class="list-more-btn" onclick="_expandList('${group}')">Mostra altri ${hiddenCount}</button></td></tr>`
+                );
                 // Riga sommario = simbolo + lato + stato (pillola): è quello
                 // che si vuole controllare al volo su uno storico lungo.
                 // Data/quantità/prezzo fill restano a un tap.
-                ordersList.innerHTML = orders.map(o => `
+                const listRows = orders.map(o => `
                     <details class="paper-item">
                         <summary class="paper-item-summary">
                             <span class="paper-item-heading">
@@ -3523,7 +3589,8 @@
                             <div class="paper-item-detail-row"><span>Prezzo fill</span><span>${o.filled_avg_price ? formatMoney(o.filled_avg_price) : '—'}</span></div>
                         </div>
                     </details>
-                `).join('');
+                `);
+                ordersList.innerHTML = _expandableRows(listRows, 'orders-list', _moreBtnHtml);
             }
         }
 
