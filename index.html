@@ -155,6 +155,12 @@
                mai trasformare la pagina intera in uno scroll orizzontale —
                è esattamente il sintomo "sembra un sito, non un'app". */
             overflow-x: hidden;
+            /* Blocca il "tira per aggiornare" nativo di Chrome in cima alla
+               pagina: ricaricava l'intera app ignorando il service worker e
+               il banner "Aggiorna" dedicato (che gestisce l'update in modo
+               controllato), dando la sensazione di un sito, non un'app
+               installata. Non tocca lo scroll normale della pagina. */
+            overscroll-behavior-y: contain;
         }
 
         body {
