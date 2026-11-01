@@ -521,6 +521,19 @@ drawdown, la cifra investita per posizione scende con lui invece di
 restare sempre la stessa (che a conto più piccolo significherebbe
 rischiare una fetta più grande di quel che resta).
 
+**Tetto di esposizione, uguale per tutte e tre le strategie**:
+`config.AI_TRADER_MAX_EXPOSURE_PCT` (35%) del capitale investito in
+totale in un giorno, mai di più — richiesto dall'utente il 2026-11-02 dopo
+aver notato che gli scaglioni sopra da soli non lo garantivano in tutta la
+fascia (a equity appena sopra una soglia, es. $70.001, 14 posizioni ×
+$2.500 arrivavano al 50%, non al 35%). Per AI reale: non apre una nuova
+posizione se il totale già investito (somma dei `market_value` delle
+posizioni aperte) supererebbe il tetto. Per Momentum/Mean Reversion, che
+prima investivano sempre il 100% del loro capitale sintetico diviso
+equal-weight tra i titoli scelti ("troppo rischioso" secondo l'utente):
+ora investono al massimo il 35%, stesso equal-weight ma diviso su quella
+quota, il resto resta in contanti.
+
 **Sicurezza**: due reti indipendenti. Ogni BUY piazza SUBITO una coppia
 **OCO nativa su Alpaca** (stop-loss a `AI_TRADER_STOP_LOSS_PCT`, -8%, e
 take-profit a `AI_TRADER_TAKE_PROFIT_PCT`, +16% — rapporto rischio/rendimento

@@ -649,6 +649,22 @@ def ai_trader_position_notional(equity_usd: float) -> float:
         if equity_usd < ceiling:
             return notional
 
+
+# Tetto massimo di capitale investito in un giorno, uguale per tutte e tre
+# le strategie (AI reale, Momentum, Mean Reversion) — richiesto
+# esplicitamente dall'utente il 2026-11-02 dopo aver scoperto che gli
+# scaglioni sopra NON garantivano da soli un tetto reale al 35%: a equity
+# appena sopra una soglia (es. $70.001, 14 posizioni × $2.500) il totale
+# investito poteva arrivare al 50% del conto, non al 35% visto solo nel
+# punto di partenza esatto ($100.000). Momentum/Mean Reversion investivano
+# PRIMA il 100% del loro capitale sintetico ogni giorno ("troppo
+# rischioso" secondo l'utente) — ora, come AI reale, max il 35%, il resto
+# resta in contanti. Vedi il suo uso in ai_trader_run.run_daily() (somma
+# dei market_value delle posizioni aperte, non supera equity * questo
+# valore) e in benchmark._update_strategy() (somma dei pesi equal-weight,
+# non più 1.0 ma questo valore).
+AI_TRADER_MAX_EXPOSURE_PCT = 0.35
+
 # Vendita di sicurezza indipendente dal giudizio AI del giorno: una
 # posizione che perde più di questa percentuale (unrealized_plpc di
 # Alpaca) viene chiusa comunque, anche se il modello quel giorno direbbe

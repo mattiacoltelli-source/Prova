@@ -9,7 +9,9 @@ Momentum e Mean Reversion sono due strategie quantitative classiche A
 REGOLE FISSE, senza nessun giudizio AI, filosoficamente opposte — ogni
 giorno tengono equal-weight i titoli dell'universo scanner (stesso di
 ai_trader.py) fino a un massimo di posizioni pari al tetto di
-diversificazione dell'esperimento reale:
+diversificazione dell'esperimento reale, investendo in totale al massimo
+AI_TRADER_MAX_EXPOSURE_PCT (35%) del proprio capitale — non più il 100%,
+il resto resta in contanti, stesso tetto di rischio di AI reale:
 - Momentum tiene chi ha il MIGLIOR rendimento recente (continuazione del
   trend), nessun titolo con momentum positivo -> tutta in contanti.
 - Mean Reversion tiene chi ha il PEGGIOR rendimento recente (scommessa sul
@@ -149,7 +151,19 @@ def _update_strategy(
         selected = [symbol for symbol, pct in rank if pct < 0][:top_n]
     else:
         selected = [symbol for symbol, pct in rank if pct > 0][:top_n]
-    new_holdings = {symbol: 1 / len(selected) for symbol in selected} if selected else {}
+    # Non più il 100% del capitale diviso equal-weight tra i selezionati:
+    # stesso tetto del 35% di AI reale (config.AI_TRADER_MAX_EXPOSURE_PCT),
+    # il resto resta in contanti — "troppo rischioso" investire tutto ogni
+    # giorno, richiesto dall'utente il 2026-11-02 per restare un confronto
+    # onesto con AI reale anche sul fronte del rischio, non solo del
+    # rendimento. day_return sopra somma solo i pesi dei titoli tenuti, già
+    # pronto per pesi che non sommano a 1.0: la quota non investita
+    # contribuisce 0 al rendimento del giorno, esattamente come contanti.
+    new_holdings = (
+        {symbol: config.AI_TRADER_MAX_EXPOSURE_PCT / len(selected) for symbol in selected}
+        if selected
+        else {}
+    )
 
     exited_today = set(previous_holdings) - set(new_holdings)
     entered_today = set(new_holdings) - set(previous_holdings)

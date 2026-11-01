@@ -649,6 +649,60 @@ def test_daily_buy_piazza_anche_stop_e_take_profit_nativi(tmp_path, monkeypatch)
     )
 
 
+# ─── run_daily: tetto del 35% di esposizione (AI_TRADER_MAX_EXPOSURE_PCT) ──
+
+
+def test_daily_buy_bloccato_se_supererebbe_il_35_percento_investito(tmp_path, monkeypatch):
+    """A equity $100.000 il tetto è $35.000. Una posizione esistente da
+    $34.000 lascia solo $1.000 di margine: un BUY da $2.500 (lo scaglione a
+    quell'equity) lo sfonderebbe (36.500) e deve essere saltato, anche se
+    il conto avrebbe sia il buying power sia uno slot libero su 14."""
+    _isolate(tmp_path, monkeypatch)
+    end_date = (__import__("datetime").date.today() + __import__("datetime").timedelta(days=30)).isoformat()
+    with open(config.AI_TRADER_EXPERIMENT_FILE, "w", encoding="utf-8") as fh:
+        json.dump({"start_date": "2026-01-01", "end_date": end_date, "status": "running"}, fh)
+
+    existing_position = {"symbol": "ZZZ", "qty": "100", "market_value": "34000"}
+    buy_decision = [{"symbol": "RIVN", "decision": "BUY", "reasoning_short": "x", "model_used": "haiku", "cost_usd": 0.0}]
+
+    with patch("src.ai_trader_run.paper_trading.get_positions", return_value=[existing_position]), \
+         patch("src.ai_trader_run.paper_trading.place_order") as mock_place, \
+         patch("src.ai_trader_run.paper_trading.get_account",
+               return_value={"equity": "100000", "buying_power": "50000"}), \
+         patch("src.ai_trader_run.paper_trading.snapshot_account"), \
+         patch("src.ai_trader_run.paper_trading.get_portfolio_history", return_value={"timestamp": [], "equity": []}), \
+         patch("src.ai_trader.decide_all", return_value=buy_decision):
+        ai_trader_run.run_daily(dry_run=False)
+
+    mock_place.assert_not_called()
+
+
+def test_daily_buy_entra_se_resta_sotto_il_35_percento(tmp_path, monkeypatch):
+    """Stesso scenario della prova sopra ma con $1.000 di posizione esistente
+    invece di $34.000: il BUY da $2.500 resta sotto il tetto (3.500 <=
+    35.000) e deve partire normalmente."""
+    _isolate(tmp_path, monkeypatch)
+    end_date = (__import__("datetime").date.today() + __import__("datetime").timedelta(days=30)).isoformat()
+    with open(config.AI_TRADER_EXPERIMENT_FILE, "w", encoding="utf-8") as fh:
+        json.dump({"start_date": "2026-01-01", "end_date": end_date, "status": "running"}, fh)
+
+    existing_position = {"symbol": "ZZZ", "qty": "10", "market_value": "1000"}
+    buy_decision = [{"symbol": "RIVN", "decision": "BUY", "reasoning_short": "x", "model_used": "haiku", "cost_usd": 0.0}]
+    buy_order_resp = {"id": "ord-buy", "symbol": "RIVN", "status": "accepted"}
+
+    with patch("src.ai_trader_run.paper_trading.get_positions", return_value=[existing_position]), \
+         patch("src.ai_trader_run.paper_trading.place_order", return_value=buy_order_resp) as mock_place, \
+         patch("src.ai_trader_run.paper_trading.place_oco_exit_order"), \
+         patch("src.ai_trader_run.paper_trading.get_account",
+               return_value={"equity": "100000", "buying_power": "50000"}), \
+         patch("src.ai_trader_run.paper_trading.snapshot_account"), \
+         patch("src.ai_trader_run.paper_trading.get_portfolio_history", return_value={"timestamp": [], "equity": []}), \
+         patch("src.ai_trader.decide_all", return_value=buy_decision):
+        ai_trader_run.run_daily(dry_run=False)
+
+    mock_place.assert_called_once_with(symbol="RIVN", side="buy", notional=2500.0)
+
+
 # ─── Resilienza: un titolo/una posizione con problemi non blocca gli altri ──
 # (audit di affidabilità richiesto dall'utente il 2026-10-31)
 

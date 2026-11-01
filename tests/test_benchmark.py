@@ -81,7 +81,7 @@ def test_momentum_primo_giorno_sceglie_i_migliori_top_n_senza_perdita_di_ieri(tm
     rec = records[0]
     # Giorno 1: nessun paniere precedente da segnare a mercato, equity invariata.
     assert rec["equity_usd"] == 100000.0
-    assert rec["holdings"] == {"AAA": 0.5, "CCC": 0.5}
+    assert rec["holdings"] == {"AAA": 0.175, "CCC": 0.175}
     assert rec["entry_prices"] == {"AAA": 110.0, "CCC": 105.0}
     assert rec["mark_prices"] == {"AAA": 110.0, "CCC": 105.0}
     assert rec["exit_prices"] == {}
@@ -108,9 +108,11 @@ def test_momentum_secondo_giorno_segna_a_mercato_il_paniere_di_ieri(tmp_path, mo
     records = storage.read_all(config.AI_TRADER_MOMENTUM_FILE)
     assert len(records) == 2
     rec = records[1]
-    # 0.5*(121/110-1) + 0.5*(105/105-1) = 0.05 -> 100000 * 1.05
+    # 0.5*(121/110-1) + 0.5*(105/105-1) = 0.05 -> 100000 * 1.05 (pesi di
+    # IERI, 0.5/0.5 come inseriti sopra nel fixture — il nuovo tetto del
+    # 35% si applica solo alla selezione di OGGI, sotto)
     assert rec["equity_usd"] == 105000.0
-    assert rec["holdings"] == {"AAA": 0.5, "CCC": 0.5}
+    assert rec["holdings"] == {"AAA": 0.175, "CCC": 0.175}
     # Nessuno dei due è entrato oggi: entry_prices resta quello originale di ieri.
     assert rec["entry_prices"] == {"AAA": 110.0, "CCC": 105.0}
     # mark_prices invece è sempre quello di OGGI.
@@ -166,7 +168,7 @@ def test_momentum_salva_il_prezzo_di_uscita_di_un_titolo_venduto(tmp_path, monke
         benchmark.update_momentum(dt.date(2026, 11, 1), _EXPERIMENT)
 
     rec = storage.read_all(config.AI_TRADER_MOMENTUM_FILE)[1]
-    assert rec["holdings"] == {"AAA": 0.5, "CCC": 0.5}  # BBB non c'è più
+    assert rec["holdings"] == {"AAA": 0.175, "CCC": 0.175}  # BBB non c'è più
     assert rec["exit_prices"] == {"BBB": 40.0}  # solo lei è uscita oggi
     assert rec["entry_prices"]["CCC"] == 110.0  # appena entrata: ingresso = oggi
 
@@ -196,7 +198,7 @@ def test_momentum_un_titolo_senza_dati_non_blocca_gli_altri(tmp_path, monkeypatc
         benchmark.update_momentum(dt.date(2026, 10, 31), _EXPERIMENT)
 
     rec = storage.read_all(config.AI_TRADER_MOMENTUM_FILE)[0]
-    assert rec["holdings"] == {"AAA": 0.5, "CCC": 0.5}
+    assert rec["holdings"] == {"AAA": 0.175, "CCC": 0.175}
 
 
 def test_momentum_stesso_giorno_e_idempotente_nessuna_chiamata_di_rete(tmp_path, monkeypatch):
@@ -292,7 +294,7 @@ def test_meanrev_primo_giorno_sceglie_i_peggiori_top_n_senza_perdita_di_ieri(tmp
 
     rec = storage.read_all(config.AI_TRADER_MEANREV_FILE)[0]
     assert rec["equity_usd"] == 100000.0
-    assert rec["holdings"] == {"AAA": 0.5, "BBB": 0.5}
+    assert rec["holdings"] == {"AAA": 0.175, "BBB": 0.175}
     assert rec["entry_prices"] == {"AAA": 90.0, "BBB": 95.0}
     assert rec["exit_prices"] == {}
 
@@ -369,8 +371,8 @@ def test_meanrev_momentum_isolati_su_file_separati(tmp_path, monkeypatch):
 
     momentum_rec = storage.read_all(config.AI_TRADER_MOMENTUM_FILE)[0]
     meanrev_rec = storage.read_all(config.AI_TRADER_MEANREV_FILE)[0]
-    assert momentum_rec["holdings"] == {"AAA": 0.5, "CCC": 0.5}
-    assert meanrev_rec["holdings"] == {"BBB": 1.0}
+    assert momentum_rec["holdings"] == {"AAA": 0.175, "CCC": 0.175}
+    assert meanrev_rec["holdings"] == {"BBB": 0.35}
 
 
 def test_derive_meanrev_trades_usa_la_stessa_logica_di_derive_strategy_trades():

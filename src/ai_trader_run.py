@@ -394,9 +394,17 @@ def run_daily(dry_run: bool) -> None:
 
     account = paper_trading.get_account()
     buying_power = float(account["buying_power"])
+    equity = float(account["equity"])
     # Calcolato una volta per run sull'equity di oggi, non per ogni
     # posizione: vedi config.ai_trader_position_notional per il perché.
-    position_notional = config.ai_trader_position_notional(float(account["equity"]))
+    position_notional = config.ai_trader_position_notional(equity)
+    # Tetto al 35% dell'equity investito in totale (config.AI_TRADER_MAX_EXPOSURE_PCT),
+    # non solo al numero massimo di posizioni: gli scaglioni da soli non lo
+    # garantivano in tutta la fascia (vedi commento lì). "positions" è già
+    # stato riletto sopra dopo l'eventuale stop-loss, quindi riflette lo
+    # stato vero del conto in questo momento, non quello di inizio giornata.
+    max_deployed_usd = equity * config.AI_TRADER_MAX_EXPOSURE_PCT
+    deployed_usd = sum(float(p.get("market_value", 0.0)) for p in positions)
 
     # Un titolo alla volta, mai fatale per gli altri (stesso principio di
     # _check_stop_losses sopra e di market_scanner.scan()): senza questo
@@ -419,6 +427,8 @@ def run_daily(dry_run: bool) -> None:
                     continue
                 if buying_power < position_notional:
                     continue
+                if deployed_usd + position_notional > max_deployed_usd:
+                    continue
                 order = paper_trading.place_order(
                     symbol=symbol, side="buy", notional=position_notional
                 )
@@ -426,6 +436,7 @@ def run_daily(dry_run: bool) -> None:
                 _attach_native_exit(symbol)
                 open_symbols.add(symbol)
                 buying_power -= position_notional
+                deployed_usd += position_notional
                 print(f"BUY {symbol} — {decision['reasoning_short']}")
         except Exception as exc:  # noqa: BLE001 - un titolo alla volta, mai fatale
             print(f"Ordine non eseguito per {symbol} (continuo con gli altri titoli): {exc}")
