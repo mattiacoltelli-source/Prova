@@ -281,6 +281,17 @@ def _check_stop_losses(positions: list[dict]) -> list[str]:
     return sold
 
 
+def _is_us_market_day(d: dt.date) -> bool:
+    """Weekend o festività USA elencata in config.AI_TRADER_US_MARKET_HOLIDAYS
+    (NYSE/Nasdaq chiusi) — vedi il commento lì per cosa copre e i suoi
+    limiti. Il weekend è già escluso dal cron ("1-5" in ai_trader.yml), ma
+    ricontrollarlo qui costa nulla e protegge anche un workflow_dispatch
+    manuale lanciato per sbaglio di sabato o domenica."""
+    if d.weekday() >= 5:  # 5=sabato, 6=domenica
+        return False
+    return d.isoformat() not in config.AI_TRADER_US_MARKET_HOLIDAYS
+
+
 def run_daily(dry_run: bool) -> None:
     experiment = load_experiment()
     if experiment is None:
@@ -291,6 +302,16 @@ def run_daily(dry_run: bool) -> None:
         return
 
     today = dt.date.today()
+
+    # Trovato in un code review pre-lancio, 2026-11-01: senza questo
+    # controllo il run di una festività USA chiamava comunque i modelli
+    # pagati (budget mensile già strettissimo, $3.50) su un mercato fermo
+    # da giorni, e gli ordini eventuali finivano rifiutati da Alpaca o
+    # restavano "pending_new" indefinitamente.
+    if not _is_us_market_day(today):
+        print(f"{today.isoformat()} non è un giorno di mercato USA (weekend o festività): nessuna azione.")
+        return
+
     end_date = dt.date.fromisoformat(experiment["end_date"])
     if today > end_date:
         if dry_run:
@@ -325,9 +346,31 @@ def run_daily(dry_run: bool) -> None:
         positions = paper_trading.get_positions()
 
     open_symbols = {p["symbol"] for p in positions}
-    decisions = ai_trader.decide_all()
-    for decision in decisions:
-        ai_trader.record_decision({**decision, "date": today.isoformat()})
+
+    # Trovato in un code review pre-lancio, 2026-11-01: a differenza di
+    # run_setup() (che controlla experiment.json prima di agire),
+    # run_daily() non aveva nessuna protezione contro una seconda
+    # esecuzione lo stesso giorno (es. rilancio manuale dopo che il run
+    # delle 22:10 UTC è fallito a metà) — decide_all() richiamava di nuovo
+    # tutti i modelli a pagamento, duplicando sia la spesa sul budget
+    # mensile sia le righe in decisions.jsonl per la stessa data. Se oggi
+    # ci sono già decisioni registrate, le riusiamo invece di rifare le
+    # chiamate AI: gli ordini restano comunque al sicuro da duplicazioni
+    # perché open_symbols sopra è sempre riletto da Alpaca, mai dedotto
+    # dalle decisioni stesse — un run parziale può quindi completare gli
+    # ordini mancanti senza ripagare le decisioni già prese.
+    today_iso = today.isoformat()
+    existing_decisions = [d for d in storage.read_all(config.AI_TRADER_DECISIONS_FILE) if d.get("date") == today_iso]
+    if existing_decisions:
+        print(
+            f"{len(existing_decisions)} decisioni già registrate oggi ({today_iso}): "
+            "le riuso invece di richiamare di nuovo i modelli AI."
+        )
+        decisions = existing_decisions
+    else:
+        decisions = ai_trader.decide_all()
+        for decision in decisions:
+            ai_trader.record_decision({**decision, "date": today_iso})
 
     account = paper_trading.get_account()
     buying_power = float(account["buying_power"])

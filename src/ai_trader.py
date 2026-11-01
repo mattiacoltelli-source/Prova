@@ -11,6 +11,7 @@ una distribuzione di probabilità da valutare col Brier Score.
 """
 from __future__ import annotations
 
+import datetime as dt
 import json
 import os
 import re
@@ -33,16 +34,30 @@ def tradeable_universe() -> list[str]:
 
 def load_scanner_results() -> dict[str, dict]:
     """Ultimo scan disponibile (data/scanner/results.json), indicizzato per
-    simbolo. {} se lo scanner non ha ancora mai girato, o se il file non si
-    legge per qualunque motivo (JSON corrotto, campi mancanti) — un
-    problema qui non deve mai bloccare decide_all(): i 4 ASSETS non
-    dipendono dallo scanner, degradano correttamente a "nessun giudizio sui
-    titoli non-ASSETS oggi" invece di un run completamente perso."""
+    simbolo. {} se lo scanner non ha ancora mai girato, se il file non si
+    legge per qualunque motivo (JSON corrotto, campi mancanti), o se i dati
+    non sono di oggi — un problema qui non deve mai bloccare decide_all(): i
+    4 ASSETS non dipendono dallo scanner, degradano correttamente a "nessun
+    giudizio sui titoli non-ASSETS oggi" invece di un run completamente
+    perso.
+
+    Il controllo di freschezza (generated_at) è stato aggiunto in un code
+    review pre-lancio, 2026-11-01: senza, uno scanner rotto o bloccato per
+    giorni/settimane (market_scanner.yml fallito in silenzio) avrebbe
+    continuato a essere letto come se fosse di oggi — build_scanner_prompt
+    dice letteralmente "Variazione da ieri", un'affermazione falsa su dati
+    vecchi che avrebbe degradato silenziosamente le decisioni di trading
+    reali per tutto il tempo in cui nessuno se ne fosse accorto."""
     if not os.path.exists(config.SCANNER_FILE):
         return {}
     try:
         with open(config.SCANNER_FILE, "r", encoding="utf-8") as fh:
             data = json.load(fh)
+        generated_at = str(data.get("generated_at", ""))
+        today = dt.date.today().isoformat()
+        if not generated_at.startswith(today):
+            print(f"Scanner non aggiornato oggi (generated_at={generated_at or 'assente'}): nessun dato scanner oggi.")
+            return {}
         return {row["symbol"]: row for row in data.get("results", [])}
     except Exception:  # noqa: BLE001 - degrada a "nessun dato scanner oggi", mai fatale
         return {}
@@ -169,6 +184,17 @@ def scanner_symbol_decision(symbol: str, row: dict, thresholds: dict, model: str
             "skipped_budget": True,
         }
     prompt = build_scanner_prompt(symbol, row, thresholds)
+    # cost_usd inizializzato qui (non 0.0 fisso nel except sotto): se
+    # call_model ha già restituito una risposta e record_trader_call_cost ha
+    # già addebitato la spesa reale al budget mensile, un parse_decision
+    # fallito subito dopo (risposta malformata/troncata) non deve far
+    # sparire quel costo dal record — bug reale trovato in un code review
+    # pre-lancio, 2026-11-01: il budget veniva addebitato correttamente (lo
+    # sforamento reale resta impossibile, trader_has_budget() legge il file
+    # di stato vero), ma decisions.jsonl riportava cost_usd:0.0 per quella
+    # decisione, rendendo inaffidabile un controllo a posteriori di dove sia
+    # finita la spesa mensile.
+    cost_usd = 0.0
     try:
         raw, input_tokens, output_tokens = call_model(model, prompt)
         cost_usd = budget.record_trader_call_cost(model, input_tokens, output_tokens)
@@ -179,7 +205,7 @@ def scanner_symbol_decision(symbol: str, row: dict, thresholds: dict, model: str
             "model_used": model,
             "decision": "HOLD",
             "reasoning_short": f"Errore nel giudizio AI, HOLD per sicurezza: {exc}",
-            "cost_usd": 0.0,
+            "cost_usd": round(cost_usd, 6),
         }
     return {
         "symbol": symbol,

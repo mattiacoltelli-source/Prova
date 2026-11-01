@@ -54,20 +54,26 @@ on:
 permissions:
   contents: write
 
-# Senza questo blocco, due "Run workflow" quasi in parallelo potrebbero
-# entrambi fare checkout prima che il primo pushi il proprio ordine: ogni
-# run calcola prev_hash/record_hash (src/storage.py: append_record) sulla
-# base dell'ULTIMA riga del file COME LA VEDE IN LOCALE, prima del commit.
-# Il retry fetch+rebase nello step "Commit e push" risolve solo il
-# conflitto git (il rebase applica comunque la riga in append), ma non
-# ricalcola l'hash: il secondo ordine finirebbe pushato con un prev_hash
-# che punta alla riga sbagliata (quella di prima del primo ordine, non
-# quella appena arrivata), rompendo la catena verificata da
-# storage.verify_chain() — corruzione silenziosa, scoperta solo
-# nell'audit del 2026-10-31, mai capitata dal vivo. group senza
-# cancel-in-progress: la seconda run resta in coda e parte (checkout
-# compreso) solo dopo che la prima ha finito, azzerando la finestra di
-# race invece di limitarsi a ridurla.
+# Senza questo blocco, due run quasi in parallelo potrebbero entrambi fare
+# checkout prima che il primo pushi il proprio ordine: ogni run calcola
+# prev_hash/record_hash (src/storage.py: append_record) sulla base
+# dell'ULTIMA riga del file COME LA VEDE IN LOCALE, prima del commit. Il
+# retry fetch+rebase nello step "Commit e push" risolve solo il conflitto
+# git (il rebase applica comunque la riga in append), ma non ricalcola
+# l'hash: il secondo ordine finirebbe pushato con un prev_hash che punta
+# alla riga sbagliata (quella di prima del primo ordine, non quella appena
+# arrivata), rompendo la catena verificata da storage.verify_chain() —
+# corruzione silenziosa, scoperta solo nell'audit del 2026-10-31, mai
+# capitata dal vivo. group senza cancel-in-progress: la seconda run resta
+# in coda e parte (checkout compreso) solo dopo che la prima ha finito,
+# azzerando la finestra di race invece di limitarsi a ridurla.
+#
+# Stesso group usato anche da ai_trader.yml (non solo da altre run di
+# questo workflow): scrive sulla stessa catena hash (paper_trading.
+# record_order) e sovrascrive lo stesso account.json, quindi è esposto
+# alla stessa classe di corruzione — un ordine manuale lanciato nello
+# stesso minuto del cron di ai_trader.yml. Trovato e corretto in un code
+# review pre-lancio, 2026-11-01.
 concurrency:
   group: paper-order
   cancel-in-progress: false

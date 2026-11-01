@@ -539,6 +539,18 @@ mercato chiuso, senza buchi se un giorno il workflow non gira) a
 `equity_history.jsonl` sopra, usato come riserva se il file non c'è ancora o
 la chiamata ad Alpaca fallisce quel giorno.
 
+**Affidabilità sui 6 mesi non presidiati** (code review pre-lancio,
+2026-11-01): il cron gira alle 22:10 UTC, sempre dopo la chiusura USA in
+entrambi gli orari dell'anno (GitHub Actions non supporta fusi orari nei
+cron); `ai_trader_run._is_us_market_day` salta weekend e le festività USA
+elencate in `config.AI_TRADER_US_MARKET_HOLIDAYS`, senza sprecare budget AI
+su un mercato fermo; `run_daily()` riusa le decisioni già registrate per
+oggi invece di richiamare i modelli una seconda volta su un rilancio
+manuale; `ai_trader.load_scanner_results()` scarta dati dello scanner non
+di oggi invece di usarli come se fossero freschi; il workflow condivide il
+concurrency group `paper-order` con "Ordine paper trading" (sotto) perché
+entrambi scrivono sulla stessa catena hash di `data/paper/orders.jsonl`.
+
 ## Scanner di mercato
 
 Modulo separato e indipendente dal motore predittivo (nessuna previsione,

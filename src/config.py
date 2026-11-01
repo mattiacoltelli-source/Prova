@@ -632,6 +632,27 @@ AI_TRADER_STOP_LOSS_PCT = -8.0
 # sistema di questo progetto.
 AI_TRADER_DURATION_DAYS = 182
 
+# Festività USA (NYSE/Nasdaq chiusi) che cadono di lunedì-venerdì durante
+# la finestra dell'esperimento (inizio 2026-11-02, fine ~2027-05-03 con
+# AI_TRADER_DURATION_DAYS sopra, più qualche giorno di margine se il setup
+# reale parte con un piccolo ritardo). Date calcolate e verificate una per
+# una (algoritmo di Gauss per la Pasqua, non un valore copiato a memoria),
+# non un calendario generico: il cron di ai_trader.yml gira ogni giorno
+# feriale senza nessun altro modo di sapere che il mercato è chiuso — senza
+# questo controllo (vedi ai_trader_run._is_us_market_day) il run di quel
+# giorno spenderebbe comunque budget AI su un mercato fermo da giorni,
+# trovato in un code review pre-lancio, 2026-11-01. Se l'esperimento viene
+# esteso oltre inizio maggio 2027, questa lista va allungata (prossima:
+# Memorial Day, ultimo lunedì di maggio).
+AI_TRADER_US_MARKET_HOLIDAYS = frozenset({
+    "2026-11-26",  # Giorno del Ringraziamento
+    "2026-12-25",  # Natale
+    "2027-01-01",  # Capodanno
+    "2027-01-18",  # Martin Luther King Jr. Day
+    "2027-02-15",  # Presidents Day
+    "2027-03-26",  # Venerdì Santo (NYSE/Nasdaq chiusi, non festa federale)
+})
+
 # Modelli Anthropic per il giudizio sui titoli non-ASSETS. Claude Haiku 5.5
 # e Claude Sonnet 5.5, non le versioni precedenti (4.5 usata da
 # ANTHROPIC_MODEL sopra): Haiku 5.5 costa 1/10 di Haiku 4.5 a parità di

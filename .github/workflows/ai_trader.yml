@@ -15,14 +15,26 @@ name: Trading automatico AI
 #    inizio/fine dell'esperimento. Idempotente (vedi ai_trader_run.py).
 #  - daily: stop-loss + decisioni + ordini + istantanea conto.
 #
-# Orario: 20:15 UTC nei giorni di mercato, dopo l'ultimo tick dello scanner
-# (19:40 UTC, vedi market_scanner.yml) e dopo la chiusura USA, così le
-# decisioni del giorno usano segnali scanner già freschi. Minuto 15 (non
-# :00) per lo stesso motivo di snapshot.yml/market_scanner.yml: evitare il
-# picco di carico di GitHub Actions a inizio ora.
+# Orario: 22:10 UTC nei giorni di mercato, dopo l'ultimo tick dello scanner
+# (19:40 UTC, vedi market_scanner.yml) e sempre dopo la chiusura USA, in
+# ENTRAMBI gli orari dell'anno — GitHub Actions non supporta fusi orari nei
+# cron, solo UTC fisso, e la chiusura NYSE/Nasdaq (16:00 ET) cade sia alle
+# 20:00 UTC (ora legale, EDT) sia alle 21:00 UTC (ora solare, EST): un
+# orario fisso più vicino alla chiusura sarebbe corretto in una sola delle
+# due stagioni e sbagliato nell'altra per metà dell'esperimento (bug reale
+# trovato in un code review pre-lancio, 2026-11-01: col vecchio orario
+# 20:15 UTC il run sarebbe partito 45 minuti PRIMA della chiusura per circa
+# 4 mesi e mezzo su 6, da inizio novembre a metà marzo). 22:10 UTC resta
+# comodamente dopo la chiusura in entrambi i casi (e anche dopo un'eventuale
+# chiusura anticipata, es. vigilia di Natale). Minuto 10 (non :00) per lo
+# stesso motivo di snapshot.yml/market_scanner.yml: evitare il picco di
+# carico di GitHub Actions a inizio ora. Festività USA (mercato chiuso pur
+# essendo un giorno feriale) non gestite qui: vedi il controllo esplicito
+# in ai_trader_run.run_daily() — un cron non può saltare solo alcuni
+# giorni della settimana senza elencarli uno per uno ogni anno.
 on:
   schedule:
-    - cron: "15 20 * * 1-5"
+    - cron: "10 22 * * 1-5"
   workflow_dispatch:
     inputs:
       mode:
@@ -38,8 +50,23 @@ on:
 permissions:
   contents: write
 
+# Stesso group di paper_order.yml, non uno dedicato: entrambi i workflow
+# scrivono sulla STESSA catena hash (data/paper/orders.jsonl, via
+# paper_trading.record_order) e sovrascrivono lo stesso data/paper/
+# account.json. Il group 'paper-order' era stato creato in paper_order.yml
+# apposta per impedire a due run concorrenti di calcolare prev_hash sulla
+# stessa riga base e rompere la catena silenziosamente (corruzione reale
+# già capitata una volta, scoperta nell'audit del 2026-10-31) — ma
+# proteggeva solo paper_order.yml contro se stesso, non contro questo
+# workflow che scrive sugli stessi file. Bug trovato in un code review
+# pre-lancio, 2026-11-01: un ordine manuale lanciato nello stesso minuto
+# del cron delle 22:10 UTC avrebbe potuto riprodurre la stessa corruzione.
+# Condividere il group vuol dire che i due workflow si mettono in coda a
+# vicenda invece di girare in parallelo — scelta corretta qui: sicurezza
+# della catena hash sui 6 mesi dell'esperimento vale più di qualche secondo
+# di attesa su un ordine manuale occasionale.
 concurrency:
-  group: ai-trader-${{ github.ref }}
+  group: paper-order
   cancel-in-progress: false
 
 jobs:

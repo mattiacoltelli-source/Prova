@@ -6,6 +6,7 @@ FakeAnthropicClient sotto, stesso spirito di FakeResponse in
 test_paper_trading.py per requests)."""
 from __future__ import annotations
 
+import datetime as dt
 import json
 from unittest.mock import patch
 
@@ -36,6 +37,13 @@ def _isolate(tmp_path, monkeypatch):
     # chiamati davvero.
     monkeypatch.setattr(ai_trader_run.benchmark, "update_momentum", lambda *a, **k: None)
     monkeypatch.setattr(ai_trader_run, "_update_trade_dashboards", lambda *a, **k: None)
+    # Il controllo weekend/festività (_is_us_market_day) non deve rendere
+    # flaky i test esistenti a seconda del giorno reale in cui gira la
+    # suite (es. CI che gira di sabato, o in un giorno della lista
+    # AI_TRADER_US_MARKET_HOLIDAYS): nessuno dei test sotto vuole verificare
+    # QUESTO comportamento, lo fanno solo i test dedicati più in basso, che
+    # sovrascrivono di nuovo questo mock.
+    monkeypatch.setattr(ai_trader_run, "_is_us_market_day", lambda d: True)
 
 
 # ─── budget.py: tetto mensile in dollari ────────────────────────────────────
@@ -190,6 +198,27 @@ def test_scanner_symbol_decision_errore_modello_torna_hold(tmp_path, monkeypatch
     assert decision["cost_usd"] == 0.0
 
 
+def test_scanner_symbol_decision_parsing_fallito_registra_comunque_il_costo(tmp_path, monkeypatch):
+    """Bug reale trovato in un code review pre-lancio, 2026-11-01:
+    record_trader_call_cost() addebita il budget PRIMA di parse_decision().
+    Se la risposta del modello non è JSON valido, il except tornava sempre
+    cost_usd:0.0 anche se la spesa reale era già stata registrata nel file
+    di stato mensile — qui la chiamata riesce (addebito reale) ma la
+    risposta è malformata, quindi cost_usd deve riflettere la spesa vera,
+    non azzerarsi."""
+    _isolate(tmp_path, monkeypatch)
+    fake_text = "risposta non JSON, troncata a metà"
+    mock_client = type("C", (), {})()
+    mock_client.messages = type("M", (), {"create": lambda self, **kw: FakeMessage(fake_text)})()
+    with patch("src.ai_trader.anthropic.Anthropic", return_value=mock_client):
+        decision = ai_trader.scanner_symbol_decision(
+            "RIVN", {"price": 10, "currency": "USD"}, {}, config.AI_TRADER_HAIKU_MODEL
+        )
+    assert decision["decision"] == "HOLD"
+    assert decision["cost_usd"] > 0
+    assert budget.get_trader_spent_usd() == pytest.approx(decision["cost_usd"])
+
+
 # ─── ai_trader.decide_all(): instradamento Sonnet/Haiku/previsione ────────
 
 
@@ -202,6 +231,7 @@ def test_decide_all_instrada_sonnet_su_flagged_e_rispetta_il_tetto_giornaliero(t
 
     scanner_file = tmp_path / "scanner.json"
     scanner_file.write_text(json.dumps({
+        "generated_at": dt.datetime.now(dt.timezone.utc).isoformat(),
         "thresholds": {"volume_ratio": 2.0},
         "results": [
             {"symbol": "RIVN", "flagged": True, "price": 10, "currency": "USD"},
@@ -281,6 +311,48 @@ def test_setup_reale_chiude_posizioni_e_fissa_experiment(tmp_path, monkeypatch):
 # ─── ai_trader_run: daily ──────────────────────────────────────────────────
 
 
+# ─── _is_us_market_day: weekend e festività USA ────────────────────────────
+
+
+def test_is_us_market_day_giorno_feriale_normale():
+    assert ai_trader_run._is_us_market_day(dt.date(2027, 1, 19)) is True  # martedì normale
+
+
+def test_is_us_market_day_weekend_falso():
+    assert ai_trader_run._is_us_market_day(dt.date(2027, 1, 23)) is False  # sabato
+    assert ai_trader_run._is_us_market_day(dt.date(2027, 1, 24)) is False  # domenica
+
+
+def test_is_us_market_day_festivita_falso():
+    # Ogni data elencata in config.AI_TRADER_US_MARKET_HOLIDAYS dev'essere
+    # riconosciuta come non di mercato, non solo quella usata per il test
+    # dedicato sotto — copre tutte e sei in un colpo solo.
+    for iso_date in config.AI_TRADER_US_MARKET_HOLIDAYS:
+        d = dt.date.fromisoformat(iso_date)
+        assert ai_trader_run._is_us_market_day(d) is False, f"{iso_date} dovrebbe essere festività"
+
+
+def test_is_us_market_day_thanksgiving_falso():
+    assert ai_trader_run._is_us_market_day(dt.date(2026, 11, 26)) is False
+
+
+def test_daily_rispetta_is_us_market_day_falso(tmp_path, monkeypatch):
+    """Bug reale trovato in un code review pre-lancio, 2026-11-01: run_daily
+    non aveva nessun controllo su weekend/festività, quindi un run di
+    festività chiamava comunque i modelli pagati su un mercato fermo.
+    Verifica il collegamento (run_daily chiama davvero _is_us_market_day e
+    si ferma se torna False) senza dover simulare una data specifica —
+    _is_us_market_day stesso è già testato a parte sopra, su tutte e sei le
+    festività elencate più il weekend."""
+    _isolate(tmp_path, monkeypatch)
+    monkeypatch.setattr(ai_trader_run, "_is_us_market_day", lambda d: False)
+    with open(config.AI_TRADER_EXPERIMENT_FILE, "w", encoding="utf-8") as fh:
+        json.dump({"start_date": "2026-01-01", "end_date": "2027-06-01", "status": "running"}, fh)
+    with patch("src.ai_trader_run.paper_trading.get_positions") as mock_positions:
+        ai_trader_run.run_daily(dry_run=False)
+    mock_positions.assert_not_called()
+
+
 def test_daily_senza_esperimento_non_fa_nulla(tmp_path, monkeypatch):
     _isolate(tmp_path, monkeypatch)
     with patch("src.ai_trader_run.paper_trading.get_positions") as mock_positions:
@@ -308,6 +380,40 @@ def test_daily_dry_run_non_chiama_ai_trader_decide_all(tmp_path, monkeypatch):
          patch("src.ai_trader.decide_all") as mock_decide:
         ai_trader_run.run_daily(dry_run=True)
     mock_decide.assert_not_called()
+
+
+def test_daily_riusa_decisioni_gia_registrate_oggi(tmp_path, monkeypatch):
+    """Bug reale trovato in un code review pre-lancio, 2026-11-01: run_daily
+    non aveva nessuna protezione contro una seconda esecuzione lo stesso
+    giorno (es. rilancio manuale dopo un run fallito a metà) — decide_all()
+    richiamava di nuovo tutti i modelli a pagamento, duplicando sia la spesa
+    sul budget mensile sia le righe in decisions.jsonl. Qui una decisione
+    BUY per NVDA è già registrata per oggi: run_daily non deve richiamare
+    decide_all(), ma deve comunque piazzare l'ordine (recuperabilità di un
+    run parziale: la decisione già presa va comunque eseguita)."""
+    _isolate(tmp_path, monkeypatch)
+    end_date = (dt.date.today() + dt.timedelta(days=30)).isoformat()
+    with open(config.AI_TRADER_EXPERIMENT_FILE, "w", encoding="utf-8") as fh:
+        json.dump({"start_date": "2026-01-01", "end_date": end_date, "status": "running"}, fh)
+    storage.append_record(config.AI_TRADER_DECISIONS_FILE, {
+        "symbol": "NVDA", "model_used": config.AI_TRADER_HAIKU_MODEL, "decision": "BUY",
+        "reasoning_short": "Decisione già presa in un run precedente oggi.",
+        "cost_usd": 0.01, "date": dt.date.today().isoformat(),
+    })
+    order_resp = {"id": "ord-nvda", "symbol": "NVDA", "status": "accepted"}
+    with patch("src.ai_trader_run.paper_trading.get_positions", return_value=[]), \
+         patch("src.ai_trader_run.paper_trading.place_order", return_value=order_resp) as mock_place, \
+         patch("src.ai_trader_run.paper_trading.get_account", return_value={"equity": "99000", "buying_power": "50000"}), \
+         patch("src.ai_trader_run.paper_trading.snapshot_account"), \
+         patch("src.ai_trader_run.paper_trading.get_open_orders", return_value=[]), \
+         patch("src.ai_trader_run.paper_trading.get_portfolio_history", return_value={"timestamp": [], "equity": []}), \
+         patch("src.ai_trader.decide_all") as mock_decide:
+        ai_trader_run.run_daily(dry_run=False)
+    mock_decide.assert_not_called()
+    mock_place.assert_any_call(symbol="NVDA", side="buy", notional=config.AI_TRADER_POSITION_NOTIONAL_USD)
+    # una sola riga per oggi: non è stata duplicata
+    today_decisions = [d for d in storage.read_all(config.AI_TRADER_DECISIONS_FILE) if d["date"] == dt.date.today().isoformat()]
+    assert len(today_decisions) == 1
 
 
 def test_daily_stop_loss_vende_posizione_sotto_soglia(tmp_path, monkeypatch):
@@ -603,6 +709,43 @@ def test_load_scanner_results_json_corrotto_torna_vuoto(tmp_path, monkeypatch):
     bad_file = tmp_path / "scanner_corrotto.json"
     bad_file.write_text("{non è json valido")
     monkeypatch.setattr(config, "SCANNER_FILE", str(bad_file))
+    assert ai_trader.load_scanner_results() == {}
+
+
+def test_load_scanner_results_dati_di_oggi_vengono_letti(tmp_path, monkeypatch):
+    _isolate(tmp_path, monkeypatch)
+    scanner_file = tmp_path / "scanner_oggi.json"
+    scanner_file.write_text(json.dumps({
+        "generated_at": dt.datetime.now(dt.timezone.utc).isoformat(),
+        "results": [{"symbol": "RIVN", "price": 10}],
+    }))
+    monkeypatch.setattr(config, "SCANNER_FILE", str(scanner_file))
+    assert "RIVN" in ai_trader.load_scanner_results()
+
+
+def test_load_scanner_results_dati_vecchi_tornano_vuoto(tmp_path, monkeypatch):
+    """Bug reale trovato in un code review pre-lancio, 2026-11-01: senza
+    questo controllo, uno scanner bloccato da giorni/settimane (market_scanner.yml
+    fallito in silenzio) veniva letto come se fosse di oggi, facendo
+    decidere l'AI su dati vecchi senza nessun segnale dell'anomalia."""
+    _isolate(tmp_path, monkeypatch)
+    yesterday = dt.date.today() - dt.timedelta(days=1)
+    scanner_file = tmp_path / "scanner_vecchio.json"
+    scanner_file.write_text(json.dumps({
+        "generated_at": dt.datetime.combine(yesterday, dt.time(12, 0), tzinfo=dt.timezone.utc).isoformat(),
+        "results": [{"symbol": "RIVN", "price": 10}],
+    }))
+    monkeypatch.setattr(config, "SCANNER_FILE", str(scanner_file))
+    assert ai_trader.load_scanner_results() == {}
+
+
+def test_load_scanner_results_senza_generated_at_torna_vuoto(tmp_path, monkeypatch):
+    """Un file scanner reale ha sempre generated_at (vedi market_scanner.scan());
+    se manca è un dato sospetto, non va trattato come fresco."""
+    _isolate(tmp_path, monkeypatch)
+    scanner_file = tmp_path / "scanner_senza_data.json"
+    scanner_file.write_text(json.dumps({"results": [{"symbol": "RIVN", "price": 10}]}))
+    monkeypatch.setattr(config, "SCANNER_FILE", str(scanner_file))
     assert ai_trader.load_scanner_results() == {}
 
 
