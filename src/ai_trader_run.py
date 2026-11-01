@@ -130,6 +130,29 @@ def _attach_native_exit(symbol: str) -> None:
         print(f"Stop/take-profit non piazzati per {symbol} (resta protetto dal controllo giornaliero): {exc}")
 
 
+def _renew_missing_native_exits(symbols: set[str]) -> None:
+    """Ricrea la coppia OCO stop/take-profit sulle posizioni già aperte
+    prima di oggi che ne sono rimaste senza. L'OCO è "day" (Alpaca non
+    supporta GTC sugli ordini frazionari, e i BUY a importo producono
+    quasi sempre quote frazionarie): scade alla chiusura della prima
+    sessione in cui è attiva, quindi senza questo rinnovo quotidiano la
+    protezione sparirebbe dopo un giorno. Bug segnalato da una revisione
+    esterna e verificato sulla documentazione Alpaca, 2026-11-02. Solo
+    posizioni preesistenti: quelle appena comprate oggi hanno già la loro
+    coppia, ricrearla la duplicherebbe."""
+    for symbol in sorted(symbols):
+        try:
+            if paper_trading.get_open_orders(symbol=symbol):
+                continue
+        except paper_trading.AlpacaError as exc:
+            print(f"Controllo ordini aperti fallito per {symbol} (salto il rinnovo): {exc}")
+            continue
+        try:
+            _attach_native_exit(symbol)
+        except Exception as exc:  # noqa: BLE001 - un rinnovo fallito non deve fermare il run
+            print(f"Rinnovo protezione fallito per {symbol} (non bloccante): {exc}")
+
+
 def _record_equity(date_str: str, equity_usd: float) -> None:
     """Un punto in più nella curva equity nel tempo — append-only, a
     differenza di account.json che viene sovrascritto ad ogni run (vedi
@@ -366,6 +389,7 @@ def run_daily(dry_run: bool) -> None:
         positions = paper_trading.get_positions()
 
     open_symbols = {p["symbol"] for p in positions}
+    preexisting_symbols = set(open_symbols)
 
     # Trovato in un code review pre-lancio, 2026-11-01: a differenza di
     # run_setup() (che controlla experiment.json prima di agire),
@@ -449,6 +473,8 @@ def run_daily(dry_run: bool) -> None:
         except Exception as exc:  # noqa: BLE001 - un titolo alla volta, mai fatale
             failed_orders.append(symbol)
             print(f"Ordine non eseguito per {symbol} (continuo con gli altri titoli): {exc}")
+
+    _renew_missing_native_exits(preexisting_symbols & open_symbols)
 
     try:
         data_health.record_fetch_health("alpaca_orders", attempted_orders, failed_orders)

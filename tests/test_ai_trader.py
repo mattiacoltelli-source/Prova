@@ -1140,3 +1140,27 @@ def test_update_trade_dashboards_mean_reversion_fallito_non_blocca_le_altre(tmp_
     assert os_module.path.exists(config.AI_TRADER_REAL_TRADES_FILE)  # scritto comunque
     assert os_module.path.exists(config.AI_TRADER_MOMENTUM_TRADES_FILE)  # scritto comunque
     assert not os_module.path.exists(config.AI_TRADER_MEANREV_TRADES_FILE)  # mai arrivato a scriverlo
+
+
+# ─── Rinnovo quotidiano della coppia OCO (scade a fine sessione, "day") ────
+
+
+def test_renew_missing_native_exits_ricrea_solo_dove_manca(tmp_path, monkeypatch):
+    _isolate(tmp_path, monkeypatch)
+
+    def fake_open_orders(symbol=None):
+        return [{"id": "ord-live"}] if symbol == "AAA" else []
+
+    with patch("src.ai_trader_run.paper_trading.get_open_orders", side_effect=fake_open_orders), \
+         patch("src.ai_trader_run._attach_native_exit") as mock_attach:
+        ai_trader_run._renew_missing_native_exits({"AAA", "BBB"})
+    mock_attach.assert_called_once_with("BBB")
+
+
+def test_renew_missing_native_exits_errore_controllo_non_blocca_ne_duplica(tmp_path, monkeypatch):
+    _isolate(tmp_path, monkeypatch)
+    with patch("src.ai_trader_run.paper_trading.get_open_orders",
+               side_effect=paper_trading.AlpacaError("rete giù")), \
+         patch("src.ai_trader_run._attach_native_exit") as mock_attach:
+        ai_trader_run._renew_missing_native_exits({"AAA"})
+    mock_attach.assert_not_called()
