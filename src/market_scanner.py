@@ -18,7 +18,7 @@ from __future__ import annotations
 import datetime as dt
 import statistics
 
-from . import config
+from . import config, data_health
 from .data_sources import http
 
 YAHOO_UA = {"User-Agent": "Mozilla/5.0 (predictive-agent research script)"}
@@ -136,6 +136,10 @@ def scan(symbols: list[str]) -> dict:
         except Exception as exc:  # noqa: BLE001 - un simbolo per volta, mai fatale
             errors.append({"symbol": symbol, "error": str(exc)})
     good_rows.sort(key=lambda r: (not r["flagged"], -(r.get("volume_ratio") or 0)))
+    try:
+        data_health.record_fetch_health("scanner", len(symbols), [e["symbol"] for e in errors])
+    except Exception:  # noqa: BLE001 - lo stato di salute non deve mai far fallire lo scan vero
+        pass
     return {
         "generated_at": dt.datetime.now(dt.timezone.utc).isoformat(),
         # Esposte nel JSON così il frontend può spiegare le soglie nel testo

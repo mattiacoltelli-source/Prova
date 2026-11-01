@@ -561,6 +561,20 @@ chiusura manuale di `setup`), l'eventuale coppia nativa ancora aperta viene
 annullata prima — altrimenti resterebbe un ordine orfano che punta ad azioni
 già vendute.
 
+**Salute della fonte prezzi** (`src/data_health.py`): richiesto dall'utente
+il 2026-11-02 — "se i dati di Yahoo cambiano forma senza preavviso e non
+danno più esiti, voglio che sia segnalato" (un bug reale di questo tipo è
+già successo in questo progetto, mai un errore esplicito). Scanner
+(`market_scanner.scan()`) e strategie di confronto
+(`benchmark._update_strategy()`, Momentum/Mean Reversion) fanno fetch
+Yahoo indipendenti: entrambi contano quanti titoli dell'universo non hanno
+dato un prezzo utilizzabile quel giorno e sovrascrivono
+`data/_state/data_health_{scanner,benchmark}.json`. Oltre
+`config.DATA_HEALTH_FAILURE_RATE_ALERT_THRESHOLD` (20%) — un singolo
+ticker illiquido è normale, 20%+ insieme nello stesso giorno è più
+probabilmente la fonte rotta — un banner in cima a ogni pagina lo segnala,
+letto una volta all'avvio indipendentemente dalla scheda aperta.
+
 **Due modalità** di
 [Actions → "Trading automatico AI"](https://github.com/mattiacoltelli-source/Prova/actions/workflows/ai_trader.yml):
 `setup` (una tantum: chiude le posizioni manuali esistenti sul conto paper e

@@ -1367,6 +1367,26 @@
 
         .update-banner-btn:hover { filter: brightness(1.3); }
 
+        /* Avviso "fonte dati rotta" (src/data_health.py, richiesto
+           dall'utente il 2026-11-02): a differenza di .update-banner sopra
+           NON è fixed — scorre nel flusso normale subito sotto l'header, su
+           ogni scheda, perché il problema (prezzi non più affidabili)
+           riguarda l'intera app, non una pagina sola. */
+        .data-health-banner {
+            display: none;
+            align-items: center;
+            gap: 8px;
+            background: var(--accent-yellow-dim);
+            color: var(--accent-yellow);
+            border: 1px solid var(--accent-yellow);
+            border-radius: var(--radius-md);
+            padding: 10px 14px;
+            margin-bottom: 16px;
+            font-size: var(--text-sm);
+            font-weight: 600;
+        }
+        .data-health-banner svg { flex-shrink: 0; }
+
         .chart-empty {
             display: flex;
             align-items: center;
@@ -1502,6 +1522,11 @@
             <button class="refresh-btn" onclick="location.reload()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>Aggiorna</button>
         </div>
     </header>
+
+    <div id="data-health-banner" class="data-health-banner">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <span id="data-health-banner-text"></span>
+    </div>
 
     <div id="page-aitrader">
 
@@ -4755,6 +4780,36 @@
                 .map(([h, m]) => convertTodayWallTime(h, m, 'America/New_York', 'Europe/Rome'))
                 .join(', ');
         }
+
+        // Avviso "fonte dati rotta" (src/data_health.py): due stati
+        // separati (scanner e benchmark) perché sono due fetch Yahoo
+        // indipendenti nel backend — se uno dei due supera la soglia di
+        // oggi, un unico banner in cima alla pagina lo segnala, qualunque
+        // sia la scheda aperta. fetchJsonNoStore ritorna null su 404 (il
+        // file non esiste ancora finché un run non l'ha scritto almeno
+        // una volta) — nessun avviso in quel caso, non un errore.
+        async function _checkDataHealthAndWarn() {
+            const [scannerHealth, benchmarkHealth] = await Promise.all([
+                fetchJsonNoStore('data/_state/data_health_scanner.json'),
+                fetchJsonNoStore('data/_state/data_health_benchmark.json'),
+            ]);
+            const problems = [];
+            if (scannerHealth && scannerHealth.alert) {
+                problems.push(`Scanner: ${scannerHealth.failed_count}/${scannerHealth.total} titoli senza risultato`);
+            }
+            if (benchmarkHealth && benchmarkHealth.alert) {
+                problems.push(`Momentum/Mean Reversion: ${benchmarkHealth.failed_count}/${benchmarkHealth.total} titoli senza risultato`);
+            }
+            const banner = document.getElementById('data-health-banner');
+            if (problems.length === 0) {
+                banner.style.display = 'none';
+                return;
+            }
+            document.getElementById('data-health-banner-text').innerText =
+                `Dati di mercato incompleti oggi (${problems.join(' · ')}) — possibile problema con la fonte prezzi.`;
+            banner.style.display = 'flex';
+        }
+        _checkDataHealthAndWarn();
 
         loadAiTraderData();
 

@@ -28,6 +28,13 @@ class FakeResponse:
         return self._json_data
 
 
+@pytest.fixture(autouse=True)
+def _isolate_state_dir(tmp_path, monkeypatch):
+    """scan() scrive anche lo stato di salute dati (src/data_health.py):
+    senza isolamento i test scriverebbero file veri in data/_state/."""
+    monkeypatch.setattr(config, "STATE_DIR", str(tmp_path / "_state"))
+
+
 def _yahoo_payload(
     price=100.0,
     volume=3_000_000,
@@ -180,6 +187,26 @@ def test_scan_un_simbolo_fallito_non_blocca_gli_altri():
     assert {r["symbol"] for r in result["results"]} == {"GOOD1", "GOOD2"}
     assert len(result["errors"]) == 1
     assert result["errors"][0]["symbol"] == "BAD"
+
+
+def test_scan_registra_lo_stato_di_salute_dati(tmp_path, monkeypatch):
+    """scan() deve scrivere data_health_scanner.json con i simboli falliti
+    (src/data_health.py, richiesto dall'utente il 2026-11-02)."""
+    good_payload = _yahoo_payload(price=100.0, volume=1_000_000)
+
+    def fake_get(url, **kwargs):
+        if "BAD" in url:
+            return FakeResponse(json_data={"chart": {"result": []}})
+        return FakeResponse(json_data=good_payload)
+
+    with patch("src.market_scanner.http.get", side_effect=fake_get):
+        market_scanner.scan(["GOOD1", "BAD", "GOOD2"])
+
+    import json
+    with open(f"{config.STATE_DIR}/data_health_scanner.json", encoding="utf-8") as fh:
+        health = json.load(fh)
+    assert health["total"] == 3
+    assert health["failed_symbols"] == ["BAD"]
 
 
 def test_scan_espone_le_soglie_usate_per_flagged():

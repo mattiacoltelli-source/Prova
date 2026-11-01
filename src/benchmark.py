@@ -50,7 +50,7 @@ from __future__ import annotations
 
 import datetime as dt
 
-from . import config, storage
+from . import config, data_health, storage
 from .data_sources import http
 
 YAHOO_UA = {"User-Agent": "Mozilla/5.0 (predictive-agent research script)"}
@@ -112,21 +112,31 @@ def _update_strategy(
 
     prices_today: dict[str, float] = {}
     rank: list[tuple[str, float]] = []
+    failed_symbols: list[str] = []
     # Un titolo alla volta, mai fatale per gli altri (stesso principio di
     # market_scanner.scan()): un ticker illiquido o senza dati quel giorno
     # non deve bloccare il calcolo per tutti gli altri. Se un titolo tenuto
     # da ieri non si riesce a riprezzare oggi, il suo contributo alla
     # performance di oggi viene semplicemente saltato (approssimazione
     # accettabile per un confronto indicativo, non per un ordine reale).
+    # I falliti vengono comunque raccolti per data_health sotto: un singolo
+    # ticker illiquido è normale, ma se falliscono tutti insieme è il
+    # segnale che la fonte si è rotta (vedi config.DATA_HEALTH_FAILURE_RATE_ALERT_THRESHOLD).
     for symbol in _universe():
         try:
             closes = _fetch_closes(symbol)
         except Exception:  # noqa: BLE001 - un titolo alla volta, mai fatale
+            failed_symbols.append(symbol)
             continue
         prices_today[symbol] = closes[-1]
         if len(closes) > lookback_days:
             pct = closes[-1] / closes[-1 - lookback_days] - 1
             rank.append((symbol, pct))
+
+    try:
+        data_health.record_fetch_health("benchmark", len(_universe()), failed_symbols)
+    except Exception:  # noqa: BLE001 - lo stato di salute non deve mai bloccare la strategia vera
+        pass
 
     existing = storage.read_all(filepath)
     last = existing[-1] if existing else {}

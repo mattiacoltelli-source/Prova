@@ -6,6 +6,7 @@ spirito di FakeResponse in test_market_scanner.py per Yahoo Finance)."""
 from __future__ import annotations
 
 import datetime as dt
+import json
 from unittest.mock import patch
 
 import pytest
@@ -45,6 +46,7 @@ def _isolate(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "AI_TRADER_MEANREV_TOP_N", 2)
     monkeypatch.setattr(config, "SCANNER_STOCKS", ["AAA", "BBB", "CCC"])
     monkeypatch.setattr(config, "AI_TRADER_EXCLUDED_TICKERS", [])
+    monkeypatch.setattr(config, "STATE_DIR", str(tmp_path / "_state"))
 
 
 _EXPERIMENT = {"start_equity_usd": 100000.0}
@@ -199,6 +201,24 @@ def test_momentum_un_titolo_senza_dati_non_blocca_gli_altri(tmp_path, monkeypatc
 
     rec = storage.read_all(config.AI_TRADER_MOMENTUM_FILE)[0]
     assert rec["holdings"] == {"AAA": 0.175, "CCC": 0.175}
+
+
+def test_momentum_registra_lo_stato_di_salute_dati(tmp_path, monkeypatch):
+    """update_momentum() deve scrivere data_health_benchmark.json con il
+    simbolo fallito (src/data_health.py, richiesto dall'utente il
+    2026-11-02)."""
+    _isolate(tmp_path, monkeypatch)
+    closes_by_symbol = {
+        "AAA": [100.0, 100.0, 110.0],
+        "CCC": [100.0, 100.0, 105.0],
+    }
+    with patch("src.benchmark.http.get", side_effect=_momentum_fake_get(closes_by_symbol, bad_symbols=["BBB"])):
+        benchmark.update_momentum(dt.date(2026, 10, 31), _EXPERIMENT)
+
+    with open(f"{config.STATE_DIR}/data_health_benchmark.json", encoding="utf-8") as fh:
+        health = json.load(fh)
+    assert health["total"] == 3
+    assert health["failed_symbols"] == ["BBB"]
 
 
 def test_momentum_stesso_giorno_e_idempotente_nessuna_chiamata_di_rete(tmp_path, monkeypatch):

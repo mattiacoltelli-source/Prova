@@ -479,6 +479,19 @@ SNAPSHOT_MAX_PER_DAY = 3
 
 DATA_DIR = "data"
 STATE_DIR = "data/_state"
+
+# --- Salute delle fonti prezzi (src/data_health.py) -------------------------
+# Richiesto dall'utente il 2026-11-02: "se i dati di Yahoo... cambia forma
+# senza preavviso e non dà più esiti, voglio che sia segnalato" — un vero
+# bug di questo tipo è già successo in questo progetto (range="max" che
+# degradava silenziosamente a barre mensili, mai un errore esplicito).
+# Oltre questa percentuale di simboli dell'universo senza un prezzo
+# utilizzabile nello stesso giorno, è più probabile un problema sistemico
+# della fonte (rotta/formato cambiato/rate-limited) che N singoli ticker
+# illiquidi per puro caso — con un universo di 58 titoli, ~12 falliti
+# insieme nello stesso giorno. Primo valore ragionevole, non validato
+# staticamente.
+DATA_HEALTH_FAILURE_RATE_ALERT_THRESHOLD = 0.20
 PENDING_FILE = "data/pending.json"
 REPORT_FILE = "REPORT.md"
 ERROR_ANALYSIS_FILE = "ERROR_ANALYSIS.md"
