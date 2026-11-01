@@ -520,28 +520,36 @@ def test_sell_to_close_annulla_ordini_aperti_prima_di_vendere(tmp_path, monkeypa
 # ─── config.ai_trader_position_notional (esposizione a scaglioni) ─────────
 
 
-def test_position_notional_fascia_bassa_sotto_70k():
-    assert config.ai_trader_position_notional(50_000.0) == 750.0  # 1,5%
+def test_position_notional_fascia_piu_bassa_sotto_50k():
+    assert config.ai_trader_position_notional(25_000.0) == 1_000.0
 
 
-def test_position_notional_fascia_centrale_replica_il_comportamento_precedente():
+def test_position_notional_seconda_fascia_50k_70k():
+    assert config.ai_trader_position_notional(60_000.0) == 1_500.0
+
+
+def test_position_notional_terza_fascia_replica_il_comportamento_precedente():
     # Equity di partenza dell'esperimento: deve dare lo stesso risultato
     # dei $2.500 fissi di prima del passaggio a scaglioni.
-    assert config.ai_trader_position_notional(100_000.0) == 2_500.0  # 2,5%
+    assert config.ai_trader_position_notional(100_000.0) == 2_500.0
 
 
-def test_position_notional_fascia_alta_sopra_130k():
-    assert config.ai_trader_position_notional(150_000.0) == 4_500.0  # 3,0%
+def test_position_notional_fascia_piu_alta_sopra_130k():
+    assert config.ai_trader_position_notional(150_000.0) == 3_000.0
 
 
-def test_position_notional_confine_esatto_70k_e_gia_fascia_centrale():
-    # "< 70.000" esclude il confine stesso: a 70.000 esatti si è già nella
-    # fascia centrale (2,5%), non in quella bassa.
-    assert config.ai_trader_position_notional(70_000.0) == 1_750.0  # 2,5%
+def test_position_notional_confine_esatto_50k_e_gia_seconda_fascia():
+    # "< 50.000" esclude il confine stesso: a 50.000 esatti si è già nella
+    # seconda fascia ($1.500), non nella prima.
+    assert config.ai_trader_position_notional(50_000.0) == 1_500.0
 
 
-def test_position_notional_confine_esatto_130k_e_gia_fascia_alta():
-    assert config.ai_trader_position_notional(130_000.0) == 3_900.0  # 3,0%
+def test_position_notional_confine_esatto_70k_e_gia_terza_fascia():
+    assert config.ai_trader_position_notional(70_000.0) == 2_500.0
+
+
+def test_position_notional_confine_esatto_130k_e_gia_quarta_fascia():
+    assert config.ai_trader_position_notional(130_000.0) == 3_000.0
 
 
 # ─── _attach_native_exit ─────────────────────────────────────────────────────
