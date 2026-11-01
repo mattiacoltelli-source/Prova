@@ -517,40 +517,42 @@ def test_sell_to_close_annulla_ordini_aperti_prima_di_vendere(tmp_path, monkeypa
     mock_place.assert_called_once_with(symbol="GME", side="sell", qty=3.0, time_in_force="day")
 
 
-# ─── _attach_native_stop ─────────────────────────────────────────────────────
+# ─── _attach_native_exit ─────────────────────────────────────────────────────
 
 
-def test_attach_native_stop_piazza_ordine_con_stop_price_corretto(tmp_path, monkeypatch):
+def test_attach_native_exit_piazza_oco_con_stop_e_take_profit_corretti(tmp_path, monkeypatch):
     _isolate(tmp_path, monkeypatch)
     monkeypatch.setattr(config, "AI_TRADER_STOP_LOSS_PCT", -8.0)
+    monkeypatch.setattr(config, "AI_TRADER_TAKE_PROFIT_PCT", 16.0)
     position = {"symbol": "RIVN", "qty": "100", "avg_entry_price": "10.00"}
-    order_resp = {"id": "ord-stop", "symbol": "RIVN", "status": "accepted"}
+    order_resp = {"id": "ord-oco", "symbol": "RIVN", "status": "accepted"}
     with patch("src.ai_trader_run.paper_trading.get_positions", return_value=[position]), \
-         patch("src.ai_trader_run.paper_trading.place_order", return_value=order_resp) as mock_place:
-        ai_trader_run._attach_native_stop("RIVN")
+         patch("src.ai_trader_run.paper_trading.place_oco_exit_order", return_value=order_resp) as mock_place:
+        ai_trader_run._attach_native_exit("RIVN")
     mock_place.assert_called_once_with(
-        symbol="RIVN", side="sell", qty=100.0, order_type="stop", stop_price=9.2
+        symbol="RIVN", qty=100.0, stop_price=9.2, take_profit_price=11.6
     )
 
 
-def test_attach_native_stop_nessuna_posizione_non_piazza_nulla(tmp_path, monkeypatch):
+def test_attach_native_exit_nessuna_posizione_non_piazza_nulla(tmp_path, monkeypatch):
     _isolate(tmp_path, monkeypatch)
     with patch("src.ai_trader_run.paper_trading.get_positions", return_value=[]), \
-         patch("src.ai_trader_run.paper_trading.place_order") as mock_place:
-        ai_trader_run._attach_native_stop("RIVN")
+         patch("src.ai_trader_run.paper_trading.place_oco_exit_order") as mock_place:
+        ai_trader_run._attach_native_exit("RIVN")
     mock_place.assert_not_called()
 
 
-def test_attach_native_stop_errore_non_bloccante(tmp_path, monkeypatch):
-    """Se Alpaca rifiuta l'ordine stop, non deve far fallire tutto il run:
-    la posizione resta comunque protetta dal controllo giornaliero
-    (_check_stop_losses)."""
+def test_attach_native_exit_errore_non_bloccante(tmp_path, monkeypatch):
+    """Se Alpaca rifiuta l'ordine OCO, non deve far fallire tutto il run: la
+    posizione resta comunque protetta sul lato stop-loss dal controllo
+    giornaliero (_check_stop_losses) — il take-profit no, ma non è un
+    rischio di perdita."""
     _isolate(tmp_path, monkeypatch)
     position = {"symbol": "RIVN", "qty": "100", "avg_entry_price": "10.00"}
     with patch("src.ai_trader_run.paper_trading.get_positions", return_value=[position]), \
-         patch("src.ai_trader_run.paper_trading.place_order",
+         patch("src.ai_trader_run.paper_trading.place_oco_exit_order",
                side_effect=paper_trading.AlpacaError("422 rifiutato")):
-        ai_trader_run._attach_native_stop("RIVN")  # non deve sollevare
+        ai_trader_run._attach_native_exit("RIVN")  # non deve sollevare
 
 
 # ─── _save_portfolio_history_snapshot ───────────────────────────────────────
@@ -575,26 +577,29 @@ def test_save_portfolio_history_snapshot_errore_non_scrive_e_non_solleva(tmp_pat
     assert not os_module.path.exists(config.AI_TRADER_PORTFOLIO_HISTORY_FILE)
 
 
-# ─── run_daily: BUY piazza anche lo stop nativo ────────────────────────────
+# ─── run_daily: BUY piazza anche la coppia OCO stop/take-profit ───────────
 
 
-def test_daily_buy_piazza_anche_lo_stop_nativo(tmp_path, monkeypatch):
+def test_daily_buy_piazza_anche_stop_e_take_profit_nativi(tmp_path, monkeypatch):
     _isolate(tmp_path, monkeypatch)
     monkeypatch.setattr(config, "AI_TRADER_STOP_LOSS_PCT", -8.0)
+    monkeypatch.setattr(config, "AI_TRADER_TAKE_PROFIT_PCT", 16.0)
     end_date = (__import__("datetime").date.today() + __import__("datetime").timedelta(days=30)).isoformat()
     with open(config.AI_TRADER_EXPERIMENT_FILE, "w", encoding="utf-8") as fh:
         json.dump({"start_date": "2026-01-01", "end_date": end_date, "status": "running"}, fh)
 
     buy_decision = [{"symbol": "RIVN", "decision": "BUY", "reasoning_short": "x", "model_used": "haiku", "cost_usd": 0.0}]
     buy_order_resp = {"id": "ord-buy", "symbol": "RIVN", "status": "accepted"}
+    oco_order_resp = {"id": "ord-oco", "symbol": "RIVN", "status": "accepted"}
     new_position = {"symbol": "RIVN", "qty": "500", "avg_entry_price": "14.0"}
 
     # Prima di decide_all(): nessuna posizione aperta. Dopo il BUY,
-    # _attach_native_stop rilegge le posizioni e trova quella appena aperta.
+    # _attach_native_exit rilegge le posizioni e trova quella appena aperta.
     positions_sequence = [[], [new_position], [new_position]]
 
     with patch("src.ai_trader_run.paper_trading.get_positions", side_effect=positions_sequence), \
          patch("src.ai_trader_run.paper_trading.place_order", return_value=buy_order_resp) as mock_place, \
+         patch("src.ai_trader_run.paper_trading.place_oco_exit_order", return_value=oco_order_resp) as mock_oco, \
          patch("src.ai_trader_run.paper_trading.get_account",
                return_value={"equity": "100000", "buying_power": "90000"}), \
          patch("src.ai_trader_run.paper_trading.snapshot_account"), \
@@ -604,10 +609,9 @@ def test_daily_buy_piazza_anche_lo_stop_nativo(tmp_path, monkeypatch):
 
     buy_call = mock_place.call_args_list[0]
     assert buy_call.kwargs == {"symbol": "RIVN", "side": "buy", "notional": config.AI_TRADER_POSITION_NOTIONAL_USD}
-    stop_call = mock_place.call_args_list[1]
-    assert stop_call.kwargs["order_type"] == "stop"
-    assert stop_call.kwargs["symbol"] == "RIVN"
-    assert stop_call.kwargs["stop_price"] == round(14.0 * 0.92, 2)
+    mock_oco.assert_called_once_with(
+        symbol="RIVN", qty=500.0, stop_price=round(14.0 * 0.92, 2), take_profit_price=round(14.0 * 1.16, 2)
+    )
 
 
 # ─── Resilienza: un titolo/una posizione con problemi non blocca gli altri ──

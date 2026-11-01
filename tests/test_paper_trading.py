@@ -284,6 +284,37 @@ def test_place_order_order_type_non_valido_non_chiama_la_rete(monkeypatch):
         mock_post.assert_not_called()
 
 
+# ─── place_oco_exit_order (coppia stop-loss/take-profit, src/ai_trader_run.py) ─
+
+
+def test_place_oco_exit_order_successo_manda_order_class_oco_e_due_prezzi(monkeypatch):
+    monkeypatch.setenv("ALPACA_API_KEY", "x")
+    monkeypatch.setenv("ALPACA_SECRET_KEY", "y")
+    fake_resp = FakeResponse(200, {"id": "ord-oco", "symbol": "NVDA", "status": "accepted"})
+    with patch("src.paper_trading.requests.post", return_value=fake_resp) as mock_post:
+        result = paper_trading.place_oco_exit_order(
+            "NVDA", qty=2, stop_price=180.5, take_profit_price=220.0
+        )
+    assert result["id"] == "ord-oco"
+    _, kwargs = mock_post.call_args
+    payload = kwargs["json"]
+    assert payload["side"] == "sell"
+    assert payload["type"] == "limit"
+    assert payload["order_class"] == "oco"
+    assert payload["qty"] == "2"
+    assert payload["take_profit"] == {"limit_price": "220.0"}
+    assert payload["stop_loss"] == {"stop_price": "180.5"}
+
+
+def test_place_oco_exit_order_errore_http_solleva_alpaca_error(monkeypatch):
+    monkeypatch.setenv("ALPACA_API_KEY", "x")
+    monkeypatch.setenv("ALPACA_SECRET_KEY", "y")
+    fake_resp = FakeResponse(422, text="simbolo senza posizione aperta")
+    with patch("src.paper_trading.requests.post", return_value=fake_resp):
+        with pytest.raises(paper_trading.AlpacaError, match="422"):
+            paper_trading.place_oco_exit_order("NVDA", qty=2, stop_price=180.5, take_profit_price=220.0)
+
+
 # ─── get_open_orders ────────────────────────────────────────────────────────
 
 

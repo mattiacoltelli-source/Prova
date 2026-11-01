@@ -630,6 +630,18 @@ AI_TRADER_MAX_POSITIONS = 14
 # dell'universo scanner (vedi commento SCANNER_STOCKS in config.py).
 AI_TRADER_STOP_LOSS_PCT = -8.0
 
+# Simmetrico allo stop-loss sopra: una posizione in guadagno oltre questa
+# percentuale viene chiusa comunque, anche se il modello quel giorno
+# direbbe HOLD. Richiesto dall'utente il 2026-11-01 ("io metterei anche un
+# take profit") per non lasciare aperto indefinitamente un guadagno che
+# potrebbe tornare indietro. +16%, rapporto rischio/rendimento 2:1 rispetto
+# allo stop a -8% — scelto dall'utente tra le opzioni proposte. Piazzato
+# insieme allo stop come un'unica coppia OCO nativa su Alpaca (vedi
+# paper_trading.place_oco_exit_order), non due ordini indipendenti: quando
+# uno dei due scatta l'altro si annulla da solo, altrimenti un vecchio
+# stop/take-profit orfano proverebbe più tardi a vendere azioni già vendute.
+AI_TRADER_TAKE_PROFIT_PCT = 16.0
+
 # Durata fissa dell'esperimento, in giorni di calendario (~6 mesi). Non
 # ricalcolata da ASSET_CADENCE_MONTHS o simili: è una finestra temporale
 # fissa decisa con l'utente, non legata alla cadenza di nessun altro

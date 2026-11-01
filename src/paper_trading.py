@@ -110,6 +110,42 @@ def place_order(
     return resp.json()
 
 
+def place_oco_exit_order(
+    symbol: str,
+    qty: float,
+    stop_price: float,
+    take_profit_price: float,
+    time_in_force: str = "day",
+) -> dict:
+    """Piazza in un colpo solo lo stop-loss e il take-profit su una posizione
+    già aperta, come coppia OCO ("one-cancels-other") nativa Alpaca: quando
+    uno dei due prezzi viene toccato durante il giorno, Alpaca esegue quella
+    gamba e annulla da sola l'altra, senza bisogno di sorvegliarle da qui.
+
+    A differenza di place_order() sopra, il tipo d'ordine per un OCO deve
+    essere "limit" (il prezzo limite è quello del take-profit) e i due
+    prezzi vanno dentro gli oggetti nidificati take_profit/stop_loss, non
+    nei campi piatti di un ordine semplice — per questo è una funzione a
+    parte invece di un altro order_type su place_order()."""
+    payload = {
+        "symbol": symbol.upper(),
+        "side": "sell",
+        "qty": str(qty),
+        "type": "limit",
+        "limit_price": str(take_profit_price),
+        "time_in_force": time_in_force,
+        "order_class": "oco",
+        "take_profit": {"limit_price": str(take_profit_price)},
+        "stop_loss": {"stop_price": str(stop_price)},
+    }
+    resp = requests.post(
+        f"{ALPACA_PAPER_BASE_URL}/v2/orders", headers=_headers(), json=payload, timeout=TIMEOUT
+    )
+    if not resp.ok:
+        raise AlpacaError(f"POST /v2/orders (OCO) fallita ({resp.status_code}): {resp.text}")
+    return resp.json()
+
+
 def get_open_orders(symbol: str | None = None) -> list[dict]:
     """Ordini ancora aperti (status=open), opzionalmente filtrati per
     simbolo — serve ad ai_trader_run.py per annullare uno stop nativo

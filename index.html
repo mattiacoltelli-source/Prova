@@ -1590,6 +1590,9 @@
                 <div class="risk-row__top"><span>Stop-loss per posizione</span><span id="aitrader-risk-stoploss-val">—</span></div>
             </div>
             <div class="risk-row">
+                <div class="risk-row__top"><span>Take profit per posizione</span><span id="aitrader-risk-takeprofit-val">—</span></div>
+            </div>
+            <div class="risk-row">
                 <div class="risk-row__top"><span>Giorni rimasti</span><span class="stat-value accent" id="aitrader-stat-days" style="font-size:var(--text-xs);">—</span></div>
             </div>
         </div>
@@ -2927,12 +2930,14 @@
         const AI_TRADER_MONTHLY_BUDGET_USD = 3.5;
 
         // Stessa logica: mantenuti manualmente in sync con
-        // config.AI_TRADER_MAX_POSITIONS e config.AI_TRADER_STOP_LOSS_PCT,
-        // solo per la card "Esposizione & rischio" (2026-11) — sono numeri
-        // della policy, non dati di mercato, quindi va bene che siano
-        // statici qui invece di un'altra chiamata di rete.
+        // config.AI_TRADER_MAX_POSITIONS, config.AI_TRADER_STOP_LOSS_PCT e
+        // config.AI_TRADER_TAKE_PROFIT_PCT, solo per la card "Esposizione &
+        // rischio" (2026-11) — sono numeri della policy, non dati di
+        // mercato, quindi va bene che siano statici qui invece di
+        // un'altra chiamata di rete.
         const AI_TRADER_MAX_POSITIONS_FRONTEND = 14;
         const AI_TRADER_STOP_LOSS_PCT_FRONTEND = -8.0;
+        const AI_TRADER_TAKE_PROFIT_PCT_FRONTEND = 16.0;
 
         // Stato condiviso tra loadAiTraderPositionsAndOrders/renderTradeDashboards
         // (che lo popolano) e applyTradeStrategyFilter (che lo legge per
@@ -3478,10 +3483,10 @@
         // sintetiche equal-weight sempre investite per costruzione su tutto
         // il paniere selezionato (vedi update_momentum/update_mean_reversion
         // in src/benchmark.py) — quindi 100% appena hanno posizioni aperte,
-        // 0% altrimenti. Lo stop-loss indipendente esiste solo per "AI
-        // reale" (src/ai_trader.py), le altre due seguono solo regole
-        // fisse di ribilanciamento: qui lo si dice invece di mostrare un
-        // numero che non si applica.
+        // 0% altrimenti. Lo stop-loss/take-profit indipendenti esistono
+        // solo per "AI reale" (src/ai_trader.py), le altre due seguono solo
+        // regole fisse di ribilanciamento: qui lo si dice invece di
+        // mostrare un numero che non si applica.
         function _renderAiTraderRiskCard() {
             const strategy = currentTradeStrategyFilter;
             const openCount = aiTraderOpenCounts[strategy] || 0;
@@ -3506,6 +3511,9 @@
 
             document.getElementById('aitrader-risk-stoploss-val').innerText = strategy === 'real'
                 ? `${AI_TRADER_STOP_LOSS_PCT_FRONTEND.toFixed(1)}%`
+                : '— (regole fisse)';
+            document.getElementById('aitrader-risk-takeprofit-val').innerText = strategy === 'real'
+                ? `+${AI_TRADER_TAKE_PROFIT_PCT_FRONTEND.toFixed(1)}%`
                 : '— (regole fisse)';
         }
 
