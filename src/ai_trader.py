@@ -242,7 +242,19 @@ def decide_all() -> list[dict]:
             thresholds = {}
 
     universe = tradeable_universe()
-    non_core = [s for s in universe if s not in config.ASSETS]
+    # Ordine dello scanner (flagged-first, volume anomalo decrescente: la
+    # classifica di market_scanner.scan(), preservata dall'ordine di
+    # inserimento del dict), non quello fisso della watchlist — come
+    # sostenuto dal vecchio commento ma mai realmente implementato (bug
+    # segnalato da una revisione esterna, verificato 2026-11-02). Decide
+    # sia chi riceve Sonnet (primi N flagged) sia, a capitale insufficiente,
+    # quali BUY partono per primi. I simboli senza riga scanner vanno in
+    # coda e vengono comunque saltati più sotto.
+    scanner_rank = {s: i for i, s in enumerate(scanner_by_symbol)}
+    non_core = sorted(
+        (s for s in universe if s not in config.ASSETS),
+        key=lambda s: scanner_rank.get(s, len(scanner_rank)),
+    )
     flagged_today = [s for s in non_core if scanner_by_symbol.get(s, {}).get("flagged")]
     sonnet_symbols = set(flagged_today[: config.AI_TRADER_MAX_SONNET_CALLS_PER_DAY])
 

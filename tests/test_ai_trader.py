@@ -1164,3 +1164,34 @@ def test_renew_missing_native_exits_errore_controllo_non_blocca_ne_duplica(tmp_p
          patch("src.ai_trader_run._attach_native_exit") as mock_attach:
         ai_trader_run._renew_missing_native_exits({"AAA"})
     mock_attach.assert_not_called()
+
+
+def test_decide_all_sonnet_segue_l_ordine_dello_scanner_non_quello_della_watchlist(tmp_path, monkeypatch):
+    """SOFI è prima di RIVN in SCANNER_STOCKS ma lo scanner mette RIVN in
+    cima (segnale più forte): con un solo slot Sonnet deve andare a RIVN."""
+    _isolate(tmp_path, monkeypatch)
+    monkeypatch.setattr(config, "DATA_DIR", str(tmp_path / "data"))
+    monkeypatch.setattr(config, "AI_TRADER_MAX_SONNET_CALLS_PER_DAY", 1)
+    monkeypatch.setattr(config, "ASSETS", [])
+    monkeypatch.setattr(config, "SCANNER_STOCKS", ["SOFI", "RIVN"])
+    scanner_file = tmp_path / "scanner.json"
+    scanner_file.write_text(json.dumps({
+        "generated_at": dt.datetime.now(dt.timezone.utc).isoformat(),
+        "thresholds": {},
+        "results": [
+            {"symbol": "RIVN", "flagged": True, "price": 10, "currency": "USD"},
+            {"symbol": "SOFI", "flagged": True, "price": 8, "currency": "USD"},
+        ],
+    }))
+    monkeypatch.setattr(config, "SCANNER_FILE", str(scanner_file))
+    used = {}
+
+    def fake_decision(symbol, row, thresholds, model):
+        used[symbol] = model
+        return {"symbol": symbol, "model_used": model, "decision": "HOLD", "reasoning_short": "x", "cost_usd": 0.0}
+
+    with patch("src.ai_trader.scanner_symbol_decision", side_effect=fake_decision):
+        decisions = ai_trader.decide_all()
+    assert used["RIVN"] == config.AI_TRADER_SONNET_MODEL
+    assert used["SOFI"] == config.AI_TRADER_HAIKU_MODEL
+    assert [d["symbol"] for d in decisions] == ["RIVN", "SOFI"]
