@@ -155,15 +155,18 @@
                mai trasformare la pagina intera in uno scroll orizzontale —
                è esattamente il sintomo "sembra un sito, non un'app". */
             overflow-x: hidden;
-            /* NON aggiungere overscroll-behavior-y qui (né su html né su
-               body) per bloccare il pull-to-refresh: provato il 2026-11-01
-               in due varianti (su html+body insieme, poi solo su body) ed
-               entrambe bloccavano COMPLETAMENTE lo scroll della pagina
-               nell'app installata su Android (display:standalone), non
-               solo il gesto in cima — scoperto subito dall'utente sul
-               telefono reale, rollback immediato in entrambi i casi. Il
-               pull-to-refresh nativo resta, per ora, un compromesso
-               accettato piuttosto che rischiare di nuovo l'intera app. */
+            /* Blocca il "tira per aggiornare" nativo in cima alla pagina —
+               ricaricava l'intera app ignorando il service worker e il
+               banner "Aggiorna" dedicato. Tentativi precedenti (2026-11-01)
+               con "overscroll-behavior-y: contain", prima su html+body
+               insieme poi solo su body, bloccavano COMPLETAMENTE lo scroll
+               dell'app installata su Android — rollback immediato in
+               entrambi i casi. Questa è invece la stessa identica riga già
+               in uso su CineFighi (altra PWA dell'utente, stesso telefono,
+               stessa modalità standalone, verificata funzionante lì): la
+               forma completa "overscroll-behavior: none" (non solo -y, non
+               "contain"), su html e body con lo stesso valore. */
+            overscroll-behavior: none;
         }
 
         body {
