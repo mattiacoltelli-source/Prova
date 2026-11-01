@@ -94,6 +94,12 @@
             --text-dim: #8b94a3;
 
             --accent-signal: #4f7cff;
+            /* Audit UI 2026-11-01 (UI-05): testo bianco su --accent-signal
+               pieno misura 3,71:1, sotto il minimo 4,5:1 per testo piccolo
+               (usato nel pulsante attivo dei toggle a pillola, 12px) —
+               variante più scura solo per quel caso, stesso blu di marca,
+               contrasto verificato a ~5:1. */
+            --accent-signal-contrast: #4568d6;
             --accent-info: #38b6d9;
             --accent-momentum: #a78bfa;
             --accent-green: #34d399;
@@ -526,7 +532,7 @@
         }
 
         .horizon-filter-btn.active {
-            background: var(--accent-signal);
+            background: var(--accent-signal-contrast);
             color: #fff;
             border-color: transparent;
             box-shadow: none;
@@ -685,7 +691,10 @@
         .agent-card__budget-top {
             display: flex;
             justify-content: space-between;
-            font-size: var(--text-2xs);
+            /* Audit UI 2026-11-01 (UI-04, stessa soglia già fissata in un
+               audit precedente): var(--text-2xs) scende a 11px, sotto il
+               minimo di leggibilità comune. */
+            font-size: var(--text-xs);
             color: var(--text-dim);
             margin-bottom: 4px;
         }
@@ -2583,7 +2592,7 @@
                         ${m.price_vs_ma_pct != null ? `${formatPct(m.price_vs_ma_pct)} vs media ${m.ma_weeks || 200} sett.` : ''}
                     </span>
                 </div>
-                <div style="font-size:var(--text-2xs); color: var(--text-dim); margin-bottom: 10px;">
+                <div style="font-size:var(--text-xs); color: var(--text-dim); margin-bottom: 10px;">
                     Lettura strutturale sull'insieme degli orizzonti 1-10 anni sotto (non un singolo periodo) · aggiornata al massimo 1 volta/mese
                 </div>
                 <div class="section-title">Prezzo vs media mobile (fase del ciclo)</div>
@@ -2623,7 +2632,7 @@
                     <span class="chevron-icon" style="transform: rotate(-90deg);">▼</span>
                 </div>
                 <div class="collapsible-content collapsed">
-                    <div style="font-size:var(--text-2xs); color: var(--text-dim); margin-bottom: 8px;">
+                    <div style="font-size:var(--text-xs); color: var(--text-dim); margin-bottom: 8px;">
                         Ogni riga è una lettura mensile del trend strutturale 1-10 anni, non una previsione a un orizzonte specifico.
                     </div>
                     <div class="table-wrapper">
@@ -3041,6 +3050,20 @@
             const canvasId = 'aitrader-equity-chart';
             if (history.length === 0) {
                 showEmptyChart(canvasId, 'Ancora nessun punto registrato.');
+                return;
+            }
+            // Audit UX 2026-11-01 (UX-07): con un solo punto le linee non si
+            // disegnano affatto (pointRadius:0 su tutti i dataset, pensato per
+            // una linea continua, non per un punto isolato) — la card più
+            // importante della pagina restava un riquadro vuoto senza
+            // spiegazione proprio il primo giorno di un esperimento appena
+            // ricominciato. Stesso meccanismo di showEmptyChart sopra, e la
+            // legenda va svuotata insieme: non c'è nulla da mostrare/nascondere
+            // con un solo punto.
+            if (history.length === 1) {
+                showEmptyChart(canvasId, 'Solo un giorno di storico finora: la linea comparirà da domani.');
+                const legendEl = document.getElementById('aitrader-chart-legend');
+                if (legendEl) legendEl.innerHTML = '';
                 return;
             }
             const canvasEl = document.getElementById(canvasId);
