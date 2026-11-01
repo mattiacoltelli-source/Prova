@@ -3059,13 +3059,16 @@
             renderTradeDashboards(realTrades, momentumTrades);
 
             const decisionsList = document.getElementById('aitrader-decisions-list');
+            // Stesso meccanismo di Vendite recenti/Storico ordini (richiesto
+            // dall'utente, 2026-11, dopo averlo visto diventare una lista
+            // enorme nell'anteprima con 2 mesi di dati): niente più taglio
+            // nascosto a 30, le prime LIST_EXPAND_INITIAL e poi "Mostra altri".
             const decisions = [...decisionsRes.data]
-                .sort((a, b) => (b.date || '').localeCompare(a.date || ''))
-                .slice(0, 30);
+                .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
             if (decisions.length === 0) {
                 decisionsList.innerHTML = paperListMessage('Nessuna decisione registrata ancora.', false);
             } else {
-                decisionsList.innerHTML = decisions.map(d => `
+                const rows = decisions.map(d => `
                     <details class="paper-item">
                         <summary class="paper-item-summary">
                             <span class="paper-item-heading">
@@ -3083,7 +3086,8 @@
                             </div>
                         </div>
                     </details>
-                `).join('');
+                `);
+                decisionsList.innerHTML = _expandableRows(rows, 'decisions', _moreBtnHtml);
             }
         }
 
