@@ -510,6 +510,16 @@ sui token REALI restituiti da Anthropic, non su una stima — se il tetto
 viene raggiunto, i nuovi giudizi AI del mese tornano HOLD senza chiamare il
 modello.
 
+**Dimensione posizione**: percentuale dell'equity ATTUALE del conto, non più
+una cifra fissa (`config.ai_trader_position_notional()`, a scaglioni —
+`config.AI_TRADER_POSITION_PCT_TIERS`): 1,5% sotto $70.000, 2,5% tra
+$70.000 e $130.000 (la fascia di partenza, equivalente ai $2.500 fissi di
+prima), 3,0% sopra $130.000. Calcolata una volta per run sull'equity di
+quel giorno. Logica richiesta dall'utente: se il conto scende per un
+drawdown, la % impegnata per posizione scende con lui invece di restare
+fissa (che a conto più piccolo significherebbe rischiare una fetta più
+grande di quel che resta).
+
 **Sicurezza**: due reti indipendenti. Ogni BUY piazza SUBITO una coppia
 **OCO nativa su Alpaca** (stop-loss a `AI_TRADER_STOP_LOSS_PCT`, -8%, e
 take-profit a `AI_TRADER_TAKE_PROFIT_PCT`, +16% — rapporto rischio/rendimento

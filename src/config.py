@@ -613,15 +613,38 @@ AI_TRADER_EXCLUDED_TICKERS = ["6481.T", "6324.T"]
 # Quanto investire per ogni nuova posizione aperta (dollari nozionali
 # inviati ad Alpaca come "notional", non quantità di azioni — così funziona
 # anche sui titoli più costosi senza dover calcolare quote frazionarie a
-# mano). Era 7000$ fino al 2026-11-01: con AI_TRADER_MAX_POSITIONS=14
-# significava fino a $98.000 impegnati se mai si fossero riempiti tutti e
-# 14 gli slot — tecnicamente "sotto il totale del conto" ma con un margine
-# di sicurezza risicato (2%), non una vera diversificazione. L'utente,
-# facendo il conto lui stesso: "mi sembra tanto". Abbassato a 2500$ — con
-# 14 posizioni piene restano impegnati $35.000 (35% del conto), un cuscino
-# di liquidità reale anche nel caso peggiore.
-AI_TRADER_POSITION_NOTIONAL_USD = 2500.0
+# mano), come percentuale dell'equity ATTUALE del conto, non più una cifra
+# fissa. Era $7.000 fissi fino al 2026-11-01 (fino a $98.000 impegnati a
+# pieno regime, margine risicato — "mi sembra tanto"), poi $2.500 fissi
+# (35% del conto a pieno regime) — ma una cifra fissa impegna la stessa %
+# di capitale sia che il conto sia cresciuto sia che sia sceso, il che
+# nel secondo caso (dopo un drawdown) significa scommettere un pezzo più
+# grande di quel che resta, non più piccolo. L'utente il 2026-11-01:
+# "quando avrò meno soldi... voglio che sia più bassa l'esposizione" — a
+# scaglioni (non una formula continua, "semplice" come già scelto per la
+# versione fissa), confermati con l'utente. La fascia centrale (2,5%)
+# riproduce esattamente i $2.500 di prima con l'equity di partenza
+# ($100.000): il comportamento attuale non cambia finché il conto resta
+# nella fascia $70.000–$130.000, cambia solo se esce da quella fascia in
+# una direzione o nell'altra. Vedi ai_trader_position_notional() sotto.
+AI_TRADER_POSITION_PCT_TIERS = (
+    (70_000.0, 0.015),
+    (130_000.0, 0.025),
+    (float("inf"), 0.03),
+)
 AI_TRADER_MAX_POSITIONS = 14
+
+
+def ai_trader_position_notional(equity_usd: float) -> float:
+    """Dollari da investire nella prossima posizione, dato l'equity attuale
+    del conto: il primo scaglione di AI_TRADER_POSITION_PCT_TIERS il cui
+    tetto supera equity_usd decide la percentuale. Chiamata una volta per
+    run (non per ogni posizione aperta quel giorno): l'equity si muove
+    pochissimo nel corso di un singolo giro di acquisti, ricalcolarla ad
+    ogni BUY aggiungerebbe complessità senza un vantaggio reale."""
+    for ceiling, pct in AI_TRADER_POSITION_PCT_TIERS:
+        if equity_usd < ceiling:
+            return round(equity_usd * pct, 2)
 
 # Vendita di sicurezza indipendente dal giudizio AI del giorno: una
 # posizione che perde più di questa percentuale (unrealized_plpc di

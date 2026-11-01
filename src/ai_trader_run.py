@@ -394,6 +394,9 @@ def run_daily(dry_run: bool) -> None:
 
     account = paper_trading.get_account()
     buying_power = float(account["buying_power"])
+    # Calcolato una volta per run sull'equity di oggi, non per ogni
+    # posizione: vedi config.ai_trader_position_notional per il perché.
+    position_notional = config.ai_trader_position_notional(float(account["equity"]))
 
     # Un titolo alla volta, mai fatale per gli altri (stesso principio di
     # _check_stop_losses sopra e di market_scanner.scan()): senza questo
@@ -414,15 +417,15 @@ def run_daily(dry_run: bool) -> None:
             elif action == "BUY" and symbol not in open_symbols:
                 if len(open_symbols) >= config.AI_TRADER_MAX_POSITIONS:
                     continue
-                if buying_power < config.AI_TRADER_POSITION_NOTIONAL_USD:
+                if buying_power < position_notional:
                     continue
                 order = paper_trading.place_order(
-                    symbol=symbol, side="buy", notional=config.AI_TRADER_POSITION_NOTIONAL_USD
+                    symbol=symbol, side="buy", notional=position_notional
                 )
                 paper_trading.record_order(order)
                 _attach_native_exit(symbol)
                 open_symbols.add(symbol)
-                buying_power -= config.AI_TRADER_POSITION_NOTIONAL_USD
+                buying_power -= position_notional
                 print(f"BUY {symbol} — {decision['reasoning_short']}")
         except Exception as exc:  # noqa: BLE001 - un titolo alla volta, mai fatale
             print(f"Ordine non eseguito per {symbol} (continuo con gli altri titoli): {exc}")

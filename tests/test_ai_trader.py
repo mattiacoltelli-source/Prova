@@ -413,7 +413,7 @@ def test_daily_riusa_decisioni_gia_registrate_oggi(tmp_path, monkeypatch):
          patch("src.ai_trader.decide_all") as mock_decide:
         ai_trader_run.run_daily(dry_run=False)
     mock_decide.assert_not_called()
-    mock_place.assert_any_call(symbol="NVDA", side="buy", notional=config.AI_TRADER_POSITION_NOTIONAL_USD)
+    mock_place.assert_any_call(symbol="NVDA", side="buy", notional=config.ai_trader_position_notional(99000.0))
     # una sola riga per oggi: non è stata duplicata
     today_decisions = [d for d in storage.read_all(config.AI_TRADER_DECISIONS_FILE) if d["date"] == dt.date.today().isoformat()]
     assert len(today_decisions) == 1
@@ -517,6 +517,33 @@ def test_sell_to_close_annulla_ordini_aperti_prima_di_vendere(tmp_path, monkeypa
     mock_place.assert_called_once_with(symbol="GME", side="sell", qty=3.0, time_in_force="day")
 
 
+# ─── config.ai_trader_position_notional (esposizione a scaglioni) ─────────
+
+
+def test_position_notional_fascia_bassa_sotto_70k():
+    assert config.ai_trader_position_notional(50_000.0) == 750.0  # 1,5%
+
+
+def test_position_notional_fascia_centrale_replica_il_comportamento_precedente():
+    # Equity di partenza dell'esperimento: deve dare lo stesso risultato
+    # dei $2.500 fissi di prima del passaggio a scaglioni.
+    assert config.ai_trader_position_notional(100_000.0) == 2_500.0  # 2,5%
+
+
+def test_position_notional_fascia_alta_sopra_130k():
+    assert config.ai_trader_position_notional(150_000.0) == 4_500.0  # 3,0%
+
+
+def test_position_notional_confine_esatto_70k_e_gia_fascia_centrale():
+    # "< 70.000" esclude il confine stesso: a 70.000 esatti si è già nella
+    # fascia centrale (2,5%), non in quella bassa.
+    assert config.ai_trader_position_notional(70_000.0) == 1_750.0  # 2,5%
+
+
+def test_position_notional_confine_esatto_130k_e_gia_fascia_alta():
+    assert config.ai_trader_position_notional(130_000.0) == 3_900.0  # 3,0%
+
+
 # ─── _attach_native_exit ─────────────────────────────────────────────────────
 
 
@@ -608,7 +635,7 @@ def test_daily_buy_piazza_anche_stop_e_take_profit_nativi(tmp_path, monkeypatch)
         ai_trader_run.run_daily(dry_run=False)
 
     buy_call = mock_place.call_args_list[0]
-    assert buy_call.kwargs == {"symbol": "RIVN", "side": "buy", "notional": config.AI_TRADER_POSITION_NOTIONAL_USD}
+    assert buy_call.kwargs == {"symbol": "RIVN", "side": "buy", "notional": config.ai_trader_position_notional(100000.0)}
     mock_oco.assert_called_once_with(
         symbol="RIVN", qty=500.0, stop_price=round(14.0 * 0.92, 2), take_profit_price=round(14.0 * 1.16, 2)
     )
