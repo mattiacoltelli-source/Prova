@@ -613,10 +613,14 @@ AI_TRADER_EXCLUDED_TICKERS = ["6481.T", "6324.T"]
 # Quanto investire per ogni nuova posizione aperta (dollari nozionali
 # inviati ad Alpaca come "notional", non quantità di azioni — così funziona
 # anche sui titoli più costosi senza dover calcolare quote frazionarie a
-# mano). Scelto per restare diversificati su un universo di ~48 titoli
-# partendo da 100.000$: con AI_TRADER_MAX_POSITIONS sotto, il capitale
-# massimo impegnato in un colpo resta sempre sotto il totale del conto.
-AI_TRADER_POSITION_NOTIONAL_USD = 7000.0
+# mano). Era 7000$ fino al 2026-11-01: con AI_TRADER_MAX_POSITIONS=14
+# significava fino a $98.000 impegnati se mai si fossero riempiti tutti e
+# 14 gli slot — tecnicamente "sotto il totale del conto" ma con un margine
+# di sicurezza risicato (2%), non una vera diversificazione. L'utente,
+# facendo il conto lui stesso: "mi sembra tanto". Abbassato a 2500$ — con
+# 14 posizioni piene restano impegnati $35.000 (35% del conto), un cuscino
+# di liquidità reale anche nel caso peggiore.
+AI_TRADER_POSITION_NOTIONAL_USD = 2500.0
 AI_TRADER_MAX_POSITIONS = 14
 
 # Vendita di sicurezza indipendente dal giudizio AI del giorno: una
