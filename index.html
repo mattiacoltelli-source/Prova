@@ -155,12 +155,6 @@
                mai trasformare la pagina intera in uno scroll orizzontale —
                è esattamente il sintomo "sembra un sito, non un'app". */
             overflow-x: hidden;
-            /* Blocca il "tira per aggiornare" nativo di Chrome in cima alla
-               pagina: ricaricava l'intera app ignorando il service worker e
-               il banner "Aggiorna" dedicato (che gestisce l'update in modo
-               controllato), dando la sensazione di un sito, non un'app
-               installata. Non tocca lo scroll normale della pagina. */
-            overscroll-behavior-y: contain;
         }
 
         body {
@@ -168,6 +162,16 @@
             color: var(--text-main);
             padding: 16px;
             padding-bottom: 80px;
+            /* Blocca il "tira per aggiornare" nativo di Chrome in cima alla
+               pagina: ricaricava l'intera app ignorando il service worker e
+               il banner "Aggiorna" dedicato (che gestisce l'update in modo
+               controllato), dando la sensazione di un sito, non un'app
+               installata. Solo su body, non su html: su html causa un bug
+               noto di Chrome Android che blocca completamente lo scroll in
+               un'app PWA standalone (display:standalone, come questa) —
+               trovato subito dall'utente dopo il primo deploy. Non tocca lo
+               scroll normale della pagina, solo l'effetto al bordo. */
+            overscroll-behavior-y: contain;
             /* Audit UI 2026-11-02 (UI-01): senza un limite, su un monitor
                largo il contenuto si allargava a riempire tutta la finestra
                — tabelle con colonne larghissime, metà schermo vuoto. Un
