@@ -278,65 +278,38 @@
 
         .header-actions { display: flex; align-items: center; gap: 8px; }
 
-        .page-menu { position: relative; }
-        .page-menu-btn {
-            width: 44px;
-            height: 44px;
-            border-radius: var(--radius-sm);
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            color: var(--text-muted);
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: color var(--transition-fast), border-color var(--transition-fast);
-        }
-        .page-menu-btn:hover, .page-menu-btn[aria-expanded="true"] {
-            color: var(--text-main);
-            border-color: var(--text-dim);
-        }
-        .page-menu-dropdown {
-            position: absolute;
-            top: calc(100% + 8px);
-            right: 0;
-            z-index: 30;
-            min-width: 180px;
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            border-radius: var(--radius-md);
-            /* var(--shadow-card) è "none" (card piatte, coerenti col resto
-               dell'app): qui basta la sola ombra da popover, "none" non può
-               essere combinato con un'altra ombra nella stessa lista — un
-               tempo --shadow-card era un valore reale fuori dalle pagine
-               (questo menu vive nell'header), ora niente più la combina. */
-            box-shadow: var(--shadow-popover);
-            padding: 6px;
+        /* Link alle altre pagine spostato dall'header al fondo pagina
+           (richiesto dall'utente, 2026-11: il "•••" accanto ad "Aggiorna"
+           non dava fastidio ma "non mi piace lì" — qui è il più lontano
+           possibile dall'azione principale, zero peso finché non si scorre
+           fino in fondo). Stessi #tab-btn-aitrader/tech/explore di sempre:
+           switchPage() continua a leggerli/scriverli senza modifiche, cambia
+           solo dove vivono e come sono vestiti (testo piccolo e spento
+           invece di un pulsante+tendina). */
+        .page-footer {
             display: flex;
-            flex-direction: column;
-            gap: 2px;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-top: 28px;
+            padding: 18px 0 4px;
+            border-top: 1px solid var(--card-border);
         }
-        /* display:flex sopra vince sempre su [hidden] (stile base del
-           browser, priorità più bassa di una qualsiasi regola d'autore a
-           parità di specificità) — senza questa riga la tendina resterebbe
-           sempre visibile anche con l'attributo hidden impostato da JS. */
-        .page-menu-dropdown[hidden] {
-            display: none;
-        }
-        .page-menu-item {
+        .page-footer-link {
             background: none;
             border: none;
-            text-align: left;
-            padding: 11px 12px;
-            border-radius: var(--radius-sm);
-            font-size: var(--text-base);
-            font-weight: 700;
+            padding: 11px 4px;
+            min-height: 44px;
+            display: inline-flex;
+            align-items: center;
+            font-size: var(--text-sm);
+            font-weight: 600;
             color: var(--text-muted);
             cursor: pointer;
-            min-height: 44px;
         }
-        .page-menu-item:hover { background: var(--bg-color-2); color: var(--text-main); }
-        .page-menu-item.active { color: var(--accent-signal); background: var(--accent-signal-dim); }
+        .page-footer-link:hover { color: var(--text-main); }
+        .page-footer-link.active { color: var(--accent-signal); }
+        .page-footer-sep { color: var(--text-dim); font-size: var(--text-sm); }
 
         /* 3 riquadri singoli ("box fatto su misura" — richiesta esplicita
            dell'utente dopo le due versioni precedenti), etichetta sopra il
@@ -1494,24 +1467,6 @@
     <header>
         <h1><span class="icon-brand"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 6"/><polyline points="15 6 21 6 21 12"/></svg></span> <span class="brand-text">AI Predictor</span></h1>
         <div class="header-actions">
-            <!-- Trading AI è la pagina di apertura, pulita, senza le altre due
-                 schede subito in vista (richiesto dall'utente, 2026-11: "non
-                 li voglio in mezzo, in vista, in alto... devono essere
-                 nascosti"; messi dentro il pannello "Come funziona questa
-                 pagina?" non avrebbe senso, nessuno lo aprirebbe per cercare
-                 altre pagine — qui invece un piccolo pulsante dedicato, un
-                 menu a tendina compatto, nulla di visibile finché non lo si
-                 tocca). -->
-            <div class="page-menu" id="page-menu">
-                <button class="page-menu-btn" id="page-menu-btn" onclick="togglePageMenu()" aria-haspopup="true" aria-expanded="false" aria-label="Altre pagine">
-                    <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="19" cy="12" r="2.2"/></svg>
-                </button>
-                <div class="page-menu-dropdown" id="page-menu-dropdown" hidden>
-                    <button class="page-menu-item active" id="tab-btn-aitrader" onclick="switchPage('aitrader')">Trading AI</button>
-                    <button class="page-menu-item" id="tab-btn-tech" onclick="switchPage('tech')">Tech</button>
-                    <button class="page-menu-item" id="tab-btn-explore" onclick="switchPage('explore')">Approfondimenti</button>
-                </div>
-            </div>
             <button class="refresh-btn" onclick="location.reload()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>Aggiorna</button>
         </div>
     </header>
@@ -1943,6 +1898,25 @@
 
     </div><!-- /page-explore -->
 
+    <!-- Link alle altre pagine, condiviso e sempre presente fuori da ogni
+         #page-* (così esiste identico su tutte e tre): Trading AI è la
+         pagina di apertura, pulita, senza le altre due subito in vista
+         (richiesto dall'utente, 2026-11: "non li voglio in mezzo, in
+         vista, in alto... devono essere nascosti"). Un pulsante dedicato
+         in header è stato il primo tentativo, spostato qui in fondo
+         (richiesto dall'utente, 2026-11: non dava fastidio ma "non mi
+         piace lì" accanto ad Aggiorna) — il punto più lontano possibile
+         dall'azione principale, zero peso finché non si scorre fino in
+         fondo. Stessi #tab-btn-aitrader/tech/explore di sempre:
+         switchPage() li legge/scrive senza modifiche. -->
+    <footer class="page-footer">
+        <button class="page-footer-link active" id="tab-btn-aitrader" onclick="switchPage('aitrader')">Trading AI</button>
+        <span class="page-footer-sep" aria-hidden="true">·</span>
+        <button class="page-footer-link" id="tab-btn-tech" onclick="switchPage('tech')">Tech</button>
+        <span class="page-footer-sep" aria-hidden="true">·</span>
+        <button class="page-footer-link" id="tab-btn-explore" onclick="switchPage('explore')">Approfondimenti</button>
+    </footer>
+
     <script>
         // Unico punto da modificare quando cambia il paniere di asset seguiti.
         const ASSETS = ['NVDA', 'AAPL', 'AMD', 'MU'];
@@ -2363,37 +2337,7 @@
             // lo scurisce di un filo per allinearlo esattamente al --bg-color
             // ri-tematizzato della pagina Trading AI (vedi CSS #page-aitrader).
             document.body.classList.toggle('bg-aitrader', page === 'aitrader');
-            closePageMenu();
         }
-
-        // Menu "altre pagine" nell'header (richiesto dall'utente, 2026-11:
-        // Tech/Approfondimenti non devono stare sempre in vista come prima
-        // — un piccolo pulsante apre questo menu a tendina, si chiude scegliendo
-        // una voce, cliccando fuori o con Esc. Stessi #tab-btn-* di sempre
-        // dentro, switchPage() continua a leggerli/scriverli senza modifiche.
-        function togglePageMenu() {
-            const btn = document.getElementById('page-menu-btn');
-            const dropdown = document.getElementById('page-menu-dropdown');
-            const isOpen = !dropdown.hidden;
-            if (isOpen) { closePageMenu(); return; }
-            dropdown.hidden = false;
-            btn.setAttribute('aria-expanded', 'true');
-        }
-
-        function closePageMenu() {
-            const btn = document.getElementById('page-menu-btn');
-            const dropdown = document.getElementById('page-menu-dropdown');
-            dropdown.hidden = true;
-            btn.setAttribute('aria-expanded', 'false');
-        }
-
-        document.addEventListener('click', (e) => {
-            const menu = document.getElementById('page-menu');
-            if (menu && !menu.contains(e.target)) closePageMenu();
-        });
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') closePageMenu();
-        });
 
         // Sotto-navigazione dentro "Approfondimenti" (Trend/Report/Scanner):
         // stesso pattern di switchPage ma un livello più dentro, sugli stessi
