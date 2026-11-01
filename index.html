@@ -121,6 +121,14 @@
                utilizzato, ora è la fonte diretta. */
             --shadow-card: none;
             --shadow-popover: 0 8px 24px rgba(0, 0, 0, 0.35);
+            /* Bagliore per i pulsanti d'azione primari (Aggiorna, Cerca...)
+               — confronto con CineFighi (altra PWA dell'utente), dove ogni
+               pulsante primario ha questo tipo di alone e "sembra vivo".
+               Qui solo sul singolo pulsante, niente aloni di sfondo diffusi:
+               Predict resta piatto (--shadow-card: none) per il tono da app
+               finanziaria seria, questo è un accento mirato, non un cambio
+               di stile generale. */
+            --shadow-glow: 0 0 18px rgba(79, 124, 255, 0.4);
 
             --control-min: 44px; /* bersaglio minimo di tocco per dito su mobile */
             --transition-fast: 150ms ease;
@@ -202,7 +210,23 @@
             align-items: center;
             margin-bottom: 20px;
             padding-bottom: 12px;
-            border-bottom: 1px solid var(--card-border);
+            position: relative;
+        }
+
+        /* Divisore in dissolvenza invece della riga piatta — confronto con
+           CineFighi ("OPPURE" fra due linee che sfumano). Solo qui, il
+           divisore più in vista della pagina (separa l'header dal
+           contenuto): le righe fra elementi di liste/tabelle sotto restano
+           piatte di proposito, lì la leggibilità conta più della rifinitura
+           estetica. */
+        header::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 1px;
+            background: linear-gradient(to right, transparent, var(--card-border) 15%, var(--card-border) 85%, transparent);
         }
 
         h1 {
@@ -215,6 +239,20 @@
         }
 
         h1 .icon-brand { color: var(--accent-signal); display: inline-flex; flex-shrink: 0; }
+
+        /* Confronto con CineFighi (code review 2026-11-01): un po' di
+           personalità sul MARCHIO, non sui dati — l'unico punto dell'app
+           dove un accento decorativo ha senso, il resto resta sobrio come
+           prima. --accent-info è il ciano tenuto nel sistema apposta "per
+           un accento secondario dove sia davvero giustificato" (vedi il
+           commit dei design token): non è un colore nuovo, è quello mai
+           più usato da quando l'app è diventata blu. */
+        h1 .brand-text {
+            background: linear-gradient(90deg, var(--accent-signal), var(--accent-info));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
 
         .refresh-btn {
             background: var(--accent-signal);
@@ -232,6 +270,7 @@
             align-items: center;
             justify-content: center;
             transition: filter var(--transition-fast), transform 80ms ease;
+            box-shadow: var(--shadow-glow);
         }
 
         .refresh-btn:hover { filter: brightness(1.1); }
@@ -607,6 +646,13 @@
             border-radius: var(--radius-pill);
             background: var(--card-bg);
             border: 1px solid var(--card-border);
+            /* Confronto con CineFighi: i suoi badge su sfondo immagine usano
+               backdrop-filter per un effetto vetro. Qui lo sfondo sotto è
+               sempre piatto (nessuna immagine), ma accent-green-dim/
+               accent-red-dim sono già colori semi-trasparenti (13% alpha):
+               il blur dà comunque profondità invece di una tinta piatta. */
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
         }
         .aitrader-hero__delta .stat-value { font-size: var(--text-sm); }
         .aitrader-hero__delta-icon { flex-shrink: 0; color: inherit; }
@@ -1327,6 +1373,38 @@
             padding: 0 12px;
         }
 
+        /* Primo giorno dell'esperimento (UX-07, già risolto): un riquadro
+           vuoto con solo testo grigio sembrava rotto, non "in attesa". Un
+           puntino che pulsa più il valore di oggi, invece del solo
+           messaggio, rende esplicito che il primo dato C'È ed è registrato
+           — la linea manca solo perché serve un secondo giorno per
+           disegnarla, non perché qualcosa non ha funzionato. */
+        .chart-empty--single {
+            flex-direction: column;
+            gap: 10px;
+        }
+        .chart-empty__dot-row { display: flex; align-items: center; gap: 8px; }
+        .chart-empty__dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-signal);
+            box-shadow: 0 0 0 0 var(--accent-signal-dim);
+            animation: chartEmptyPulse 2s ease-out infinite;
+        }
+        @keyframes chartEmptyPulse {
+            0% { box-shadow: 0 0 0 0 var(--accent-signal-dim); }
+            70% { box-shadow: 0 0 0 9px rgba(79, 124, 255, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(79, 124, 255, 0); }
+        }
+        .chart-empty__value {
+            font-family: var(--font-display);
+            font-weight: 800;
+            font-size: var(--text-lg);
+            color: var(--text-main);
+        }
+        .chart-empty__msg { color: var(--text-muted); font-size: var(--text-sm); max-width: 240px; }
+
         .info-panel {
             margin-bottom: 20px;
         }
@@ -1414,7 +1492,7 @@
     </div>
 
     <header>
-        <h1><span class="icon-brand"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 6"/><polyline points="15 6 21 6 21 12"/></svg></span> AI Predictor</h1>
+        <h1><span class="icon-brand"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 6"/><polyline points="15 6 21 6 21 12"/></svg></span> <span class="brand-text">AI Predictor</span></h1>
         <div class="header-actions">
             <!-- Trading AI è la pagina di apertura, pulita, senza le altre due
                  schede subito in vista (richiesto dall'utente, 2026-11: "non
@@ -3075,13 +3153,28 @@
             // una linea continua, non per un punto isolato) — la card più
             // importante della pagina restava un riquadro vuoto senza
             // spiegazione proprio il primo giorno di un esperimento appena
-            // ricominciato. Stesso meccanismo di showEmptyChart sopra, e la
-            // legenda va svuotata insieme: non c'è nulla da mostrare/nascondere
-            // con un solo punto.
+            // ricominciato. La legenda va svuotata insieme: non c'è nulla da
+            // mostrare/nascondere con un solo punto.
+            //
+            // Confronto con CineFighi (code review 2026-11-01): il solo
+            // messaggio grigio centrato sembrava un riquadro rotto più che
+            // "in attesa". Un puntino che pulsa più il valore di oggi rende
+            // esplicito che il dato C'È ed è registrato — manca solo un
+            // secondo giorno per disegnare la linea.
             if (history.length === 1) {
-                showEmptyChart(canvasId, 'Solo un giorno di storico finora: la linea comparirà da domani.');
+                const canvas = document.getElementById(canvasId);
                 const legendEl = document.getElementById('aitrader-chart-legend');
                 if (legendEl) legendEl.innerHTML = '';
+                if (canvas) {
+                    canvas.parentElement.innerHTML = `
+                        <div class="chart-empty chart-empty--single">
+                            <div class="chart-empty__dot-row">
+                                <span class="chart-empty__dot"></span>
+                                <span class="chart-empty__value">${fmtMoney(history[0].equity_usd, '$')}</span>
+                            </div>
+                            <span class="chart-empty__msg">Solo un giorno di storico finora: la linea comparirà da domani.</span>
+                        </div>`;
+                }
                 return;
             }
             const canvasEl = document.getElementById(canvasId);
