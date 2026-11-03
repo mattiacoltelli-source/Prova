@@ -1,43 +1,43 @@
-# Report accuratezza — aggiornato al 2026-11-03T02:17:09.802893+00:00
+# Report accuratezza — aggiornato al 2026-11-03T11:16:23.707630+00:00
 
-**Previsioni valutate: 205 — accuratezza complessiva: 41.5%**
+**Previsioni valutate: 208 — accuratezza complessiva: 40.9%**
 
 ## Per asset / orizzonte
 
 | Asset | Orizzonte | N | Accuratezza |
 |---|---|---|---|
 | AAPL | 1d | 39 | 43.6% |
-| AAPL | 1m | 20 | 35.0% |
+| AAPL | 1m | 21 | 33.3% |
 | AAPL | 7d | 23 | 60.9% |
 | AMD | 1d | 19 | 26.3% |
-| AMD | 1m | 1 | 0.0% |
+| AMD | 1m | 2 | 0.0% |
 | AMD | 7d | 4 | 50.0% |
 | MU | 1d | 14 | 42.9% |
 | MU | 7d | 3 | 0.0% |
 | NVDA | 1d | 39 | 41.0% |
-| NVDA | 1m | 20 | 50.0% |
+| NVDA | 1m | 21 | 47.6% |
 | NVDA | 7d | 23 | 34.8% |
 
 ## Matrice di confusione (predetto vs reale, tutti gli asset/orizzonti)
 
 | Predetto \ Reale | UP | DOWN | FLAT |
 |---|---|---|---|
-| UP | 16 | 16 | 32 |
+| UP | 16 | 17 | 33 |
 | DOWN | 4 | 2 | 2 |
-| FLAT | 36 | 30 | 67 |
+| FLAT | 36 | 31 | 67 |
 
 ## Calibrazione (confidence dichiarata vs accuratezza reale)
 
 | Fascia confidence | N | Accuratezza |
 |---|---|---|
-| bassa (0-49) | 131 | 37.4% |
-| media (50-74) | 63 | 47.6% |
+| bassa (0-49) | 133 | 36.8% |
+| media (50-74) | 64 | 46.9% |
 | alta (75-100) | 11 | 54.5% |
 
 ## Probabilità (Brier Score, Log Loss)
 
-- Brier Score: **0.654** (n=133; range 0-2, più basso è meglio)
-- Log Loss: **1.0782** (n=133; più basso è meglio)
+- Brier Score: **0.6591** (n=136; range 0-2, più basso è meglio)
+- Log Loss: **1.0868** (n=136; più basso è meglio)
 - Riferimento "non informativo" (probabilità sempre 33.3%/33.3%/33.3%): Brier 0.667, Log Loss 1.099 — l'agente deve fare meglio di questo per aggiungere valore.
 - 72 previsioni valutate sono precedenti all'introduzione delle probabilità (2026-09-18) ed escluse da queste due metriche.
 
@@ -50,16 +50,16 @@ descritte in `src/config.py` (`PROMPT_VERSION`).
 | Versione | N | Accuratezza |
 |---|---|---|
 | v1 | 66 | 48.5% |
-| v2 | 119 | 39.5% |
+| v2 | 122 | 38.5% |
 | v3 | 20 | 30.0% |
 
 ## Confronto con baseline naive
 
 - Random (3 classi equiprobabili): 33.3%
-- Persistenza (ripete l'ultimo esito reale osservato): 50.5% (n=194)
-- Classe più frequente (frequenza storica su decenni di prezzi, pesata sullo stesso mix asset/orizzonte): 44.6% (n=205)
+- Persistenza (ripete l'ultimo esito reale osservato): 50.8% (n=197)
+- Classe più frequente (frequenza storica su decenni di prezzi, pesata sullo stesso mix asset/orizzonte): 44.5% (n=208)
 - Chronos-Bolt-tiny (Amazon, open-source — previsione numerica pura su serie storiche, zero news/macro/fondamentali): 38.1% (n=42)
-- **Agente AI: 41.5%**
+- **Agente AI: 40.9%**
 
 > La baseline "classe più frequente" è la più dura delle tre: è
 > l'accuratezza di chi prevede sempre la stessa classe senza
