@@ -638,6 +638,7 @@ della classifica.
   sul ritorno verso la media, non sulla continuazione. Mai compra chi è
   salito, esattamente come Momentum non compra mai chi è sceso.
 - **Stop-loss e take-profit anche qui (dal 2026-11-04)**: stessi livelli di AI reale (-8% / +16% sul prezzo d'ingresso originale). Se nella seduta il minimo tocca lo stop o il massimo il take-profit, la posizione esce a quel livello, non alla chiusura; se li tocca entrambi lo stesso giorno vale lo stop (ipotesi prudente). Un titolo uscito così non rientra nel paniere dello stesso giorno. Il controllo è giornaliero sulla barra del giorno (massimo/minimo), non su prezzi intraday.
+- **Prezzi da Alpaca, volumi da Yahoo (dal 2026-11-04)**: le barre recenti (massimo, minimo, chiusura) di tutti i titoli arrivano da Alpaca in poche richieste (feed sip, ripiego iex) — gli stessi prezzi con cui sono eseguiti gli ordini di AI reale. Yahoo resta la base per lo storico lungo (SMA 200) e per i volumi. Se Alpaca non risponde si usa solo Yahoo; se Yahoo non risponde per un titolo si usano le sole barre Alpaca (punteggi tecnici a 0 punti, mai esclusione). Il file `data/_state/benchmark_price_check.json` registra ogni sera quanto differiscono le chiusure delle due fonti (soglia 0,5%).
 
 **Punteggio tecnico come precedenza, non filtro** (2026-11-02, richiesto
 dall'utente: "non voglio filtri rigidi... gli altri titoli devono comunque

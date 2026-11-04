@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import datetime as dt
 import json
+import os
+import json
 from unittest.mock import patch
 
 import pytest
@@ -678,3 +680,71 @@ def test_dati_vecchi_non_scrivono_il_giorno(tmp_path, monkeypatch):
 def test_ultima_seduta_attesa_salta_weekend_e_festivi():
     assert benchmark._expected_last_session(dt.date(2026, 11, 2)) == "2026-10-30"  # lunedì -> venerdì
     assert benchmark._expected_last_session(dt.date(2026, 11, 4)) == "2026-11-03"
+
+
+# ─── Alpaca come fonte dei prezzi, Yahoo per volumi e storico lungo ─────────
+
+def test_merge_bars_prezzi_alpaca_volume_yahoo():
+    yahoo = [
+        {"date": "2026-10-29", "close": 100.0, "high": 101.0, "low": 99.0, "volume": 1000.0},
+        {"date": "2026-10-30", "close": 102.0, "high": 103.0, "low": 101.0, "volume": 2000.0},
+    ]
+    alpaca = [
+        {"date": "2026-10-30", "close": 102.5, "high": 103.5, "low": 101.5},
+        {"date": "2026-11-02", "close": 104.0, "high": 105.0, "low": 103.0},
+    ]
+    merged, diff = benchmark._merge_bars(yahoo, alpaca)
+    assert [b["date"] for b in merged] == ["2026-10-29", "2026-10-30", "2026-11-02"]
+    assert merged[1]["close"] == 102.5 and merged[1]["volume"] == 2000.0  # prezzo Alpaca, volume Yahoo
+    assert "volume" not in merged[2]  # data solo di Alpaca: niente volume
+    assert round(diff, 2) == round(abs(102.5 / 102.0 - 1) * 100, 2)
+
+
+def test_fetch_alpaca_bars_senza_chiavi_torna_vuoto(monkeypatch):
+    monkeypatch.delenv("ALPACA_API_KEY", raising=False)
+    monkeypatch.delenv("ALPACA_SECRET_KEY", raising=False)
+    assert benchmark._fetch_alpaca_bars(["AAA"], dt.date(2026, 11, 4)) == {}
+
+
+def test_fetch_alpaca_bars_parsa_e_ripiega_su_iex(monkeypatch):
+    monkeypatch.setenv("ALPACA_API_KEY", "k")
+    monkeypatch.setenv("ALPACA_SECRET_KEY", "s")
+    feeds = []
+
+    class Resp:
+        def __init__(self, ok, body, status=200):
+            self.ok, self._b, self.status_code, self.text = ok, body, status, "x"
+        def json(self):
+            return self._b
+
+    def fake_get(url, params, headers, timeout):
+        feeds.append(params["feed"])
+        if params["feed"] == "sip":
+            return Resp(False, {}, 403)
+        return Resp(True, {"bars": {"AAA": [{"t": "2026-11-03T05:00:00Z", "o": 1, "h": 11.0, "l": 9.0, "c": 10.0, "v": 5}]}})
+
+    monkeypatch.setattr(benchmark.requests, "get", fake_get)
+    out = benchmark._fetch_alpaca_bars(["AAA"], dt.date(2026, 11, 4))
+    assert feeds == ["sip", "iex"]
+    assert out == {"AAA": [{"date": "2026-11-03", "close": 10.0, "high": 11.0, "low": 9.0}]}
+
+
+def test_yahoo_giu_ma_alpaca_ok_il_titolo_non_e_escluso(tmp_path, monkeypatch):
+    _isolate(tmp_path, monkeypatch)
+    alpaca = {
+        s: [
+            {"date": "2026-10-28", "close": 100.0, "high": 100.0, "low": 100.0},
+            {"date": "2026-10-29", "close": 100.0, "high": 100.0, "low": 100.0},
+            {"date": "2026-10-30", "close": c, "high": c, "low": c},
+        ]
+        for s, c in (("AAA", 110.0), ("BBB", 90.0), ("CCC", 105.0))
+    }
+    monkeypatch.setattr(benchmark, "_fetch_alpaca_bars", lambda symbols, today: alpaca)
+    def boom(symbol, range_="1y"):
+        raise benchmark.BenchmarkError("yahoo giù")
+    with patch("src.benchmark.prices.fetch_daily_history", side_effect=boom):
+        benchmark.update_momentum(dt.date(2026, 11, 1), _EXPERIMENT)
+    rec = storage.read_all(config.AI_TRADER_MOMENTUM_FILE)[0]
+    assert set(rec["holdings"]) == {"AAA", "CCC"}  # i due con rendimento positivo
+    check = json.load(open(os.path.join(config.STATE_DIR, "benchmark_price_check.json")))
+    assert check["compared"] == 0

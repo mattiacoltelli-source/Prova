@@ -62,6 +62,11 @@ from __future__ import annotations
 
 import datetime as dt
 
+import json
+import os
+
+import requests
+
 from . import config, data_health, storage, technicals
 from .data_sources import prices
 from .data_sources.prices import DailyBar
@@ -193,6 +198,88 @@ def _expected_last_session(today: dt.date) -> str:
     return d.isoformat()
 
 
+ALPACA_DATA_URL = "https://data.alpaca.markets/v2/stocks/bars"
+ALPACA_RECENT_DAYS = 60  # ~40 sedute: bastano per rendimento 20gg, SMA lunghe restano a Yahoo
+ALPACA_PRICE_DIFF_ALERT_PCT = 0.5
+
+
+def _fetch_alpaca_bars(symbols: list[str], today: dt.date) -> dict[str, list[dict]]:
+    """Barre giornaliere recenti (massimo, minimo, chiusura) di TUTTI i
+    simboli in poche richieste da Alpaca — gli stessi prezzi con cui vengono
+    eseguiti gli ordini di AI reale. Feed "sip" (tutte le borse, ritardo di
+    15 minuti sul piano gratuito, irrilevante a mercato chiuso); se il piano
+    lo rifiuta ripiega su "iex". Qualunque errore -> {} e il chiamante usa
+    solo Yahoo: Alpaca migliora i prezzi, non è mai un punto di rottura."""
+    api_key = os.environ.get("ALPACA_API_KEY")
+    secret_key = os.environ.get("ALPACA_SECRET_KEY")
+    if not api_key or not secret_key:
+        return {}
+    headers = {"APCA-API-KEY-ID": api_key, "APCA-API-SECRET-KEY": secret_key}
+    start = (today - dt.timedelta(days=ALPACA_RECENT_DAYS)).isoformat()
+    for feed in ("sip", "iex"):
+        try:
+            out: dict[str, list[dict]] = {}
+            token = None
+            for _ in range(20):
+                params = {
+                    "symbols": ",".join(symbols), "timeframe": "1Day", "start": start,
+                    "adjustment": "raw", "feed": feed, "limit": 10000, "sort": "asc",
+                }
+                if token:
+                    params["page_token"] = token
+                resp = requests.get(ALPACA_DATA_URL, params=params, headers=headers, timeout=20)
+                if not resp.ok:
+                    raise RuntimeError(f"{resp.status_code}: {resp.text[:200]}")
+                payload = resp.json()
+                for sym, rows in (payload.get("bars") or {}).items():
+                    out.setdefault(sym, []).extend(rows)
+                token = payload.get("next_page_token")
+                if not token:
+                    break
+            if out:
+                return {
+                    sym: [
+                        {"date": r["t"][:10], "close": float(r["c"]), "high": float(r["h"]), "low": float(r["l"])}
+                        for r in rows
+                    ]
+                    for sym, rows in out.items()
+                }
+        except Exception:  # noqa: BLE001 - si prova l'altro feed, poi Yahoo
+            continue
+    return {}
+
+
+def _merge_bars(yahoo_bars: list[DailyBar], alpaca_bars: list[dict]) -> tuple[list[DailyBar], float]:
+    """Yahoo come base (storico lungo e volumi), prezzi di Alpaca sopra per
+    le date che Alpaca copre. Ritorna anche la massima differenza % di
+    chiusura tra le due fonti sulle date in comune (0 se nessuna)."""
+    by_date = {b["date"]: dict(b) for b in yahoo_bars}
+    max_diff = 0.0
+    for a in alpaca_bars:
+        cur = by_date.get(a["date"])
+        if cur and cur.get("close"):
+            max_diff = max(max_diff, abs(a["close"] / cur["close"] - 1) * 100)
+        merged = cur or {"date": a["date"]}
+        merged.update(close=a["close"], high=a["high"], low=a["low"])
+        by_date[a["date"]] = merged
+    return [by_date[d] for d in sorted(by_date)], max_diff  # type: ignore[misc]
+
+
+def _write_price_check(today_str: str, compared: int, diffs: dict[str, float]) -> None:
+    """Diagnostica Alpaca vs Yahoo: quali titoli differiscono oltre la soglia."""
+    try:
+        os.makedirs(config.STATE_DIR, exist_ok=True)
+        flagged = {s: round(d, 2) for s, d in diffs.items() if d > ALPACA_PRICE_DIFF_ALERT_PCT}
+        with open(os.path.join(config.STATE_DIR, "benchmark_price_check.json"), "w", encoding="utf-8") as fh:
+            json.dump({
+                "date": today_str, "compared": compared,
+                "max_diff_pct": round(max(diffs.values(), default=0.0), 2),
+                "over_threshold": flagged,
+            }, fh, ensure_ascii=False)
+    except Exception:  # noqa: BLE001 - diagnostica, mai fatale
+        pass
+
+
 def _universe() -> list[str]:
     return [s for s in config.SCANNER_STOCKS if s not in config.AI_TRADER_EXCLUDED_TICKERS]
 
@@ -231,12 +318,25 @@ def _update_strategy(
     # ticker illiquido è normale, ma se falliscono tutti insieme è il
     # segnale che la fonte si è rotta (vedi config.DATA_HEALTH_FAILURE_RATE_ALERT_THRESHOLD).
     expected_session = _expected_last_session(today)
+    alpaca_by_symbol = _fetch_alpaca_bars(_universe(), today)
+    price_diffs: dict[str, float] = {}
     for symbol in _universe():
+        alpaca_rows = alpaca_by_symbol.get(symbol)
         try:
             bars = _fetch_bars(symbol)
         except Exception:  # noqa: BLE001 - un titolo alla volta, mai fatale
-            failed_symbols.append(symbol)
-            continue
+            # Yahoo non risponde: se Alpaca ha il titolo si va avanti con le
+            # sole barre recenti (senza volume e senza SMA 200: punteggi
+            # tecnici a 0 punti, mai un'esclusione).
+            if alpaca_rows:
+                bars = list(alpaca_rows)
+            else:
+                failed_symbols.append(symbol)
+                continue
+        else:
+            if alpaca_rows:
+                bars, diff = _merge_bars(bars, alpaca_rows)
+                price_diffs[symbol] = diff
         # Dati vecchi: l'ultima barra è precedente all'ultima seduta attesa
         # (la fonte non ha ancora pubblicato il giorno appena chiuso, o ha
         # servito una risposta in cache). Visto il 2026-11-04: tutti i 14
@@ -253,6 +353,7 @@ def _update_strategy(
             pct = closes[-1] / closes[-1 - lookback_days] - 1
             rank.append((symbol, pct))
 
+    _write_price_check(today_str, len(price_diffs), price_diffs)
     try:
         data_health.record_fetch_health("benchmark", len(_universe()), failed_symbols)
     except Exception:  # noqa: BLE001 - lo stato di salute non deve mai bloccare la strategia vera
