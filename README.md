@@ -637,6 +637,7 @@ della classifica.
   ipervenduto di breve periodo, non un trend di fondo) giorni — scommessa
   sul ritorno verso la media, non sulla continuazione. Mai compra chi è
   salito, esattamente come Momentum non compra mai chi è sceso.
+- **Stop-loss e take-profit anche qui (dal 2026-11-04)**: stessi livelli di AI reale (-8% / +16% sul prezzo d'ingresso originale). Se nella seduta il minimo tocca lo stop o il massimo il take-profit, la posizione esce a quel livello, non alla chiusura; se li tocca entrambi lo stesso giorno vale lo stop (ipotesi prudente). Un titolo uscito così non rientra nel paniere dello stesso giorno. Il controllo è giornaliero sulla barra del giorno (massimo/minimo), non su prezzi intraday.
 
 **Punteggio tecnico come precedenza, non filtro** (2026-11-02, richiesto
 dall'utente: "non voglio filtri rigidi... gli altri titoli devono comunque

@@ -242,11 +242,34 @@ def _update_strategy(
     previous_mark_prices = last.get("mark_prices", {})
     previous_entry_prices = last.get("entry_prices", {})
 
+    # Stop-loss e take-profit come in AI reale (stessi livelli di config,
+    # misurati sul prezzo d'ingresso originale): se nella seduta di oggi il
+    # minimo tocca lo stop o il massimo tocca il take-profit, la posizione
+    # esce a quel livello (non alla chiusura). Se la barra non ha
+    # massimo/minimo si usa la chiusura. Se tocca entrambi lo stesso giorno
+    # vale lo stop (ipotesi prudente: l'ordine dei due tocchi non si sa).
+    # Un titolo uscito così oggi non rientra nel paniere di domani.
+    stopped_out: dict[str, float] = {}
+    for symbol in previous_holdings:
+        entry = previous_entry_prices.get(symbol)
+        bars = bars_by_symbol.get(symbol)
+        if not entry or not bars:
+            continue
+        bar = bars[-1]
+        low = bar.get("low", bar["close"])
+        high = bar.get("high", bar["close"])
+        stop_level = entry * (1 + config.AI_TRADER_STOP_LOSS_PCT / 100)
+        take_level = entry * (1 + config.AI_TRADER_TAKE_PROFIT_PCT / 100)
+        if low <= stop_level:
+            stopped_out[symbol] = stop_level
+        elif high >= take_level:
+            stopped_out[symbol] = take_level
+
     if previous_holdings:
         day_return = 0.0
         for symbol, weight in previous_holdings.items():
             prev_price = previous_mark_prices.get(symbol)
-            curr_price = prices_today.get(symbol)
+            curr_price = stopped_out.get(symbol, prices_today.get(symbol))
             if prev_price and curr_price:
                 day_return += weight * (curr_price / prev_price - 1)
         equity_usd = previous_equity * (1 + day_return)
@@ -272,6 +295,7 @@ def _update_strategy(
     # dall'utente il 2026-11-02: "non voglio filtri rigidi... gli altri
     # titoli devono comunque poter essere selezionati se hanno un buon
     # rendimento."
+    eligible = [symbol for symbol in eligible if symbol not in stopped_out]
     tiered = sorted(eligible, key=lambda s: tier_fn(score_fn(bars_by_symbol[s])), reverse=True)
     selected = tiered[:top_n]
     # Non più il 100% del capitale diviso equal-weight tra i selezionati:
@@ -302,7 +326,11 @@ def _update_strategy(
             new_entry_prices[symbol] = previous_entry_prices.get(symbol)
 
     new_mark_prices = {symbol: prices_today[symbol] for symbol in new_holdings if symbol in prices_today}
-    exit_prices = {symbol: prices_today[symbol] for symbol in exited_today if symbol in prices_today}
+    exit_prices = {
+        symbol: round(stopped_out[symbol], 4) if symbol in stopped_out else prices_today[symbol]
+        for symbol in exited_today
+        if symbol in stopped_out or symbol in prices_today
+    }
 
     storage.append_record(filepath, {
         "date": today_str,

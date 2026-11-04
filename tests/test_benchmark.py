@@ -158,17 +158,17 @@ def test_momentum_salva_il_prezzo_di_uscita_di_un_titolo_venduto(tmp_path, monke
         "mark_prices": {"AAA": 100.0, "BBB": 100.0}, "exit_prices": {},
     })
     closes_by_symbol = {
-        "AAA": [100.0, 110.0, 121.0],  # momentum +21%, resta
-        "BBB": [100.0, 50.0, 40.0],    # momentum -60%, esce dal paniere
-        "CCC": [100.0, 100.0, 110.0],  # momentum +10%, entra nel paniere
+        "AAA": [100.0, 105.0, 110.0],  # momentum +10%, resta
+        "BBB": [100.0, 96.0, 95.0],    # momentum -5%, esce dal paniere (senza toccare lo stop)
+        "CCC": [100.0, 100.0, 105.0],  # momentum +5%, entra nel paniere
     }
     with patch("src.benchmark.prices.fetch_daily_history", side_effect=_momentum_fake_fetch(closes_by_symbol)):
         benchmark.update_momentum(dt.date(2026, 11, 1), _EXPERIMENT)
 
     rec = storage.read_all(config.AI_TRADER_MOMENTUM_FILE)[1]
     assert rec["holdings"] == {"AAA": 0.175, "CCC": 0.175}  # BBB non c'è più
-    assert rec["exit_prices"] == {"BBB": 40.0}  # solo lei è uscita oggi
-    assert rec["entry_prices"]["CCC"] == 110.0  # appena entrata: ingresso = oggi
+    assert rec["exit_prices"] == {"BBB": 95.0}  # solo lei è uscita oggi
+    assert rec["entry_prices"]["CCC"] == 105.0  # appena entrata: ingresso = oggi
 
 
 def test_momentum_nessun_titolo_con_momentum_positivo_va_tutto_in_contanti(tmp_path, monkeypatch):
@@ -341,7 +341,7 @@ def test_meanrev_secondo_giorno_segna_a_mercato_il_paniere_di_ieri(tmp_path, mon
     })
     # AAA continua a scendere (ancora la peggiore): resta in portafoglio.
     closes_by_symbol = {
-        "AAA": [100.0, 90.0, 81.0],
+        "AAA": [100.0, 90.0, 85.0],
         "BBB": [100.0, 100.0, 102.0],
         "CCC": [100.0, 100.0, 103.0],
     }
@@ -349,10 +349,10 @@ def test_meanrev_secondo_giorno_segna_a_mercato_il_paniere_di_ieri(tmp_path, mon
         benchmark.update_mean_reversion(dt.date(2026, 11, 1), _EXPERIMENT)
 
     rec = storage.read_all(config.AI_TRADER_MEANREV_FILE)[1]
-    # (81/90 - 1) = -10% -> 100000 * 0.9
-    assert rec["equity_usd"] == 90000.0
+    # (85/90 - 1) = -5.56% (sopra lo stop -8%) -> 100000 * 0.9444
+    assert rec["equity_usd"] == 94444.44
     assert rec["entry_prices"]["AAA"] == 90.0  # invariato, non è entrata oggi
-    assert rec["mark_prices"]["AAA"] == 81.0
+    assert rec["mark_prices"]["AAA"] == 85.0
 
 
 def test_meanrev_stesso_giorno_e_idempotente_nessuna_chiamata_di_rete(tmp_path, monkeypatch):
@@ -575,3 +575,78 @@ def test_momentum_punteggio_zero_non_svuota_mai_la_selezione(tmp_path, monkeypat
 
     rec = storage.read_all(config.AI_TRADER_MOMENTUM_FILE)[0]
     assert set(rec["holdings"]) == {"AAA", "CCC"}
+
+
+def _stop_tp_record(filepath):
+    storage.append_record(filepath, {
+        "date": "2026-10-31", "equity_usd": 100000.0,
+        "holdings": {"AAA": 0.35}, "entry_prices": {"AAA": 100.0},
+        "mark_prices": {"AAA": 100.0}, "exit_prices": {},
+    })
+
+
+def _bars_hl(closes, highs, lows):
+    start = dt.date(2026, 1, 1)
+    return [
+        {"date": (start + dt.timedelta(days=i)).isoformat(), "close": c, "high": h, "low": l}
+        for i, (c, h, l) in enumerate(zip(closes, highs, lows))
+    ]
+
+
+def _run_momentum_with(bars_by_symbol):
+    def fake(symbol, range_="1y"):
+        return bars_by_symbol[symbol]
+    with patch("src.benchmark.prices.fetch_daily_history", side_effect=fake):
+        benchmark.update_momentum(dt.date(2026, 11, 1), _EXPERIMENT)
+
+
+def test_stop_loss_intraday_esce_al_livello_e_non_rientra(tmp_path, monkeypatch):
+    _isolate(tmp_path, monkeypatch)
+    _stop_tp_record(config.AI_TRADER_MOMENTUM_FILE)
+    # Il minimo di oggi tocca -9% (sotto lo stop -8%) ma chiude a +2%: esce a 92.
+    _run_momentum_with({
+        "AAA": _bars_hl([100.0, 100.0, 102.0], [100.0, 100.0, 103.0], [100.0, 100.0, 91.0]),
+        "BBB": _bars_hl([100.0, 100.0, 101.0], [100.0] * 3, [100.0] * 3),
+    })
+    rec = storage.read_all(config.AI_TRADER_MOMENTUM_FILE)[1]
+    assert rec["exit_prices"] == {"AAA": 92.0}
+    assert "AAA" not in rec["holdings"]  # niente rientro lo stesso giorno
+    assert rec["equity_usd"] == round(100000 * (1 + 0.35 * (92 / 100 - 1)), 2)
+
+
+def test_take_profit_intraday_esce_al_livello(tmp_path, monkeypatch):
+    _isolate(tmp_path, monkeypatch)
+    _stop_tp_record(config.AI_TRADER_MOMENTUM_FILE)
+    _run_momentum_with({
+        "AAA": _bars_hl([100.0, 100.0, 110.0], [100.0, 100.0, 120.0], [100.0, 100.0, 99.0]),
+        "BBB": _bars_hl([100.0, 100.0, 101.0], [100.0] * 3, [100.0] * 3),
+    })
+    rec = storage.read_all(config.AI_TRADER_MOMENTUM_FILE)[1]
+    assert rec["exit_prices"] == {"AAA": 116.0}
+    assert rec["equity_usd"] == round(100000 * (1 + 0.35 * 0.16), 2)
+
+
+def test_stop_e_take_profit_lo_stesso_giorno_vale_lo_stop(tmp_path, monkeypatch):
+    _isolate(tmp_path, monkeypatch)
+    _stop_tp_record(config.AI_TRADER_MOMENTUM_FILE)
+    _run_momentum_with({
+        "AAA": _bars_hl([100.0, 100.0, 105.0], [100.0, 100.0, 120.0], [100.0, 100.0, 90.0]),
+        "BBB": _bars_hl([100.0, 100.0, 101.0], [100.0] * 3, [100.0] * 3),
+    })
+    rec = storage.read_all(config.AI_TRADER_MOMENTUM_FILE)[1]
+    assert rec["exit_prices"] == {"AAA": 92.0}
+
+
+def test_stop_loss_vale_anche_per_mean_reversion(tmp_path, monkeypatch):
+    _isolate(tmp_path, monkeypatch)
+    _stop_tp_record(config.AI_TRADER_MEANREV_FILE)
+    def fake(symbol, range_="1y"):
+        return {
+            "AAA": _bars_hl([100.0, 100.0, 95.0], [100.0, 100.0, 100.0], [100.0, 100.0, 90.0]),
+            "BBB": _bars_hl([100.0, 100.0, 97.0], [100.0] * 3, [100.0] * 3),
+        }[symbol]
+    with patch("src.benchmark.prices.fetch_daily_history", side_effect=fake):
+        benchmark.update_mean_reversion(dt.date(2026, 11, 1), _EXPERIMENT)
+    rec = storage.read_all(config.AI_TRADER_MEANREV_FILE)[1]
+    assert rec["exit_prices"] == {"AAA": 92.0}
+    assert "AAA" not in rec["holdings"]
