@@ -750,7 +750,7 @@ AI_TRADER_US_MARKET_HOLIDAYS = frozenset({
 # sotto sarebbe impossibile da rispettare con i prezzi di Haiku 4.5.
 AI_TRADER_HAIKU_MODEL = "claude-haiku-5-5"
 AI_TRADER_SONNET_MODEL = "claude-sonnet-5-5"
-AI_TRADER_MAX_TOKENS = 300
+AI_TRADER_MAX_TOKENS = 600
 
 # Tetto massimo di chiamate al modello più caro (Sonnet) in un solo giorno,
 # indipendente dal tetto di spesa mensile in dollari sotto: una giornata di

@@ -1195,3 +1195,30 @@ def test_decide_all_sonnet_segue_l_ordine_dello_scanner_non_quello_della_watchli
     assert used["RIVN"] == config.AI_TRADER_SONNET_MODEL
     assert used["SOFI"] == config.AI_TRADER_HAIKU_MODEL
     assert [d["symbol"] for d in decisions] == ["RIVN", "SOFI"]
+
+
+def test_parse_decision_recupera_risposta_troncata():
+    out = ai_trader.parse_decision('{"decision": "HOLD", "reasoning_short": "Solo il breakout')
+    assert out["decision"] == "HOLD"
+    assert "breakout" in out["reasoning_short"]
+
+
+def test_parse_decision_recupera_json_malformato():
+    out = ai_trader.parse_decision('{"decision": "BUY" "reasoning_short": "ok"}')
+    assert out["decision"] == "BUY"
+
+
+def test_parse_decision_risposta_vuota_resta_errore():
+    import pytest
+    with pytest.raises(ai_trader.DecisionParseError):
+        ai_trader.parse_decision("")
+
+
+def test_scanner_decision_riprova_una_volta_su_risposta_vuota(monkeypatch):
+    monkeypatch.setattr(ai_trader.budget, "trader_has_budget", lambda: True)
+    monkeypatch.setattr(ai_trader.budget, "record_trader_call_cost", lambda *a: 0.001)
+    replies = iter([("", 10, 0), ('{"decision": "HOLD", "reasoning_short": "ok"}', 10, 10)])
+    monkeypatch.setattr(ai_trader, "call_model", lambda m, p: next(replies))
+    out = ai_trader.scanner_symbol_decision("XYZ", {}, {}, "m")
+    assert out["decision"] == "HOLD" and not out.get("error")
+    assert out["cost_usd"] == 0.002

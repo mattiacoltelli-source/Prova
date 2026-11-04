@@ -140,9 +140,20 @@ Rispondi ESCLUSIVAMENTE con un oggetto JSON valido, nessun altro testo:
 def _extract_json(text: str) -> dict:
     text = text.strip()
     match = re.search(r"\{.*\}", text, re.DOTALL)
-    if not match:
-        raise DecisionParseError(f"Nessun JSON trovato nella risposta del modello: {text!r}")
-    return json.loads(match.group(0))
+    if match:
+        try:
+            return json.loads(match.group(0))
+        except json.JSONDecodeError:
+            pass  # JSON malformato (es. virgola mancante): provo il recupero sotto
+    # Risposta troncata o malformata: recupero la decisione se è già scritta
+    # in chiaro. La decisione viene prima del testo nel formato richiesto,
+    # quindi una troncatura nel ragionamento non la invalida.
+    dec = re.search(r'"decision"\s*:\s*"(BUY|SELL|HOLD)"', text, re.IGNORECASE)
+    if dec:
+        reason = re.search(r'"reasoning_short"\s*:\s*"([^"]*)', text)
+        reasoning = (reason.group(1).strip() if reason else "") or "(ragionamento troncato)"
+        return {"decision": dec.group(1), "reasoning_short": reasoning}
+    raise DecisionParseError(f"Nessun JSON trovato nella risposta del modello: {text!r}")
 
 
 def parse_decision(raw_text: str) -> dict:
@@ -196,9 +207,16 @@ def scanner_symbol_decision(symbol: str, row: dict, thresholds: dict, model: str
     # finita la spesa mensile.
     cost_usd = 0.0
     try:
-        raw, input_tokens, output_tokens = call_model(model, prompt)
-        cost_usd = budget.record_trader_call_cost(model, input_tokens, output_tokens)
-        parsed = parse_decision(raw)
+        parsed = None
+        for attempt in range(2):  # un solo nuovo tentativo se la risposta è inutilizzabile
+            raw, input_tokens, output_tokens = call_model(model, prompt)
+            cost_usd += budget.record_trader_call_cost(model, input_tokens, output_tokens)
+            try:
+                parsed = parse_decision(raw)
+                break
+            except DecisionParseError:
+                if attempt == 1 or not budget.trader_has_budget():
+                    raise
     except Exception as exc:  # noqa: BLE001 - un simbolo non deve bloccare gli altri
         return {
             "symbol": symbol,
