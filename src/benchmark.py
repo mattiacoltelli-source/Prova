@@ -180,6 +180,19 @@ def _already_recorded_today(filepath: str, today_str: str) -> bool:
     return bool(records) and records[-1].get("date") == today_str
 
 
+def _expected_last_session(today: dt.date) -> str:
+    """Ultima seduta USA attesa nei dati quando il giro gira nel giorno
+    `today` (data UTC): l'ultimo giorno di borsa STRETTAMENTE precedente.
+    Prudente apposta: il giro serale delle 22:10 UTC di un giorno di borsa
+    potrebbe già avere la barra di quel giorno, ma qui si pretende solo
+    quella di ieri; quello delle 02:00 UTC del giorno dopo deve avere quella
+    del giorno appena chiuso."""
+    d = today - dt.timedelta(days=1)
+    while d.weekday() >= 5 or d.isoformat() in config.AI_TRADER_US_MARKET_HOLIDAYS:
+        d -= dt.timedelta(days=1)
+    return d.isoformat()
+
+
 def _universe() -> list[str]:
     return [s for s in config.SCANNER_STOCKS if s not in config.AI_TRADER_EXCLUDED_TICKERS]
 
@@ -217,10 +230,20 @@ def _update_strategy(
     # I falliti vengono comunque raccolti per data_health sotto: un singolo
     # ticker illiquido è normale, ma se falliscono tutti insieme è il
     # segnale che la fonte si è rotta (vedi config.DATA_HEALTH_FAILURE_RATE_ALERT_THRESHOLD).
+    expected_session = _expected_last_session(today)
     for symbol in _universe():
         try:
             bars = _fetch_bars(symbol)
         except Exception:  # noqa: BLE001 - un titolo alla volta, mai fatale
+            failed_symbols.append(symbol)
+            continue
+        # Dati vecchi: l'ultima barra è precedente all'ultima seduta attesa
+        # (la fonte non ha ancora pubblicato il giorno appena chiuso, o ha
+        # servito una risposta in cache). Visto il 2026-11-04: tutti i 14
+        # titoli tenuti con i prezzi di due sedute prima, quindi un giorno
+        # "a rendimento zero" scritto per sbagliato. Stesso trattamento di
+        # un fallimento di fetch: il titolo non entra nel calcolo di oggi.
+        if bars[-1]["date"] < expected_session:
             failed_symbols.append(symbol)
             continue
         closes = [b["close"] for b in bars]
@@ -234,6 +257,19 @@ def _update_strategy(
         data_health.record_fetch_health("benchmark", len(_universe()), failed_symbols)
     except Exception:  # noqa: BLE001 - lo stato di salute non deve mai bloccare la strategia vera
         pass
+
+    # Se troppi titoli hanno dati non aggiornati (o non scaricabili) il
+    # giorno NON si scrive: meglio un buco nel grafico, recuperato dal giro
+    # dopo (che confronta con l'ultimo prezzo registrato), che un giorno a
+    # rendimento zero con acquisti a prezzi vecchi. Lo stato di salute sopra
+    # ha già segnalato il problema nell'app.
+    universe_size = len(_universe())
+    if universe_size and len(failed_symbols) / universe_size > config.DATA_HEALTH_FAILURE_RATE_ALERT_THRESHOLD:
+        print(
+            f"Benchmark {filepath}: {len(failed_symbols)}/{universe_size} titoli senza dati aggiornati "
+            f"(attesa ultima seduta {expected_session}): giorno {today_str} non registrato."
+        )
+        return
 
     existing = storage.read_all(filepath)
     last = existing[-1] if existing else {}

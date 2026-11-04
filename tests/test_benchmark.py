@@ -24,10 +24,12 @@ def _bars_from_closes(closes, volumes=None):
     tecnico — mai un errore, coerente con "un indicatore non calcolabile
     non deve causare l'esclusione automatica" richiesto dall'utente. I
     test che verificano il punteggio tecnico passano volumes esplicito."""
-    start = dt.date(2026, 1, 1)
+    # Le barre finiscono all'ultima seduta attesa dai test (venerdì
+    # 2026-10-30): altrimenti il controllo "dati vecchi" le scarterebbe.
+    end = dt.date(2026, 10, 30)
     bars = []
     for i, close in enumerate(closes):
-        bar = {"date": (start + dt.timedelta(days=i)).isoformat(), "close": close}
+        bar = {"date": (end - dt.timedelta(days=len(closes) - 1 - i)).isoformat(), "close": close}
         if volumes is not None:
             bar["volume"] = volumes[i]
         bars.append(bar)
@@ -188,6 +190,7 @@ def test_momentum_nessun_titolo_con_momentum_positivo_va_tutto_in_contanti(tmp_p
 
 def test_momentum_un_titolo_senza_dati_non_blocca_gli_altri(tmp_path, monkeypatch):
     _isolate(tmp_path, monkeypatch)
+    monkeypatch.setattr(config, "DATA_HEALTH_FAILURE_RATE_ALERT_THRESHOLD", 0.5)  # universo di test da 3 titoli: 1 su 3 è tollerato qui
     closes_by_symbol = {
         "AAA": [100.0, 100.0, 110.0],
         "CCC": [100.0, 100.0, 105.0],
@@ -586,9 +589,9 @@ def _stop_tp_record(filepath):
 
 
 def _bars_hl(closes, highs, lows):
-    start = dt.date(2026, 1, 1)
+    end = dt.date(2026, 10, 30)
     return [
-        {"date": (start + dt.timedelta(days=i)).isoformat(), "close": c, "high": h, "low": l}
+        {"date": (end - dt.timedelta(days=len(closes) - 1 - i)).isoformat(), "close": c, "high": h, "low": l}
         for i, (c, h, l) in enumerate(zip(closes, highs, lows))
     ]
 
@@ -607,6 +610,7 @@ def test_stop_loss_intraday_esce_al_livello_e_non_rientra(tmp_path, monkeypatch)
     _run_momentum_with({
         "AAA": _bars_hl([100.0, 100.0, 102.0], [100.0, 100.0, 103.0], [100.0, 100.0, 91.0]),
         "BBB": _bars_hl([100.0, 100.0, 101.0], [100.0] * 3, [100.0] * 3),
+        "CCC": _bars_hl([100.0, 100.0, 100.5], [100.0] * 3, [100.0] * 3),
     })
     rec = storage.read_all(config.AI_TRADER_MOMENTUM_FILE)[1]
     assert rec["exit_prices"] == {"AAA": 92.0}
@@ -620,6 +624,7 @@ def test_take_profit_intraday_esce_al_livello(tmp_path, monkeypatch):
     _run_momentum_with({
         "AAA": _bars_hl([100.0, 100.0, 110.0], [100.0, 100.0, 120.0], [100.0, 100.0, 99.0]),
         "BBB": _bars_hl([100.0, 100.0, 101.0], [100.0] * 3, [100.0] * 3),
+        "CCC": _bars_hl([100.0, 100.0, 100.5], [100.0] * 3, [100.0] * 3),
     })
     rec = storage.read_all(config.AI_TRADER_MOMENTUM_FILE)[1]
     assert rec["exit_prices"] == {"AAA": 116.0}
@@ -632,6 +637,7 @@ def test_stop_e_take_profit_lo_stesso_giorno_vale_lo_stop(tmp_path, monkeypatch)
     _run_momentum_with({
         "AAA": _bars_hl([100.0, 100.0, 105.0], [100.0, 100.0, 120.0], [100.0, 100.0, 90.0]),
         "BBB": _bars_hl([100.0, 100.0, 101.0], [100.0] * 3, [100.0] * 3),
+        "CCC": _bars_hl([100.0, 100.0, 100.5], [100.0] * 3, [100.0] * 3),
     })
     rec = storage.read_all(config.AI_TRADER_MOMENTUM_FILE)[1]
     assert rec["exit_prices"] == {"AAA": 92.0}
@@ -644,9 +650,31 @@ def test_stop_loss_vale_anche_per_mean_reversion(tmp_path, monkeypatch):
         return {
             "AAA": _bars_hl([100.0, 100.0, 95.0], [100.0, 100.0, 100.0], [100.0, 100.0, 90.0]),
             "BBB": _bars_hl([100.0, 100.0, 97.0], [100.0] * 3, [100.0] * 3),
+            "CCC": _bars_hl([100.0, 100.0, 98.0], [100.0] * 3, [100.0] * 3),
         }[symbol]
     with patch("src.benchmark.prices.fetch_daily_history", side_effect=fake):
         benchmark.update_mean_reversion(dt.date(2026, 11, 1), _EXPERIMENT)
     rec = storage.read_all(config.AI_TRADER_MEANREV_FILE)[1]
     assert rec["exit_prices"] == {"AAA": 92.0}
     assert "AAA" not in rec["holdings"]
+
+
+def test_dati_vecchi_non_scrivono_il_giorno(tmp_path, monkeypatch):
+    """Se l'ultima barra è precedente all'ultima seduta attesa per quasi
+    tutti i titoli, il giorno non viene registrato (niente rendimento zero
+    con prezzi vecchi) e lo stato di salute segnala il problema."""
+    _isolate(tmp_path, monkeypatch)
+    _stop_tp_record(config.AI_TRADER_MOMENTUM_FILE)
+    old = {
+        "AAA": [{"date": "2026-10-28", "close": 100.0}, {"date": "2026-10-29", "close": 101.0}],
+    }
+    def fake(symbol, range_="1y"):
+        return old["AAA"]
+    with patch("src.benchmark.prices.fetch_daily_history", side_effect=fake):
+        benchmark.update_momentum(dt.date(2026, 11, 2), _EXPERIMENT)
+    assert len(storage.read_all(config.AI_TRADER_MOMENTUM_FILE)) == 1  # nessun nuovo record
+
+
+def test_ultima_seduta_attesa_salta_weekend_e_festivi():
+    assert benchmark._expected_last_session(dt.date(2026, 11, 2)) == "2026-10-30"  # lunedì -> venerdì
+    assert benchmark._expected_last_session(dt.date(2026, 11, 4)) == "2026-11-03"
