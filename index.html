@@ -3559,10 +3559,7 @@
         // update_momentum/update_mean_reversion in src/benchmark.py) —
         // quindi AI_TRADER_MAX_EXPOSURE_PCT_FRONTEND (35%, stesso tetto di
         // AI reale, non più 100%) appena hanno posizioni aperte, 0%
-        // altrimenti. Lo stop-loss/take-profit indipendenti esistono solo
-        // per "AI reale" (src/ai_trader.py), le altre due seguono solo
-        // regole fisse di ribilanciamento: qui lo si dice invece di
-        // mostrare un numero che non si applica.
+        // altrimenti. Stop-loss e take-profit valgono per tutte e tre.
         function _renderAiTraderRiskCard() {
             const strategy = currentTradeStrategyFilter;
             const openCount = aiTraderOpenCounts[strategy] || 0;
@@ -3585,12 +3582,13 @@
                 `${openCount} di ${AI_TRADER_MAX_POSITIONS_FRONTEND} max`;
             document.getElementById('aitrader-risk-positions-fill').style.width = `${positionsPct}%`;
 
-            document.getElementById('aitrader-risk-stoploss-val').innerText = strategy === 'real'
-                ? `${AI_TRADER_STOP_LOSS_PCT_FRONTEND.toFixed(1)}%`
-                : '— (regole fisse)';
-            document.getElementById('aitrader-risk-takeprofit-val').innerText = strategy === 'real'
-                ? `+${AI_TRADER_TAKE_PROFIT_PCT_FRONTEND.toFixed(1)}%`
-                : '— (regole fisse)';
+            // Stessi livelli per tutte e tre (dal 2026-11-04): ordini veri su
+            // Alpaca per AI reale, simulati su minimo/massimo della seduta
+            // per Momentum e Mean Reversion (src/benchmark.py).
+            document.getElementById('aitrader-risk-stoploss-val').innerText =
+                `${AI_TRADER_STOP_LOSS_PCT_FRONTEND.toFixed(1)}%` + (strategy === 'real' ? '' : ' (simulato)');
+            document.getElementById('aitrader-risk-takeprofit-val').innerText =
+                `+${AI_TRADER_TAKE_PROFIT_PCT_FRONTEND.toFixed(1)}%` + (strategy === 'real' ? '' : ' (simulato)');
         }
 
         const AITRADER_STRATEGY_LABELS = { real: 'AI reale', momentum: 'Momentum', meanrev: 'Mean Reversion' };
