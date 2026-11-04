@@ -1222,3 +1222,41 @@ def test_scanner_decision_riprova_una_volta_su_risposta_vuota(monkeypatch):
     out = ai_trader.scanner_symbol_decision("XYZ", {}, {}, "m")
     assert out["decision"] == "HOLD" and not out.get("error")
     assert out["cost_usd"] == 0.002
+
+
+import pytest as _pytest
+
+_ORIG_TREND = ai_trader._trend_context
+
+
+@_pytest.fixture(autouse=True)
+def _no_trend_network(monkeypatch):
+    monkeypatch.setattr(ai_trader, "_trend_context", lambda symbol: None)
+
+
+def test_prompt_include_trend_e_regola_buy():
+    p = ai_trader.build_scanner_prompt(
+        "XYZ", {"price": 10}, {}, {"rsi": 60.0, "vs_sma50_pct": 3.2, "vs_sma200_pct": 8.0, "ret20_pct": 5.5}
+    )
+    assert "RSI(14): 60.0" in p and "media a 50 giorni: 3.2%" in p and "BUY se il trend è positivo" in p
+
+
+def test_prompt_trend_mancante_non_disponibile():
+    assert "RSI(14): non disponibile" in ai_trader.build_scanner_prompt("XYZ", {}, {}, None)
+
+
+def test_trend_context_calcola_indicatori(monkeypatch):
+    bars = [
+        {"date": f"d{i}", "open": 100 + i * 0.5, "high": 100 + i * 0.5, "low": 100 + i * 0.5,
+         "close": 100 + i * 0.5, "volume": 1000}
+        for i in range(250)
+    ]
+    monkeypatch.setattr(ai_trader.prices, "fetch_daily_history", lambda s, range_="1y": bars)
+    ctx = _ORIG_TREND("XYZ")
+    assert ctx["ret20_pct"] > 0 and ctx["vs_sma50_pct"] > 0 and ctx["vs_sma200_pct"] > 0
+    assert ctx["rsi"] is not None
+
+
+def test_trend_context_storico_corto_none(monkeypatch):
+    monkeypatch.setattr(ai_trader.prices, "fetch_daily_history", lambda s, range_="1y": [])
+    assert _ORIG_TREND("XYZ") is None

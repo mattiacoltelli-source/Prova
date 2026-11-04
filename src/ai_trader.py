@@ -18,7 +18,8 @@ import re
 
 import anthropic
 
-from . import budget, config, data_health, storage
+from . import budget, config, data_health, storage, technicals
+from .data_sources import prices
 
 
 class DecisionParseError(RuntimeError):
@@ -114,8 +115,37 @@ def core_asset_decision(asset: str) -> dict:
     }
 
 
-def build_scanner_prompt(symbol: str, row: dict, thresholds: dict) -> str:
+def _trend_context(symbol: str) -> dict | None:
+    """Contesto di trend (RSI, SMA50/SMA200, rendimento 20gg) dallo storico a
+    1 anno. None se i dati non ci sono: il giudizio procede comunque, con la
+    riga di trend segnata "non disponibile" (mai un titolo escluso per questo)."""
+    bars = prices.fetch_daily_history(symbol, range_="1y")
+    if len(bars) < 21:
+        return None
+    last = bars[-1]["close"]
+    ret20 = (last / bars[-21]["close"] - 1.0) * 100.0
+    sma50 = technicals.compute_sma(bars, 50)
+    sma200 = technicals.compute_sma(bars, 200)
+    rsi = technicals.compute_rsi(bars)
+
+    def vs(sma):
+        return None if not sma else round((last / sma - 1.0) * 100.0, 1)
+
+    return {
+        "rsi": None if rsi is None else round(rsi, 0),
+        "vs_sma50_pct": vs(sma50),
+        "vs_sma200_pct": vs(sma200),
+        "ret20_pct": round(ret20, 1),
+    }
+
+
+def _fmt(value, suffix=""):
+    return "non disponibile" if value is None else f"{value}{suffix}"
+
+
+def build_scanner_prompt(symbol: str, row: dict, thresholds: dict, trend: dict | None = None) -> str:
     flagged_line = "SÌ — uno o più segnali sopra soglia oggi" if row.get("flagged") else "no, nessun segnale sopra soglia oggi"
+    trend = trend or {}
     return f"""Devi dare un giudizio BUY/SELL/HOLD su {symbol} per un conto di trading PAPER
 (denaro finto su Alpaca, nessuna operazione reale). Non è consulenza finanziaria: è un
 esperimento che misura quanto un giudizio automatico regge nel tempo.
@@ -128,9 +158,19 @@ Segnali quantitativi di oggi (da uno scanner su volume/gap/breakout):
 - Posizione vs massimo di {config.SCANNER_LOOKBACK_DAYS}gg (breakout): {row.get('breakout_pct')}% (soglia: {thresholds.get('breakout_pct')}%)
 - Segnalato come anomalo oggi dallo scanner: {flagged_line}
 
-BUY solo se il quadro è chiaramente positivo (non solo "non negativo"); SELL solo se
-chiaramente negativo; HOLD in tutti gli altri casi, incluso quando i segnali sono
-contrastanti o troppo deboli per decidere con sicurezza.
+Contesto di trend:
+- RSI(14): {_fmt(trend.get('rsi'))}
+- Prezzo vs media a 50 giorni: {_fmt(trend.get('vs_sma50_pct'), '%')}
+- Prezzo vs media a 200 giorni: {_fmt(trend.get('vs_sma200_pct'), '%')}
+- Rendimento ultimi 20 giorni: {_fmt(trend.get('ret20_pct'), '%')}
+
+Regola: BUY se il trend è positivo (prezzo sopra la media a 50 giorni, rendimento a 20
+giorni positivo, RSI non in ipercomprato oltre 75) E c'è almeno una conferma, anche
+moderata, da volume sopra la media, gap positivo o vicinanza al massimo recente: non
+servono segnali estremi. SELL se il trend è chiaramente negativo (prezzo sotto la media
+a 50 giorni con rendimento a 20 giorni negativo) e c'è conferma al ribasso. HOLD se il
+trend è incerto, se mancano conferme o se i segnali sono contrastanti. Se un dato di
+trend è non disponibile, decidi con quelli presenti e in dubbio scegli HOLD.
 
 Rispondi ESCLUSIVAMENTE con un oggetto JSON valido, nessun altro testo:
 {{"decision": "BUY"|"SELL"|"HOLD", "reasoning_short": "<massimo 2 frasi>"}}
@@ -194,7 +234,11 @@ def scanner_symbol_decision(symbol: str, row: dict, thresholds: dict, model: str
             "cost_usd": 0.0,
             "skipped_budget": True,
         }
-    prompt = build_scanner_prompt(symbol, row, thresholds)
+    try:
+        trend = _trend_context(symbol)
+    except Exception:  # noqa: BLE001 - il trend è un di più, mai bloccante
+        trend = None
+    prompt = build_scanner_prompt(symbol, row, thresholds, trend)
     # cost_usd inizializzato qui (non 0.0 fisso nel except sotto): se
     # call_model ha già restituito una risposta e record_trader_call_cost ha
     # già addebitato la spesa reale al budget mensile, un parse_decision

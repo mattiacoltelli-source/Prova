@@ -508,6 +508,7 @@ coprendo ~58 titoli/giorno:
 - Titoli che lo Scanner segnala come anomali quel giorno (fino a
   `AI_TRADER_MAX_SONNET_CALLS_PER_DAY`): giudizio con **Claude Sonnet 5.5**.
 - Tutti gli altri: giudizio con **Claude Haiku 5.5** (copertura di base,
+  Dal 2026-11-04 il prompt include anche il contesto di trend (RSI, prezzo vs SMA50/SMA200, rendimento a 20 giorni) e una regola BUY meno rigida: trend positivo + almeno una conferma moderata (volume, gap o vicinanza al massimo), senza richiedere segnali estremi. Stop-loss, take-profit e tetto di esposizione invariati.
   quasi gratuita).
 
 **Tetto di spesa**: `$3.5`/mese (`config.AI_TRADER_MONTHLY_BUDGET_USD`),
