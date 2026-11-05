@@ -1,7 +1,7 @@
 name: Scanner di mercato
 
 # Segnali quantitativi (volume anomalo, gap, vicinanza al massimo recente)
-# su una watchlist di 50 azioni + 3 crypto (config.SCANNER_STOCKS/
+# su una watchlist di 60 azioni + 3 crypto (config.SCANNER_STOCKS/
 # SCANNER_CRYPTO) — modulo indipendente dal motore predittivo, nessuna
 # previsione, nessuna chiamata AI, nessuna chiave richiesta (solo Yahoo
 # Finance, stessa fonte primaria già usata da src/data_sources/prices.py).
@@ -15,6 +15,10 @@ on:
     - cron: "40 14 * * 1-5"
     - cron: "10 17 * * 1-5"
     - cron: "40 19 * * 1-5"
+    # Dopo la chiusura di Wall Street in TUTTE e due le stagioni (20:00 UTC a
+    # ora legale, 21:00 UTC a ora solare) e prima del trading AI delle 22:10
+    # UTC: i giri sopra possono girare a mercato aperto, con volume parziale.
+    - cron: "40 21 * * 1-5"
   workflow_dispatch:
     inputs:
       dry_run:

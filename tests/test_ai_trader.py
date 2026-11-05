@@ -1260,3 +1260,68 @@ def test_trend_context_calcola_indicatori(monkeypatch):
 def test_trend_context_storico_corto_none(monkeypatch):
     monkeypatch.setattr(ai_trader.prices, "fetch_daily_history", lambda s, range_="1y": [])
     assert _ORIG_TREND("XYZ") is None
+
+
+# ─── Freschezza dello Scanner rispetto alla chiusura (2026-11-05) ───────────
+
+@_pytest.fixture(autouse=True)
+def _no_fresh_scan_network(monkeypatch):
+    """Di default nessuna scansione nuova (niente rete nei test)."""
+    monkeypatch.setattr(ai_trader, "_fresh_scan", lambda: None)
+
+
+def test_last_session_close_ora_solare_e_legale():
+    utc = dt.timezone.utc
+    # novembre (EST): chiusura 21:00 UTC
+    assert ai_trader.last_session_close_utc(dt.datetime(2026, 11, 4, 22, 10, tzinfo=utc)) == dt.datetime(2026, 11, 4, 21, 0, tzinfo=utc)
+    # luglio (EDT): chiusura 20:00 UTC
+    assert ai_trader.last_session_close_utc(dt.datetime(2026, 7, 8, 22, 10, tzinfo=utc)) == dt.datetime(2026, 7, 8, 20, 0, tzinfo=utc)
+
+
+def test_last_session_close_prima_della_chiusura_usa_il_giorno_prima():
+    utc = dt.timezone.utc
+    # mercoledì 4 nov alle 19:40 UTC la seduta è ancora aperta: vale la chiusura di martedì
+    assert ai_trader.last_session_close_utc(dt.datetime(2026, 11, 4, 19, 40, tzinfo=utc)) == dt.datetime(2026, 11, 3, 21, 0, tzinfo=utc)
+
+
+def test_last_session_close_weekend_torna_a_venerdi():
+    utc = dt.timezone.utc
+    assert ai_trader.last_session_close_utc(dt.datetime(2026, 11, 7, 12, 0, tzinfo=utc)) == dt.datetime(2026, 11, 6, 21, 0, tzinfo=utc)
+
+
+def _write_scan(tmp_path, monkeypatch, generated_at, symbol="RIVN"):
+    f = tmp_path / "scan.json"
+    f.write_text(json.dumps({"generated_at": generated_at.isoformat(), "results": [{"symbol": symbol, "price": 10}]}))
+    monkeypatch.setattr(config, "SCANNER_FILE", str(f))
+
+
+def test_scanner_prima_della_chiusura_fa_una_scansione_nuova(tmp_path, monkeypatch):
+    _isolate(tmp_path, monkeypatch)
+    now = dt.datetime.now(dt.timezone.utc)
+    close = ai_trader.last_session_close_utc(now)
+    _write_scan(tmp_path, monkeypatch, close - dt.timedelta(hours=1))   # parziale
+    monkeypatch.setattr(ai_trader, "_fresh_scan", lambda: {"results": [{"symbol": "NEW", "price": 1}]})
+    assert set(ai_trader.load_scanner_results()) == {"NEW"}
+
+
+def test_scanner_dopo_la_chiusura_non_rifa_la_scansione(tmp_path, monkeypatch):
+    _isolate(tmp_path, monkeypatch)
+    now = dt.datetime.now(dt.timezone.utc)
+    close = ai_trader.last_session_close_utc(now)
+    _write_scan(tmp_path, monkeypatch, close + dt.timedelta(minutes=1))
+    def boom():
+        raise AssertionError("non doveva rifare la scansione")
+    monkeypatch.setattr(ai_trader, "_fresh_scan", boom)
+    assert "RIVN" in ai_trader.load_scanner_results()
+
+
+def test_scansione_nuova_fallita_ripiega_sul_file_di_oggi(tmp_path, monkeypatch):
+    _isolate(tmp_path, monkeypatch)
+    now = dt.datetime.now(dt.timezone.utc)
+    close = ai_trader.last_session_close_utc(now)
+    # prima della chiusura ma stessa data UTC di oggi: si ripiega (con avviso)
+    gen = close - dt.timedelta(minutes=30)
+    if gen.date() != now.date():
+        pytest.skip("la chiusura è di un altro giorno UTC: scenario non riproducibile ora")
+    _write_scan(tmp_path, monkeypatch, gen)
+    assert "RIVN" in ai_trader.load_scanner_results()   # _fresh_scan() -> None

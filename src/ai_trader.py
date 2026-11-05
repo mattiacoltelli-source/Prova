@@ -15,10 +15,11 @@ import datetime as dt
 import json
 import os
 import re
+from zoneinfo import ZoneInfo
 
 import anthropic
 
-from . import budget, config, data_health, storage, technicals
+from . import budget, config, data_health, market_scanner, storage, technicals
 from .data_sources import prices
 
 
@@ -33,33 +34,83 @@ def tradeable_universe() -> list[str]:
     return [s for s in config.SCANNER_STOCKS if s not in config.AI_TRADER_EXCLUDED_TICKERS]
 
 
-def load_scanner_results() -> dict[str, dict]:
-    """Ultimo scan disponibile (data/scanner/results.json), indicizzato per
-    simbolo. {} se lo scanner non ha ancora mai girato, se il file non si
-    legge per qualunque motivo (JSON corrotto, campi mancanti), o se i dati
-    non sono di oggi — un problema qui non deve mai bloccare decide_all(): i
-    4 ASSETS non dipendono dallo scanner, degradano correttamente a "nessun
-    giudizio sui titoli non-ASSETS oggi" invece di un run completamente
-    perso.
+_NY = ZoneInfo("America/New_York")
 
-    Il controllo di freschezza (generated_at) è stato aggiunto in un code
-    review pre-lancio, 2026-11-01: senza, uno scanner rotto o bloccato per
-    giorni/settimane (market_scanner.yml fallito in silenzio) avrebbe
-    continuato a essere letto come se fosse di oggi — build_scanner_prompt
-    dice letteralmente "Variazione da ieri", un'affermazione falsa su dati
-    vecchi che avrebbe degradato silenziosamente le decisioni di trading
-    reali per tutto il tempo in cui nessuno se ne fosse accorto."""
+
+def last_session_close_utc(now: dt.datetime) -> dt.datetime:
+    """Chiusura (16:00 New York, ora legale/solare gestita dal fuso) dell'ultima
+    seduta USA già conclusa a `now`: weekend e festività di
+    config.AI_TRADER_US_MARKET_HOLIDAYS saltati."""
+    d = now.astimezone(_NY).date()
+    for _ in range(10):
+        if d.weekday() < 5 and d.isoformat() not in config.AI_TRADER_US_MARKET_HOLIDAYS:
+            close = dt.datetime.combine(d, dt.time(16, 0), tzinfo=_NY).astimezone(dt.timezone.utc)
+            if close <= now:
+                return close
+        d -= dt.timedelta(days=1)
+    return now - dt.timedelta(days=1)
+
+
+def _fresh_scan() -> dict | None:
+    """Scansione nuova, adesso, senza AI (solo Yahoo): usata quando l'ultimo
+    file dello Scanner è stato fatto prima della chiusura. Salva il risultato
+    come fa scanner_run.py. None se non riesce (rete, Yahoo giù)."""
+    try:
+        result = market_scanner.scan(market_scanner.all_symbols())
+        if not result.get("results"):
+            return None
+        os.makedirs(os.path.dirname(config.SCANNER_FILE), exist_ok=True)
+        with open(config.SCANNER_FILE, "w", encoding="utf-8") as fh:
+            json.dump(result, fh, indent=2, ensure_ascii=False)
+        return result
+    except Exception:  # noqa: BLE001 - mai fatale: si ripiega sul file esistente
+        return None
+
+
+def load_scanner_results() -> dict[str, dict]:
+    """Dati dello Scanner per i giudizi di oggi, indicizzati per simbolo.
+
+    Freschezza (richiesta da una revisione esterna, 2026-11-05): non basta
+    che il file sia "di oggi" — l'ultimo giro programmato dello Scanner
+    (19:40 UTC) cade PRIMA della chiusura di Wall Street in ora solare
+    (21:00 UTC), quindi prezzo e volume possono essere parziali, con un
+    volume odierno sottostimato rispetto alla media (meno titoli segnalati,
+    giudizi più prudenti senza che nessuno se ne accorga). Il file è valido
+    solo se generato DOPO la chiusura dell'ultima seduta conclusa. Se non lo
+    è, si fa una scansione nuova adesso (nessun costo AI). Se anche quella
+    fallisce si ripiega sul vecchio criterio (file generato oggi, data UTC),
+    con una riga nel registro; senza nemmeno quello: {} — un problema qui non
+    deve mai bloccare decide_all() (i 4 ASSETS non dipendono dallo scanner).
+
+    Il controllo sulla data resta dal code review pre-lancio del
+    2026-11-01: uno scanner fermo da giorni (market_scanner.yml fallito in
+    silenzio) non va letto come se fosse di oggi — build_scanner_prompt dice
+    "Variazione da ieri"."""
     if not os.path.exists(config.SCANNER_FILE):
         return {}
     try:
         with open(config.SCANNER_FILE, "r", encoding="utf-8") as fh:
             data = json.load(fh)
         generated_at = str(data.get("generated_at", ""))
-        today = dt.date.today().isoformat()
-        if not generated_at.startswith(today):
-            print(f"Scanner non aggiornato oggi (generated_at={generated_at or 'assente'}): nessun dato scanner oggi.")
-            return {}
-        return {row["symbol"]: row for row in data.get("results", [])}
+        now = dt.datetime.now(dt.timezone.utc)
+        try:
+            generated = dt.datetime.fromisoformat(generated_at)
+            if generated.tzinfo is None:
+                generated = generated.replace(tzinfo=dt.timezone.utc)
+        except ValueError:
+            generated = None
+        close = last_session_close_utc(now)
+        if generated is not None and generated >= close:
+            return {row["symbol"]: row for row in data.get("results", [])}
+        print(f"Scanner generato prima della chiusura dell'ultima seduta (generated_at={generated_at or 'assente'}, chiusura {close.isoformat()}): scansione nuova.")
+        fresh = _fresh_scan()
+        if fresh is not None:
+            return {row["symbol"]: row for row in fresh.get("results", [])}
+        if generated_at.startswith(dt.date.today().isoformat()):
+            print("Scansione nuova non riuscita: uso lo Scanner di oggi, che può essere parziale.")
+            return {row["symbol"]: row for row in data.get("results", [])}
+        print(f"Scanner non aggiornato oggi (generated_at={generated_at or 'assente'}): nessun dato scanner oggi.")
+        return {}
     except Exception:  # noqa: BLE001 - degrada a "nessun dato scanner oggi", mai fatale
         return {}
 
