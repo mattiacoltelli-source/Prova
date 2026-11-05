@@ -502,7 +502,7 @@ confronto, pescando tutte da qui, rischiavano di muoversi insieme sullo
 stesso fattore di rischio invece di essere un test davvero diversificato.
 
 **Segnale ibrido**, pensato per restare dentro un tetto di spesa fisso pur
-coprendo ~58 titoli/giorno:
+coprendo ~59 titoli/giorno:
 - NVDA/AAPL/AMD/MU: previsione AI 1 giorno già generata da "Genera
   previsioni" — costo zero aggiuntivo.
 - Titoli che lo Scanner segnala come anomali quel giorno (fino a
