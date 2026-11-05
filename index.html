@@ -589,13 +589,15 @@
         .diary-controls { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
         .diary-controls .horizon-filter { margin-bottom: 0; align-self: flex-start; max-width: 100%; }
         .diary-input {
-            width: 100%; min-height: 44px; box-sizing: border-box;
+            width: 100%; box-sizing: border-box; min-height: 40px;
             background: var(--card-bg); color: var(--text-main);
             border: 1px solid var(--card-border); border-radius: var(--radius-pill);
-            padding: 0 16px; font: inherit; font-size: var(--text-sm);
+            padding: 0 15px; font: inherit; font-size: var(--text-xs); font-weight: 600;
         }
+        .diary-input::placeholder { color: var(--text-muted); font-weight: 600; }
         .diary-input:focus { outline: 2px solid var(--accent-signal); outline-offset: 1px; }
         .diary-row-date { display: flex; gap: 8px; align-items: center; }
+        .diary-row-date .diary-btn { border: 1px solid var(--card-border); min-height: 40px; padding: 0 15px; }
         .diary-row-date .diary-input { flex: 1; min-width: 0; }
         .diary-day-head { font-size: var(--text-xs); font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; margin: 14px 2px 6px; }
         .diary-err { font-size: var(--text-xs); color: var(--accent-yellow); margin-top: 6px; }
@@ -1742,7 +1744,7 @@
                 <div class="horizon-filter" id="diary-range-filter" role="group" aria-label="Periodo"></div>
                 <div class="diary-row-date">
                     <input type="date" id="diary-date" class="diary-input" aria-label="Giorno singolo">
-                    <button class="diary-btn" id="diary-date-clear" type="button" style="min-height:44px">Azzera</button>
+                    <button class="diary-btn" id="diary-date-clear" type="button">Azzera</button>
                 </div>
             </div>
             <div class="paper-item-list" id="aitrader-decisions-list" style="display:block;"></div>
@@ -3214,7 +3216,7 @@
         }
 
         function _diaryChip(group, value, label, active) {
-            return `<button type="button" class="diary-btn${active ? ' active' : ''}" data-diary-${group}="${value}" style="min-height:44px">${label}</button>`;
+            return `<button type="button" class="diary-btn${active ? ' active' : ''}" data-diary-${group}="${value}">${label}</button>`;
         }
 
         function _diaryRender() {
@@ -3229,16 +3231,15 @@
             diary.dec = saveDec; diary.q = saveQ;
             const n = k => base.filter(r => r.decision === k).length;
             document.getElementById('diary-dec-filter').innerHTML =
-                _diaryChip('dec', 'ALL', `Tutte ${base.length}`, diary.dec === 'ALL') +
+                _diaryChip('dec', 'ALL', `Tutte`, diary.dec === 'ALL') +
                 _diaryChip('dec', 'BUY', `BUY ${n('BUY')}`, diary.dec === 'BUY') +
                 _diaryChip('dec', 'SELL', `SELL ${n('SELL')}`, diary.dec === 'SELL') +
-                _diaryChip('dec', 'HOLD', `HOLD ${n('HOLD')}`, diary.dec === 'HOLD') +
-                _diaryChip('dec', 'ACT', 'Solo BUY/SELL', diary.dec === 'ACT');
+                _diaryChip('dec', 'HOLD', `HOLD ${n('HOLD')}`, diary.dec === 'HOLD');
             const noRange = !!diary.date;
             document.getElementById('diary-range-filter').innerHTML =
                 _diaryChip('range', 'LAST', 'Ultimo giro', !noRange && diary.range === 'LAST') +
-                _diaryChip('range', '7D', 'Ultimi 7 giorni', !noRange && diary.range === '7D') +
-                _diaryChip('range', 'LOADED', 'Giorni caricati', !noRange && diary.range === 'LOADED');
+                _diaryChip('range', '7D', '7 giorni', !noRange && diary.range === '7D') +
+                _diaryChip('range', 'LOADED', 'Caricati', !noRange && diary.range === 'LOADED');
             const dateEl = document.getElementById('diary-date');
             if (dates.length) { dateEl.max = dates[dates.length - 1]; }
             if (dateEl.value !== diary.date) dateEl.value = diary.date;
