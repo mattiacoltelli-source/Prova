@@ -3404,7 +3404,18 @@
             // quest'ultima resta come riserva se il file non c'è ancora o
             // la chiamata ad Alpaca fallisce (vedi commento su
             // AI_TRADER_PORTFOLIO_HISTORY_FILE in config.py).
-            const history = convertPortfolioHistory(portfolioHistoryRaw) || equityRes.data;
+            // Unione delle due fonti per data (Alpaca ha la precedenza dove
+            // c'è): la curva Alpaca da sola può avere pochissimi punti nei
+            // primi giorni (2 il 5 novembre) e il grafico restava piatto,
+            // senza i giorni già registrati da noi (equity_history.jsonl).
+            const alpacaHistory = convertPortfolioHistory(portfolioHistoryRaw);
+            const history = (() => {
+                if (!alpacaHistory) return equityRes.data;
+                const byDate = {};
+                for (const r of equityRes.data) byDate[r.date] = r;
+                for (const r of alpacaHistory) byDate[r.date] = r;
+                return Object.keys(byDate).sort().map(d => byDate[d]);
+            })();
             const startEquity = experiment.start_equity_usd;
             const latestEquity = history.length > 0
                 ? history[history.length - 1].equity_usd
@@ -3517,8 +3528,14 @@
             const canvasEl = document.getElementById(canvasId);
             if (!canvasEl) return;
             const ctx = canvasEl.getContext('2d');
-            const labels = history.map(p => p.date);
-            const equityData = history.map(p => p.equity_usd);
+            // Asse X = unione dei giorni di tutte e tre le serie (non solo
+            // quelli di AI reale): senza, due strategie con pochi giorni in
+            // comune risultavano linee piatte.
+            const labelSet = new Set(history.map(p => p.date));
+            (momentumHistory || []).forEach(r => labelSet.add(r.date));
+            (meanrevHistory || []).forEach(r => labelSet.add(r.date));
+            const labels = [...labelSet].sort();
+            const equityData = _alignEquityToLabels(history, labels);
             const startEquity = experiment.start_equity_usd;
 
             if (chartInstances[canvasId]) {
