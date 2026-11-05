@@ -103,6 +103,13 @@ jobs:
             main/index.html main/manifest.json main/sw.js main/REPORT.md \
             pages/
           rsync -a --checksum --delete main/data/ pages/data/
+          # .nojekyll: GitHub Pages passa dal build Jekyll, che SCARTA ogni
+          # file e cartella con nome che inizia per "_" — quindi tutto
+          # data/_state/ (budget mensile AI, salute dati, conteggi) non
+          # veniva mai pubblicato e l'app leggeva sempre 404: budget a
+          # $0.00 e banner di salute dati sempre "tutto ok". Scoperto il
+          # 2026-11-05 (il budget mostrava 0 con $0.14 realmente spesi).
+          touch pages/.nojekyll
 
       - name: Commit e push su gh-pages
         run: |
