@@ -3,7 +3,7 @@ name: Trading automatico AI
 # Esperimento di 6 mesi richiesto dall'utente il 2026-10-31: trading
 # completamente automatico (nessuna approvazione per singolo ordine, a
 # differenza di paper_order.yml) sul conto paper Alpaca già esistente, su
-# un universo di ~48 titoli (config.SCANNER_STOCKS meno i 2 di Tokyo non
+# un universo di 58 titoli (config.SCANNER_STOCKS meno i 2 di Tokyo non
 # tradabili su Alpaca). Segnale ibrido: previsioni 1g già esistenti per
 # NVDA/AAPL/AMD/MU, giudizio Sonnet 5.5 sui titoli segnalati dallo scanner
 # quel giorno, giudizio Haiku 5.5 su tutti gli altri — vedi src/ai_trader.py

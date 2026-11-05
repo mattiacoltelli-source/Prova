@@ -502,7 +502,7 @@ confronto, pescando tutte da qui, rischiavano di muoversi insieme sullo
 stesso fattore di rischio invece di essere un test davvero diversificato.
 
 **Segnale ibrido**, pensato per restare dentro un tetto di spesa fisso pur
-coprendo ~59 titoli/giorno:
+coprendo ~58 titoli/giorno:
 - NVDA/AAPL/AMD/MU: previsione AI 1 giorno già generata da "Genera
   previsioni" — costo zero aggiuntivo.
 - Titoli che lo Scanner segnala come anomali quel giorno (fino a
@@ -677,8 +677,9 @@ visibile; le altre due restano sottili e tratteggiate per confronto.
 ## Scanner di mercato
 
 Modulo separato e indipendente dal motore predittivo (nessuna previsione,
-nessuna chiamata AI): `src/market_scanner.py` scansiona una watchlist di 50
-azioni + 3 crypto (`config.SCANNER_STOCKS`/`SCANNER_CRYPTO`, assemblata
+nessuna chiamata AI): `src/market_scanner.py` scansiona una watchlist di 60
+azioni (di cui 58 tradabili su Alpaca) + 3 crypto, che al momento non producono dati
+utili da Yahoo e non compaiono nei risultati (`config.SCANNER_STOCKS`/`SCANNER_CRYPTO`, assemblata
 insieme all'utente il 2026-10-31) e calcola 3 segnali puramente
 quantitativi su dati pubblici di oggi — **volume anomalo** (rispetto alla
 media di ~1 mese), **gap** in apertura rispetto alla chiusura precedente, e

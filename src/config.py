@@ -488,7 +488,7 @@ STATE_DIR = "data/_state"
 # Oltre questa percentuale di simboli dell'universo senza un prezzo
 # utilizzabile nello stesso giorno, è più probabile un problema sistemico
 # della fonte (rotta/formato cambiato/rate-limited) che N singoli ticker
-# illiquidi per puro caso — con un universo di 59 titoli, ~12 falliti
+# illiquidi per puro caso — con un universo di 58 titoli, ~12 falliti
 # insieme nello stesso giorno. Primo valore ragionevole, non validato
 # staticamente.
 DATA_HEALTH_FAILURE_RATE_ALERT_THRESHOLD = 0.20
@@ -586,9 +586,6 @@ SCANNER_STOCKS = [
     "GME", "AMC", "CVNA", "UPST", "LCID", "ARM", "INTC", "MSTR", "CRWD", "NIO",
     # Diversificazione fuori dal tech (2026-11-02)
     "XOM", "NEE", "UNH", "PG", "O", "LIN", "HON", "VZ", "PGR", "RTX",
-    # Aggiunto su richiesta dell'utente (2026-11-05): STMicroelectronics
-    # (ADR quotato a New York, semiconduttori)
-    "STM",
 ]
 
 # Ticker Yahoo Finance per le crypto: formato con trattino (BTC-USD), non lo
@@ -749,7 +746,7 @@ AI_TRADER_US_MARKET_HOLIDAYS = frozenset({
 # Modelli Anthropic per il giudizio sui titoli non-ASSETS. Claude Haiku 5.5
 # e Claude Sonnet 5.5, non le versioni precedenti (4.5 usata da
 # ANTHROPIC_MODEL sopra): Haiku 5.5 costa 1/10 di Haiku 4.5 a parità di
-# token, e con un universo di ~48 titoli/giorno il tetto di spesa mensile
+# token, e con un universo di ~58 titoli/giorno il tetto di spesa mensile
 # sotto sarebbe impossibile da rispettare con i prezzi di Haiku 4.5.
 AI_TRADER_HAIKU_MODEL = "claude-haiku-5-5"
 AI_TRADER_SONNET_MODEL = "claude-sonnet-5-5"
