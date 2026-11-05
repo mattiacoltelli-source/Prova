@@ -866,3 +866,7 @@ già, viene comunque riusata per un test realistico a costo zero.
   l'accuratezza predittiva dell'AI nel tempo.
 - I dati di prezzo usati sono "delayed" (~15 min), coerente con l'uso di
   sole fonti gratuite — accettabile per orizzonti ≥ 1 giorno.
+
+### Diario AI (pagina Trading AI)
+
+Scheda "Diario AI": storico delle decisioni BUY/SELL/HOLD (anche HOLD) con ticker, modello e motivazione espandibile, letto da `data/ai_trader/decisions.jsonl` senza nuove chiamate AI. Il file NON viene scaricato per intero: all'apertura si legge solo la coda (richiesta HTTP Range, ~90 KB, ~3 giorni di borsa) e i giorni più vecchi si caricano su richiesta ("Carica giorni precedenti" o scegliendo una data/periodo più lontano). Il primo giorno di ogni blocco, se tagliato a metà, viene scartato e ricaricato col blocco successivo (nessun buco, nessun doppione). Se il server non supportasse Range si ricade sul download completo. Filtri: ticker, BUY/SELL/HOLD (+ "Solo BUY/SELL"), Ultimo giro / Ultimi 7 giorni / Giorni caricati, giorno singolo. Dentro un giorno BUY e SELL vengono prima degli HOLD. Le decisioni finite in errore AI (HOLD di sicurezza) sono segnalate.
