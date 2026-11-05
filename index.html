@@ -595,6 +595,15 @@
             padding: 0 15px; font: inherit; font-size: var(--text-xs); font-weight: 600;
         }
         .diary-input::placeholder { color: var(--text-muted); font-weight: 600; }
+        .diary-select {
+            appearance: none; -webkit-appearance: none; cursor: pointer;
+            padding-right: 40px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%238b94a3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: right 16px center;
+        }
+        .diary-select option { background: var(--card-bg); color: var(--text-main); font-weight: 600; }
+        .diary-controls .horizon-filter { scrollbar-width: none; }
+        .diary-controls .horizon-filter::-webkit-scrollbar { display: none; }
         .diary-input:focus { outline: 2px solid var(--accent-signal); outline-offset: 1px; }
         .diary-row-date { display: flex; gap: 8px; align-items: center; }
         .diary-row-date .diary-btn { border: 1px solid var(--card-border); min-height: 40px; padding: 0 15px; }
@@ -1739,7 +1748,7 @@
             </div>
             <p class="diary-summary" id="diary-summary">Carico le decisioni…</p>
             <div class="diary-controls">
-                <input type="search" id="diary-q" class="diary-input" placeholder="Cerca un ticker (es. NVDA)" autocomplete="off" autocapitalize="characters" aria-label="Cerca ticker">
+                <select id="diary-q" class="diary-input diary-select" aria-label="Titolo"><option value="">Tutti i titoli</option></select>
                 <div class="horizon-filter" id="diary-dec-filter" role="group" aria-label="Decisione"></div>
                 <div class="horizon-filter" id="diary-range-filter" role="group" aria-label="Periodo"></div>
                 <div class="diary-row-date">
@@ -3199,9 +3208,9 @@
         function _diaryFiltered() {
             const dates = _diaryDates();
             const latest = dates.length ? dates[dates.length - 1] : null;
-            const q = diary.q.trim().toUpperCase();
+            const q = diary.q;
             const rows = diary.rows.filter(r => {
-                if (q && !String(r.symbol || '').toUpperCase().includes(q)) return false;
+                if (q && r.symbol !== q) return false;
                 if (diary.dec === 'ACT') { if (r.decision !== 'BUY' && r.decision !== 'SELL') return false; }
                 else if (diary.dec !== 'ALL' && r.decision !== diary.dec) return false;
                 if (diary.date) return r.date === diary.date;
@@ -3243,6 +3252,16 @@
             const dateEl = document.getElementById('diary-date');
             if (dates.length) { dateEl.max = dates[dates.length - 1]; }
             if (dateEl.value !== diary.date) dateEl.value = diary.date;
+
+            const selEl = document.getElementById('diary-q');
+            const symbols = [...new Set(diary.rows.map(r => r.symbol).filter(Boolean))].sort();
+            const sig = symbols.join(',');
+            if (selEl.dataset.sig !== sig) {
+                selEl.innerHTML = `<option value="">Tutti i titoli (${symbols.length})</option>` +
+                    symbols.map(sym => `<option value="${escapeHtml(sym)}">${escapeHtml(sym)}</option>`).join('');
+                selEl.dataset.sig = sig;
+            }
+            if (selEl.value !== diary.q) selEl.value = diary.q;
 
             const rows = _diaryFiltered();
             const countBy = k => rows.filter(r => r.decision === k).length;
@@ -3319,7 +3338,7 @@
                 else if (t.dataset.diaryOlder) { await _diaryLoadMore(); _diaryRender(); }
                 else if (t.id === 'diary-date-clear') { diary.date = ''; diary.limit = DIARY_PAGE_SIZE; _diaryRender(); }
             });
-            document.getElementById('diary-q').addEventListener('input', e => { diary.q = e.target.value; diary.limit = DIARY_PAGE_SIZE; _diaryRender(); });
+            document.getElementById('diary-q').addEventListener('change', e => { diary.q = e.target.value; diary.limit = DIARY_PAGE_SIZE; _diaryRender(); });
             document.getElementById('diary-date').addEventListener('change', async e => {
                 diary.date = e.target.value; diary.limit = DIARY_PAGE_SIZE; _diaryRender();
                 await _diaryNeedDataFor(); _diaryRender();
