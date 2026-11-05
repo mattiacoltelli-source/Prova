@@ -631,13 +631,26 @@
         .diary-sheet__item:hover { background: rgba(255, 255, 255, 0.04); }
         .diary-sheet__item.active { background: var(--accent-signal-contrast); color: #fff; }
         .diary-sheet__item .diary-sheet__sub { font-weight: 600; font-size: var(--text-xs); opacity: 0.75; }
+        .diary-btn svg { margin-right: 6px; flex: none; }
+        .diary-cal__nav { display: flex; align-items: center; justify-content: space-between; flex: none; }
+        .diary-cal__month { font-size: var(--text-sm); font-weight: 700; color: var(--text-main); text-transform: capitalize; }
+        .diary-cal__arrow { border: 1px solid var(--card-border); padding: 7px 15px; font-size: var(--text-sm); }
+        .diary-cal__arrow:disabled { opacity: 0.3; cursor: default; }
+        .diary-cal__grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; flex: none; }
+        .diary-cal__dow { text-align: center; font-size: var(--text-xs); font-weight: 700; color: var(--text-muted); padding: 4px 0; }
+        .diary-cal__day {
+            height: 42px; border: 1px solid transparent; border-radius: 50%; background: transparent;
+            color: var(--text-main); font: inherit; font-size: var(--text-sm); font-weight: 700; cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .diary-cal__day:disabled { color: var(--text-dim, var(--text-muted)); opacity: 0.3; cursor: default; }
+        .diary-cal__day.today { border-color: var(--card-border); }
+        .diary-cal__day.active { background: var(--accent-signal-contrast); color: #fff; opacity: 1; }
+        .diary-cal__hint { margin: 2px 0 0; text-align: center; font-size: var(--text-xs); color: var(--text-muted); flex: none; }
         .diary-sheet__empty { text-align: center; color: var(--text-muted); font-size: var(--text-sm); padding: 20px 0; }
         .diary-controls .horizon-filter { scrollbar-width: none; }
         .diary-controls .horizon-filter::-webkit-scrollbar { display: none; }
         .diary-input:focus { outline: 2px solid var(--accent-signal); outline-offset: 1px; }
-        .diary-row-date { display: flex; gap: 8px; align-items: center; }
-        .diary-row-date .diary-btn { border: 1px solid var(--card-border); min-height: 40px; padding: 0 15px; }
-        .diary-row-date .diary-input { flex: 1; min-width: 0; }
         .diary-day-head { font-size: var(--text-xs); font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; margin: 14px 2px 6px; }
         .diary-err { font-size: var(--text-xs); color: var(--accent-yellow); margin-top: 6px; }
 
@@ -1785,6 +1798,24 @@
                 <div class="diary-sheet__list" id="diary-sheet-list" role="listbox"></div>
             </div>
         </div>
+
+        <div class="diary-sheet" id="diary-cal-sheet" aria-hidden="true">
+            <div class="diary-sheet__backdrop" data-diary-close="1"></div>
+            <div class="diary-sheet__panel" role="dialog" aria-modal="true" aria-label="Scegli un giorno">
+                <div class="diary-sheet__grab"></div>
+                <div class="diary-sheet__head">
+                    <span class="diary-sheet__title">Scegli un giorno</span>
+                    <button type="button" class="diary-btn diary-sheet__close" data-diary-close="1">Chiudi</button>
+                </div>
+                <div class="diary-cal__nav">
+                    <button type="button" class="diary-btn diary-cal__arrow" id="diary-cal-prev" aria-label="Mese precedente">‹</button>
+                    <span class="diary-cal__month" id="diary-cal-month"></span>
+                    <button type="button" class="diary-btn diary-cal__arrow" id="diary-cal-next" aria-label="Mese successivo">›</button>
+                </div>
+                <div class="diary-cal__grid" id="diary-cal-grid"></div>
+                <p class="diary-cal__hint">Si possono scegliere i giorni feriali, dall'inizio dell'esperimento all'ultimo giro.</p>
+            </div>
+        </div>
         <div class="asset-card" id="aitrader-diary-card" style="margin-top:16px;">
             <div class="asset-header">
                 <span class="asset-title">Diario AI</span>
@@ -1794,10 +1825,7 @@
                 <button type="button" id="diary-q" class="diary-input diary-select diary-select-btn" aria-haspopup="dialog" aria-label="Scegli un titolo">Tutti i titoli</button>
                 <div class="horizon-filter" id="diary-dec-filter" role="group" aria-label="Decisione"></div>
                 <div class="horizon-filter" id="diary-range-filter" role="group" aria-label="Periodo"></div>
-                <div class="diary-row-date">
-                    <input type="date" id="diary-date" class="diary-input" aria-label="Giorno singolo">
-                    <button class="diary-btn" id="diary-date-clear" type="button">Azzera</button>
-                </div>
+                <div class="horizon-filter" id="diary-day-filter" role="group" aria-label="Giorno"></div>
             </div>
             <div class="paper-item-list" id="aitrader-decisions-list" style="display:block;"></div>
         </div>
@@ -3292,10 +3320,11 @@
                 _diaryChip('range', 'LAST', 'Ultimo giro', !noRange && diary.range === 'LAST') +
                 _diaryChip('range', '7D', '7 giorni', !noRange && diary.range === '7D') +
                 _diaryChip('range', 'LOADED', 'Caricati', !noRange && diary.range === 'LOADED');
-            const dateEl = document.getElementById('diary-date');
-            if (dates.length) { dateEl.max = dates[dates.length - 1]; }
-            if (dateEl.value !== diary.date) dateEl.value = diary.date;
-
+            const calIcon = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>';
+            document.getElementById('diary-day-filter').innerHTML = diary.date
+                ? `<button type="button" class="diary-btn active" data-diary-cal="1" aria-haspopup="dialog">${calIcon}${_diaryFmtDate(diary.date)}</button>` +
+                  `<button type="button" class="diary-btn" data-diary-calclear="1" aria-label="Togli il filtro del giorno">✕</button>`
+                : `<button type="button" class="diary-btn" data-diary-cal="1" aria-haspopup="dialog">${calIcon}Scegli un giorno ▾</button>`;
             const symbols = [...new Set(diary.rows.map(r => r.symbol).filter(Boolean))].sort();
             document.getElementById('diary-q').textContent =
                 diary.q || `Tutti i titoli (${symbols.length})`;
@@ -3388,11 +3417,63 @@
             if (on) on.scrollIntoView({ block: 'center' });
         }
 
+
+        const DIARY_MONTHS = ['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
+        const diaryCal = { y: 0, m: 0 };
+
+        function _diaryFmtDate(d) {
+            const [y, m, day] = d.split('-').map(Number);
+            return `${day} ${DIARY_MONTHS[m - 1].slice(0, 3)} ${y}`;
+        }
+
+        function _diaryBounds() {
+            const dates = _diaryDates();
+            const max = dates.length ? dates[dates.length - 1] : null;
+            const min = (diary.allLoaded && dates.length) ? dates[0] : (diary.minDate || (dates.length ? dates[0] : null));
+            return { min, max };
+        }
+
+        function _diaryRenderCal() {
+            const { min, max } = _diaryBounds();
+            const first = new Date(Date.UTC(diaryCal.y, diaryCal.m, 1));
+            const daysInMonth = new Date(Date.UTC(diaryCal.y, diaryCal.m + 1, 0)).getUTCDate();
+            const offset = (first.getUTCDay() + 6) % 7;   // settimana da lunedì
+            document.getElementById('diary-cal-month').textContent = `${DIARY_MONTHS[diaryCal.m]} ${diaryCal.y}`;
+            const ym = diaryCal.y * 12 + diaryCal.m;
+            document.getElementById('diary-cal-prev').disabled = !min || ym <= (+min.slice(0, 4)) * 12 + (+min.slice(5, 7) - 1);
+            document.getElementById('diary-cal-next').disabled = !max || ym >= (+max.slice(0, 4)) * 12 + (+max.slice(5, 7) - 1);
+            let html = ['L','M','M','G','V','S','D'].map(d => `<div class="diary-cal__dow">${d}</div>`).join('');
+            for (let i = 0; i < offset; i++) html += '<div></div>';
+            for (let d = 1; d <= daysInMonth; d++) {
+                const iso = `${diaryCal.y}-${String(diaryCal.m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                const dow = (offset + d - 1) % 7;   // 5,6 = sabato, domenica
+                const ok = dow < 5 && min && max && iso >= min && iso <= max;
+                html += `<button type="button" class="diary-cal__day${iso === diary.date ? ' active' : ''}${iso === max ? ' today' : ''}" data-date="${iso}"${ok ? '' : ' disabled'}>${d}</button>`;
+            }
+            document.getElementById('diary-cal-grid').innerHTML = html;
+        }
+
+        function _diaryCalShift(delta) {
+            const t = new Date(Date.UTC(diaryCal.y, diaryCal.m + delta, 1));
+            diaryCal.y = t.getUTCFullYear(); diaryCal.m = t.getUTCMonth();
+            _diaryRenderCal();
+        }
+
+        function _diaryOpenCal() {
+            const { max } = _diaryBounds();
+            const ref = diary.date || max || new Date().toISOString().slice(0, 10);
+            diaryCal.y = +ref.slice(0, 4); diaryCal.m = +ref.slice(5, 7) - 1;
+            _diaryRenderCal();
+            const sheet = document.getElementById('diary-cal-sheet');
+            sheet.classList.add('open'); sheet.setAttribute('aria-hidden', 'false');
+            document.body.style.overflow = 'hidden';
+        }
+
         function _diaryCloseSheet() {
-            const sheet = document.getElementById('diary-sheet');
-            if (!sheet || !sheet.classList.contains('open')) return;
-            sheet.classList.remove('open');
-            sheet.setAttribute('aria-hidden', 'true');
+            document.querySelectorAll('.diary-sheet.open').forEach(sh => {
+                sh.classList.remove('open');
+                sh.setAttribute('aria-hidden', 'true');
+            });
             document.body.style.overflow = '';
         }
 
@@ -3407,7 +3488,8 @@
                 else if (t.dataset.diaryRange) { diary.range = t.dataset.diaryRange; diary.date = ''; diary.limit = DIARY_PAGE_SIZE; _diaryRender(); await _diaryNeedDataFor(); _diaryRender(); }
                 else if (t.dataset.diaryMore) { diary.limit += DIARY_PAGE_SIZE; _diaryRender(); }
                 else if (t.dataset.diaryOlder) { await _diaryLoadMore(); _diaryRender(); }
-                else if (t.id === 'diary-date-clear') { diary.date = ''; diary.limit = DIARY_PAGE_SIZE; _diaryRender(); }
+                else if (t.dataset.diaryCal) { _diaryOpenCal(); }
+                else if (t.dataset.diaryCalclear) { diary.date = ''; diary.limit = DIARY_PAGE_SIZE; _diaryRender(); }
             });
             document.getElementById('diary-q').addEventListener('click', _diaryOpenSheet);
             const sheet = document.getElementById('diary-sheet');
@@ -3423,10 +3505,18 @@
             });
             document.getElementById('diary-sheet-q').addEventListener('input', _diaryRenderSheetList);
             document.addEventListener('keydown', e => { if (e.key === 'Escape') _diaryCloseSheet(); });
-            document.getElementById('diary-date').addEventListener('change', async e => {
-                diary.date = e.target.value; diary.limit = DIARY_PAGE_SIZE; _diaryRender();
-                await _diaryNeedDataFor(); _diaryRender();
+            const cal = document.getElementById('diary-cal-sheet');
+            cal.addEventListener('click', async e => {
+                if (e.target.closest('[data-diary-close]')) { _diaryCloseSheet(); return; }
+                const day = e.target.closest('.diary-cal__day');
+                if (day && !day.disabled) {
+                    diary.date = day.dataset.date; diary.limit = DIARY_PAGE_SIZE;
+                    _diaryCloseSheet(); _diaryRender();
+                    await _diaryNeedDataFor(); _diaryRender();
+                }
             });
+            document.getElementById('diary-cal-prev').addEventListener('click', () => { _diaryCalShift(-1); });
+            document.getElementById('diary-cal-next').addEventListener('click', () => { _diaryCalShift(1); });
         }
 
         async function _diaryLoadFirst() {
@@ -3488,6 +3578,7 @@
 
             const notStartedCard = document.getElementById('aitrader-not-started');
             const chartCard = document.getElementById('aitrader-chart-card');
+            diary.minDate = (experiment && experiment.start_date) || null;
             _renderAiTraderAgentCard(experiment, budgetState, decisionsRes.data);
 
             if (!experiment) {
