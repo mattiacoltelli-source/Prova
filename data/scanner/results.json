@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-04T22:32:24.056403+00:00",
+  "generated_at": "2026-11-05T00:31:57.018174+00:00",
   "thresholds": {
     "volume_ratio": 2.0,
     "gap_pct": 4.0,
@@ -18,20 +18,6 @@
       "gap_pct": 11.38,
       "recent_high": 18.61,
       "breakout_pct": -17.41,
-      "flagged": true
-    },
-    {
-      "symbol": "6324.T",
-      "name": "HARMONIC DRIVE SYSTEMS",
-      "currency": "JPY",
-      "price": 4931.0,
-      "change_pct": -5.25,
-      "volume": 3302900,
-      "average_volume": 1237300,
-      "volume_ratio": 2.67,
-      "gap_pct": -1.73,
-      "recent_high": 6770.0,
-      "breakout_pct": -27.16,
       "flagged": true
     },
     {
@@ -483,34 +469,6 @@
       "flagged": false
     },
     {
-      "symbol": "ETH-USD",
-      "name": "Ethereum USD",
-      "currency": "USD",
-      "price": 2434.91,
-      "change_pct": 6.31,
-      "volume": 17294342144,
-      "average_volume": 10566338145,
-      "volume_ratio": 1.64,
-      "gap_pct": -0.03,
-      "recent_high": 2522.8418,
-      "breakout_pct": -3.49,
-      "flagged": false
-    },
-    {
-      "symbol": "SOL-USD",
-      "name": "Solana USD",
-      "currency": "USD",
-      "price": 95.54,
-      "change_pct": 2.27,
-      "volume": 4102306048,
-      "average_volume": 2519519210,
-      "volume_ratio": 1.63,
-      "gap_pct": -0.02,
-      "recent_high": 109.0304,
-      "breakout_pct": -12.37,
-      "flagged": false
-    },
-    {
       "symbol": "KO",
       "name": "Coca-Cola Company (The)",
       "currency": "USD",
@@ -522,20 +480,6 @@
       "gap_pct": 1.58,
       "recent_high": 96.26,
       "breakout_pct": -0.48,
-      "flagged": false
-    },
-    {
-      "symbol": "BTC-USD",
-      "name": "Bitcoin USD",
-      "currency": "USD",
-      "price": 80620.85,
-      "change_pct": 3.65,
-      "volume": 40142376960,
-      "average_volume": 25157709624,
-      "volume_ratio": 1.6,
-      "gap_pct": -0.01,
-      "recent_high": 84840.0469,
-      "breakout_pct": -4.97,
       "flagged": false
     },
     {
@@ -735,20 +679,6 @@
       "flagged": false
     },
     {
-      "symbol": "6481.T",
-      "name": "THK CO LTD",
-      "currency": "JPY",
-      "price": 5622.0,
-      "change_pct": -1.65,
-      "volume": 1149800,
-      "average_volume": 1007530,
-      "volume_ratio": 1.14,
-      "gap_pct": 0.52,
-      "recent_high": 6905.0,
-      "breakout_pct": -18.58,
-      "flagged": false
-    },
-    {
       "symbol": "BAC",
       "name": "Bank of America Corporation",
       "currency": "USD",
@@ -887,7 +817,48 @@
       "recent_high": 28.3,
       "breakout_pct": -11.17,
       "flagged": false
+    },
+    {
+      "symbol": "6324.T",
+      "name": "HARMONIC DRIVE SYSTEMS",
+      "currency": "JPY",
+      "price": 4720.0,
+      "change_pct": -4.28,
+      "volume": 262400,
+      "average_volume": 1366600,
+      "volume_ratio": 0.19,
+      "gap_pct": 0.02,
+      "recent_high": 6700.0,
+      "breakout_pct": -29.55,
+      "flagged": false
+    },
+    {
+      "symbol": "6481.T",
+      "name": "THK CO LTD",
+      "currency": "JPY",
+      "price": 5420.0,
+      "change_pct": -3.59,
+      "volume": 102700,
+      "average_volume": 1013785,
+      "volume_ratio": 0.1,
+      "gap_pct": -0.12,
+      "recent_high": 6905.0,
+      "breakout_pct": -21.51,
+      "flagged": false
     }
   ],
-  "errors": []
+  "errors": [
+    {
+      "symbol": "BTC-USD",
+      "error": "Campi essenziali mancanti per BTC-USD"
+    },
+    {
+      "symbol": "ETH-USD",
+      "error": "Campi essenziali mancanti per ETH-USD"
+    },
+    {
+      "symbol": "SOL-USD",
+      "error": "Campi essenziali mancanti per SOL-USD"
+    }
+  ]
 }
