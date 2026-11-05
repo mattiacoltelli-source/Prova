@@ -2,16 +2,20 @@
   "base_value": 99986.47,
   "base_value_asof": "2026-10-30",
   "equity": [
+    99987.08,
     99987.08
   ],
   "profit_loss": [
-    0.61
+    0.61,
+    0.0
   ],
   "profit_loss_pct": [
+    0.0,
     0.0
   ],
   "timeframe": "1D",
   "timestamp": [
-    1793667600
+    1793667600,
+    1793754000
   ]
 }

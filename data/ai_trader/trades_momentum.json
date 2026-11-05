@@ -2,6 +2,30 @@
   "closed": [
     {
       "entry_date": "2026-11-01",
+      "entry_price": 3.059999942779541,
+      "exit_date": "2026-11-05",
+      "exit_price": 3.5496,
+      "return_pct": 16.0,
+      "symbol": "AMC"
+    },
+    {
+      "entry_date": "2026-11-01",
+      "entry_price": 57.0099983215332,
+      "exit_date": "2026-11-05",
+      "exit_price": 60.2,
+      "return_pct": 5.6,
+      "symbol": "PYPL"
+    },
+    {
+      "entry_date": "2026-11-03",
+      "entry_price": 179.67,
+      "exit_date": "2026-11-05",
+      "exit_price": 169.27,
+      "return_pct": -5.79,
+      "symbol": "XOM"
+    },
+    {
+      "entry_date": "2026-11-01",
       "entry_price": 344.6300048828125,
       "exit_date": "2026-11-03",
       "exit_price": 338.32,
@@ -43,101 +67,101 @@
   ],
   "open": [
     {
+      "entry_date": "2026-11-05",
+      "entry_price": 349.51,
+      "mark_price": 349.51,
+      "return_pct": 0.0,
+      "symbol": "AAPL"
+    },
+    {
+      "entry_date": "2026-11-05",
+      "entry_price": 555.8,
+      "mark_price": 555.8,
+      "return_pct": 0.0,
+      "symbol": "MSFT"
+    },
+    {
+      "entry_date": "2026-11-05",
+      "entry_price": 40.49,
+      "mark_price": 40.49,
+      "return_pct": 0.0,
+      "symbol": "NKE"
+    },
+    {
       "entry_date": "2026-11-03",
       "entry_price": 519.72,
-      "mark_price": 519.72,
-      "return_pct": 0.0,
+      "mark_price": 524.74,
+      "return_pct": 0.97,
       "symbol": "LIN"
     },
     {
       "entry_date": "2026-11-03",
       "entry_price": 163.56,
-      "mark_price": 163.56,
-      "return_pct": 0.0,
+      "mark_price": 167.32,
+      "return_pct": 2.3,
       "symbol": "PG"
     },
     {
       "entry_date": "2026-11-03",
       "entry_price": 233.92,
-      "mark_price": 233.92,
-      "return_pct": 0.0,
+      "mark_price": 234.82,
+      "return_pct": 0.38,
       "symbol": "PGR"
     },
     {
       "entry_date": "2026-11-03",
       "entry_price": 400.44,
-      "mark_price": 400.44,
-      "return_pct": 0.0,
+      "mark_price": 409.38,
+      "return_pct": 2.23,
       "symbol": "UNH"
-    },
-    {
-      "entry_date": "2026-11-03",
-      "entry_price": 179.67,
-      "mark_price": 179.67,
-      "return_pct": 0.0,
-      "symbol": "XOM"
-    },
-    {
-      "entry_date": "2026-11-01",
-      "entry_price": 3.059999942779541,
-      "mark_price": 3.19,
-      "return_pct": 4.25,
-      "symbol": "AMC"
     },
     {
       "entry_date": "2026-11-01",
       "entry_price": 68.29000091552734,
-      "mark_price": 72.0,
-      "return_pct": 5.43,
+      "mark_price": 77.56,
+      "return_pct": 13.57,
       "symbol": "CVNA"
     },
     {
       "entry_date": "2026-11-01",
       "entry_price": 94.08000183105469,
-      "mark_price": 95.83,
-      "return_pct": 1.86,
+      "mark_price": 95.8,
+      "return_pct": 1.83,
       "symbol": "KO"
     },
     {
       "entry_date": "2026-11-01",
       "entry_price": 1417.5400390625,
-      "mark_price": 1410.99,
-      "return_pct": -0.46,
+      "mark_price": 1417.99,
+      "return_pct": 0.03,
       "symbol": "LLY"
     },
     {
       "entry_date": "2026-11-01",
       "entry_price": 638.010009765625,
-      "mark_price": 658.1,
-      "return_pct": 3.15,
+      "mark_price": 672.68,
+      "return_pct": 5.43,
       "symbol": "MA"
     },
     {
       "entry_date": "2026-11-01",
-      "entry_price": 57.0099983215332,
-      "mark_price": 58.78,
-      "return_pct": 3.1,
-      "symbol": "PYPL"
-    },
-    {
-      "entry_date": "2026-11-01",
       "entry_price": 399.80999755859375,
-      "mark_price": 403.82,
-      "return_pct": 1.0,
+      "mark_price": 385.19,
+      "return_pct": -3.66,
       "symbol": "TSLA"
     },
     {
       "entry_date": "2026-11-01",
       "entry_price": 413.5899963378906,
-      "mark_price": 425.51,
-      "return_pct": 2.88,
+      "mark_price": 436.57,
+      "return_pct": 5.56,
       "symbol": "V"
     },
     {
       "entry_date": "2026-11-01",
       "entry_price": 123.51000213623047,
-      "mark_price": 127.69,
-      "return_pct": 3.38,
+      "mark_price": 129.17,
+      "return_pct": 4.58,
       "symbol": "WMT"
     }
   ]
