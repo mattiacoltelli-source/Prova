@@ -25,6 +25,15 @@
         }
     </script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js"></script>
+    <script>
+        // Se jsdelivr non risponde (rete lenta, blocco, CDN giù) si riprova da
+        // un secondo CDN prima che la pagina parta: senza, ogni grafico
+        // lanciava "Chart is not defined" (16 volte segnalate da Sentry il
+        // 2026-11-05). Il service worker tiene anche una copia per l'offline.
+        if (typeof Chart === 'undefined') {
+            document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"><\/script>');
+        }
+    </script>
     <!-- Solo per la pagina Trading AI (vedi #page-aitrader nel CSS sotto):
          Outfit per i numeri/titoli in evidenza, Inter per il testo, JetBrains
          Mono già usato altrove via --font-mono. Tech e Approfondimenti restano
@@ -3687,6 +3696,11 @@
 
         function renderAiTraderEquityChart(history, experiment, momentumHistory, meanrevHistory) {
             const canvasId = 'aitrader-equity-chart';
+            if (chartLibMissing(canvasId)) {
+                const legendEl = document.getElementById('aitrader-chart-legend');
+                if (legendEl) legendEl.innerHTML = '';
+                return;
+            }
             if (history.length === 0) {
                 showEmptyChart(canvasId, 'Ancora nessun punto registrato.');
                 return;
@@ -4925,6 +4939,14 @@
             renderAccuracyChart(asset, outcomes, persistence);
         }
 
+        // Se Chart.js non è disponibile (CDN irraggiungibile e nessuna copia) i
+        // grafici dicono "non disponibile" invece di lanciare ReferenceError.
+        function chartLibMissing(canvasId) {
+            if (typeof Chart !== 'undefined') return false;
+            showEmptyChart(canvasId, 'Grafico non disponibile in questo momento.');
+            return true;
+        }
+
         function showEmptyChart(canvasId, message) {
             const canvas = document.getElementById(canvasId);
             if (!canvas) return;
@@ -4932,6 +4954,7 @@
         }
 
         function renderPriceChart(canvasId, instanceKey, points, showLegend) {
+            if (chartLibMissing(canvasId)) return;
             if (points.length === 0) {
                 showEmptyChart(canvasId, 'Nessuna previsione valutata ancora');
                 return;
@@ -5001,6 +5024,7 @@
         // sopra la MA e rosso = estesa/rischio correzione, sotto e verde =
         // compressa, come nel badge.
         function renderRoboticsCycleChart(assetKey, seriesData, cyclePhase) {
+            if (chartLibMissing(`robotics-chart-${assetKey}`)) return;
             const canvasId = `robotics-chart-${assetKey}`;
             const weekly = seriesData && seriesData.weekly;
             if (!weekly || weekly.length === 0) {
@@ -5075,6 +5099,7 @@
 
         function renderAccuracyChart(asset, outcomes, persistence) {
             const canvasId = `accuracy-chart-${asset}`;
+            if (chartLibMissing(canvasId)) return;
 
             const sorted = [...outcomes].sort((a, b) => (a.evaluated_at || '').localeCompare(b.evaluated_at || ''));
             // Prima dei 20 esiti la finestra si allarga fino a quel punto
