@@ -538,7 +538,7 @@
             flex-shrink: 0;
         }
 
-        .horizon-filter-btn {
+        .horizon-filter-btn, .diary-btn {
             background: transparent;
             color: var(--text-muted);
             border: none;
@@ -568,17 +568,37 @@
             -webkit-touch-callout: none;
         }
 
-        .horizon-filter-btn:hover:not(.active) {
+        .horizon-filter-btn:hover:not(.active), .diary-btn:hover:not(.active) {
             color: var(--text-main);
             border-color: var(--text-dim);
         }
 
-        .horizon-filter-btn.active {
+        .horizon-filter-btn.active, .diary-btn.active {
             background: var(--accent-signal-contrast);
             color: #fff;
             border-color: transparent;
             box-shadow: none;
         }
+
+
+        /* Diario AI (scheda decisioni): riepilogo, ricerca, data. I pulsanti
+           filtro usano .diary-btn (stesso aspetto di .horizon-filter-btn ma
+           senza agganciarsi a setHorizonFilter, che attiva/disattiva tutti
+           i .horizon-filter-btn della pagina). */
+        .diary-summary { font-size: var(--text-xs); color: var(--text-muted); margin: 0 0 10px; }
+        .diary-controls { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
+        .diary-controls .horizon-filter { margin-bottom: 0; align-self: flex-start; max-width: 100%; }
+        .diary-input {
+            width: 100%; min-height: 44px; box-sizing: border-box;
+            background: var(--card-bg); color: var(--text-main);
+            border: 1px solid var(--card-border); border-radius: var(--radius-pill);
+            padding: 0 16px; font: inherit; font-size: var(--text-sm);
+        }
+        .diary-input:focus { outline: 2px solid var(--accent-signal); outline-offset: 1px; }
+        .diary-row-date { display: flex; gap: 8px; align-items: center; }
+        .diary-row-date .diary-input { flex: 1; min-width: 0; }
+        .diary-day-head { font-size: var(--text-xs); font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; margin: 14px 2px 6px; }
+        .diary-err { font-size: var(--text-xs); color: var(--accent-yellow); margin-top: 6px; }
 
         .grid-two-assets {
             display: grid;
@@ -1711,9 +1731,19 @@
             <div class="paper-item-list mobile-only" id="paper-orders-list"></div>
         </div>
 
-        <div class="asset-card" style="margin-top:16px;">
+        <div class="asset-card" id="aitrader-diary-card" style="margin-top:16px;">
             <div class="asset-header">
-                <span class="asset-title">Ultime decisioni AI</span>
+                <span class="asset-title">Diario AI</span>
+            </div>
+            <p class="diary-summary" id="diary-summary">Carico le decisioni…</p>
+            <div class="diary-controls">
+                <input type="search" id="diary-q" class="diary-input" placeholder="Cerca un ticker (es. NVDA)" autocomplete="off" autocapitalize="characters" aria-label="Cerca ticker">
+                <div class="horizon-filter" id="diary-dec-filter" role="group" aria-label="Decisione"></div>
+                <div class="horizon-filter" id="diary-range-filter" role="group" aria-label="Periodo"></div>
+                <div class="diary-row-date">
+                    <input type="date" id="diary-date" class="diary-input" aria-label="Giorno singolo">
+                    <button class="diary-btn" id="diary-date-clear" type="button" style="min-height:44px">Azzera</button>
+                </div>
             </div>
             <div class="paper-item-list" id="aitrader-decisions-list" style="display:block;"></div>
         </div>
@@ -3047,6 +3077,261 @@
             return points.length > 0 ? points : null;
         }
 
+
+        // ─── Diario AI: decisioni lette a pezzi da decisions.jsonl ─────────
+        // Richiesto dall'utente (2026-11-05): niente download dell'intero file
+        // (cresce ~30 KB al giorno, ~4 MB a fine esperimento) — si scaricano
+        // solo gli ultimi giorni con una richiesta HTTP Range sulla coda del
+        // file (GitHub Pages la supporta, verificato), e i giorni più vecchi
+        // solo su richiesta (pulsante o filtro data). Il file resta l'unica
+        // fonte: nessuna copia, nessuna modifica lato trader.
+        const DIARY_CHUNK_BYTES = 90 * 1024;   // ~3 giorni di borsa (58 righe/giorno)
+        const DIARY_PAGE_SIZE = 20;
+        const DIARY_MAX_CHUNKS = 60;           // freno: ~5 MB, oltre la durata dell'esperimento
+        const DIARY_FILE = 'data/ai_trader/decisions.jsonl';
+        const diary = {
+            rows: [],           // in ordine di file (cronologico)
+            startByte: null,    // byte da cui iniziano i dati caricati (inizio di una riga a inizio giorno)
+            total: null,        // dimensione totale del file (da Content-Range)
+            allLoaded: false,
+            loading: false,
+            failed: false,
+            dec: 'ALL', range: 'LAST', date: '', q: '', limit: DIARY_PAGE_SIZE,
+        };
+
+        function _diaryParseChunk(text, baseByte, dropFirstPartial) {
+            const enc = new TextEncoder();
+            const lines = [];
+            let byte = baseByte;
+            const parts = text.split('\n');
+            parts.forEach((line, i) => {
+                const lineBytes = enc.encode(line).length;
+                if (line.trim() && !(i === 0 && dropFirstPartial)) {
+                    try { lines.push({ obj: JSON.parse(line), byteStart: byte }); } catch (e) { /* riga tagliata o rovinata */ }
+                }
+                byte += lineBytes + 1;
+            });
+            return lines;
+        }
+
+        // Scarica un blocco: la coda (end=null) o quello che finisce a `end`.
+        async function _diaryFetchChunk(end) {
+            let headers = {};
+            if (end === null) headers.Range = `bytes=-${DIARY_CHUNK_BYTES}`;
+            else headers.Range = `bytes=${Math.max(0, end - DIARY_CHUNK_BYTES)}-${end - 1}`;
+            const res = await fetch(DIARY_FILE, { cache: 'no-store', headers });
+            if (res.status === 404) return { lines: [], base: 0, total: 0, whole: true };
+            if (!res.ok && res.status !== 206) throw new Error('HTTP ' + res.status);
+            const text = await res.text();
+            if (res.status === 200) {
+                // Range non supportato: il server ha mandato tutto il file.
+                return { lines: _diaryParseChunk(text, 0, false), base: 0, total: new TextEncoder().encode(text).length, whole: true, full: true };
+            }
+            const m = /bytes (\d+)-(\d+)\/(\d+)/.exec(res.headers.get('Content-Range') || '');
+            const base = m ? parseInt(m[1], 10) : 0;
+            const total = m ? parseInt(m[3], 10) : null;
+            return { lines: _diaryParseChunk(text, base, base > 0), base, total, whole: base === 0 };
+        }
+
+        // Carica un blocco in più (il più recente, o quello subito precedente).
+        async function _diaryLoadMore() {
+            if (diary.loading || diary.allLoaded) return;
+            diary.loading = true; _diaryRender();
+            try {
+                const chunk = await _diaryFetchChunk(diary.startByte);   // null alla prima chiamata
+                diary.total = chunk.total ?? diary.total;
+                let lines = chunk.lines;
+                if (chunk.full) {
+                    // Il server ha mandato tutto il file (niente Range): si sostituisce.
+                    diary.allLoaded = true;
+                    diary.startByte = 0;
+                    diary.rows = lines.map(l => l.obj);
+                } else if (chunk.whole) {
+                    // Blocco che parte dall'inizio del file: righe tutte intere, si antepongono.
+                    diary.startByte = 0;
+                    diary.rows = lines.map(l => l.obj).concat(diary.rows);
+                } else {
+                    // Il primo giorno del blocco è quasi sempre tagliato a metà:
+                    // si scarta e si riparte dal giorno dopo; il blocco successivo
+                    // finirà esattamente lì, quindi nessun buco e nessun doppione.
+                    const firstDate = lines.length ? lines[0].obj.date : null;
+                    const cut = lines.findIndex(l => l.obj.date !== firstDate);
+                    if (cut === -1) {
+                        // Tutto lo stesso giorno (blocco piccolo): si tiene com'è e si prosegue indietro.
+                        diary.startByte = chunk.base;
+                        diary.rows = lines.map(l => l.obj).concat(diary.rows);
+                    } else {
+                        lines = lines.slice(cut);
+                        diary.startByte = lines[0].byteStart;
+                        diary.rows = lines.map(l => l.obj).concat(diary.rows);
+                    }
+                }
+                if (diary.startByte === 0) diary.allLoaded = true;
+                diary.failed = false;
+            } catch (e) {
+                diary.failed = true;
+            }
+            diary.loading = false;
+        }
+
+        function _diaryDates() {
+            return [...new Set(diary.rows.map(r => r.date))].sort();
+        }
+
+        // Carica indietro finché la data più vecchia caricata arriva a `minDate`.
+        async function _diaryLoadUntil(minDate) {
+            let guard = DIARY_MAX_CHUNKS;
+            while (!diary.allLoaded && !diary.failed && guard-- > 0) {
+                const d = _diaryDates();
+                if (d.length && d[0] <= minDate) break;
+                await _diaryLoadMore();
+            }
+        }
+
+        function _diaryAddDays(dateStr, n) {
+            const d = new Date(dateStr + 'T00:00:00Z');
+            d.setUTCDate(d.getUTCDate() + n);
+            return d.toISOString().slice(0, 10);
+        }
+
+        function _diaryFiltered() {
+            const dates = _diaryDates();
+            const latest = dates.length ? dates[dates.length - 1] : null;
+            const q = diary.q.trim().toUpperCase();
+            const rows = diary.rows.filter(r => {
+                if (q && !String(r.symbol || '').toUpperCase().includes(q)) return false;
+                if (diary.dec === 'ACT') { if (r.decision !== 'BUY' && r.decision !== 'SELL') return false; }
+                else if (diary.dec !== 'ALL' && r.decision !== diary.dec) return false;
+                if (diary.date) return r.date === diary.date;
+                if (diary.range === 'LAST') return r.date === latest;
+                if (diary.range === '7D') return latest && r.date >= _diaryAddDays(latest, -6);
+                return true;
+            });
+            // Giorno più recente in alto; dentro il giorno BUY e SELL prima degli HOLD,
+            // poi l'ordine del file (quello dello Scanner: titoli segnalati per primi).
+            const rank = { BUY: 0, SELL: 1 };
+            return rows.sort((a, b) => (b.date || '').localeCompare(a.date || '') || ((rank[a.decision] ?? 2) - (rank[b.decision] ?? 2)));
+        }
+
+        function _diaryChip(group, value, label, active) {
+            return `<button type="button" class="diary-btn${active ? ' active' : ''}" data-diary-${group}="${value}" style="min-height:44px">${label}</button>`;
+        }
+
+        function _diaryRender() {
+            const listEl = document.getElementById('aitrader-decisions-list');
+            const sumEl = document.getElementById('diary-summary');
+            if (!listEl) return;
+            const dates = _diaryDates();
+            // conteggi per i pulsanti: sui giorni del periodo scelto, senza il filtro decisione/ticker
+            const saveDec = diary.dec, saveQ = diary.q;
+            diary.dec = 'ALL'; diary.q = '';
+            const base = _diaryFiltered();
+            diary.dec = saveDec; diary.q = saveQ;
+            const n = k => base.filter(r => r.decision === k).length;
+            document.getElementById('diary-dec-filter').innerHTML =
+                _diaryChip('dec', 'ALL', `Tutte ${base.length}`, diary.dec === 'ALL') +
+                _diaryChip('dec', 'BUY', `BUY ${n('BUY')}`, diary.dec === 'BUY') +
+                _diaryChip('dec', 'SELL', `SELL ${n('SELL')}`, diary.dec === 'SELL') +
+                _diaryChip('dec', 'HOLD', `HOLD ${n('HOLD')}`, diary.dec === 'HOLD') +
+                _diaryChip('dec', 'ACT', 'Solo BUY/SELL', diary.dec === 'ACT');
+            const noRange = !!diary.date;
+            document.getElementById('diary-range-filter').innerHTML =
+                _diaryChip('range', 'LAST', 'Ultimo giro', !noRange && diary.range === 'LAST') +
+                _diaryChip('range', '7D', 'Ultimi 7 giorni', !noRange && diary.range === '7D') +
+                _diaryChip('range', 'LOADED', 'Giorni caricati', !noRange && diary.range === 'LOADED');
+            const dateEl = document.getElementById('diary-date');
+            if (dates.length) { dateEl.max = dates[dates.length - 1]; }
+            if (dateEl.value !== diary.date) dateEl.value = diary.date;
+
+            const rows = _diaryFiltered();
+            const countBy = k => rows.filter(r => r.decision === k).length;
+            const errCount = rows.filter(r => r.error).length;
+            const from = dates.length ? dates[0] : null;
+            sumEl.innerText = diary.rows.length === 0
+                ? (diary.loading ? 'Carico le decisioni…' : (diary.failed ? 'Non riesco a leggere le decisioni.' : 'Nessuna decisione registrata ancora.'))
+                : `${rows.length} decisioni (${countBy('BUY')} BUY · ${countBy('SELL')} SELL · ${countBy('HOLD')} HOLD${errCount ? ` · ${errCount} con errore AI` : ''}). ` +
+                  (diary.allLoaded ? 'Storico completo caricato.' : `Giorni caricati: dal ${from}.`);
+
+            if (diary.rows.length === 0) { listEl.innerHTML = diary.failed ? paperListMessage('Non riesco a leggere le decisioni.', false) : ''; return; }
+            if (rows.length === 0) {
+                listEl.innerHTML = paperListMessage('Nessuna decisione con questi filtri.', false) + _diaryOlderBtn();
+                return;
+            }
+            const shown = rows.slice(0, diary.limit);
+            let html = '', lastDay = null;
+            shown.forEach(d => {
+                if (d.date !== lastDay) { html += `<div class="diary-day-head">${escapeHtml(d.date || '-')}</div>`; lastDay = d.date; }
+                const err = d.error ? `<div class="diary-err">Giudizio AI non riuscito: la decisione HOLD è stata messa per sicurezza.</div>` : '';
+                html += `
+                    <details class="paper-item">
+                        <summary class="paper-item-summary">
+                            <span class="paper-item-heading">
+                                <span class="paper-item-title">${escapeHtml(d.symbol || '-')}</span>
+                                <span class="paper-item-sub">${escapeHtml(d.model_used || '-')}${d.error ? ' · errore AI' : ''}</span>
+                            </span>
+                            <span class="paper-item-headline">
+                                <span class="badge ${decisionBadgeClass(d.decision)}">${escapeHtml(d.decision || '-')}</span>
+                                <span class="chevron-icon">▼</span>
+                            </span>
+                        </summary>
+                        <div class="paper-item-detail">
+                            <div class="scanner-detail-row">
+                                <div class="paper-item-detail-desc">${escapeHtml(d.reasoning_short || '-')}</div>
+                                ${err}
+                            </div>
+                        </div>
+                    </details>`;
+            });
+            if (rows.length > shown.length) {
+                html += `<button class="list-more-btn" type="button" data-diary-more="1">Mostra altri ${Math.min(DIARY_PAGE_SIZE, rows.length - shown.length)}</button>`;
+            }
+            listEl.innerHTML = html + _diaryOlderBtn();
+        }
+
+        function _diaryOlderBtn() {
+            if (diary.allLoaded) return '';
+            if (diary.loading) return `<button class="list-more-btn" type="button" disabled>Carico…</button>`;
+            return `<button class="list-more-btn" type="button" data-diary-older="1">${diary.failed ? 'Errore: riprova' : 'Carica giorni precedenti'}</button>`;
+        }
+
+        async function _diaryNeedDataFor() {
+            // Prima di mostrare un periodo/giorno più lontano di quanto caricato, si scarica quel che manca.
+            const dates = _diaryDates();
+            if (!dates.length) return;
+            const latest = dates[dates.length - 1];
+            let target = null;
+            if (diary.date) target = diary.date;
+            else if (diary.range === '7D') target = _diaryAddDays(latest, -6);
+            if (target) await _diaryLoadUntil(target);
+        }
+
+        function _diaryInit() {
+            const card = document.getElementById('aitrader-diary-card');
+            if (!card || card.dataset.ready) return;
+            card.dataset.ready = '1';
+            card.addEventListener('click', async e => {
+                const t = e.target.closest('button');
+                if (!t) return;
+                if (t.dataset.diaryDec) { diary.dec = t.dataset.diaryDec; diary.limit = DIARY_PAGE_SIZE; _diaryRender(); }
+                else if (t.dataset.diaryRange) { diary.range = t.dataset.diaryRange; diary.date = ''; diary.limit = DIARY_PAGE_SIZE; _diaryRender(); await _diaryNeedDataFor(); _diaryRender(); }
+                else if (t.dataset.diaryMore) { diary.limit += DIARY_PAGE_SIZE; _diaryRender(); }
+                else if (t.dataset.diaryOlder) { await _diaryLoadMore(); _diaryRender(); }
+                else if (t.id === 'diary-date-clear') { diary.date = ''; diary.limit = DIARY_PAGE_SIZE; _diaryRender(); }
+            });
+            document.getElementById('diary-q').addEventListener('input', e => { diary.q = e.target.value; diary.limit = DIARY_PAGE_SIZE; _diaryRender(); });
+            document.getElementById('diary-date').addEventListener('change', async e => {
+                diary.date = e.target.value; diary.limit = DIARY_PAGE_SIZE; _diaryRender();
+                await _diaryNeedDataFor(); _diaryRender();
+            });
+        }
+
+        async function _diaryLoadFirst() {
+            _diaryInit();
+            diary.rows = []; diary.startByte = null; diary.allLoaded = false; diary.failed = false;
+            await _diaryLoadMore();
+            _diaryRender();
+        }
+
         // Card "Agente AI" in fondo pagina: stato/modello/budget, letti da
         // dati già recuperati da _loadAiTraderExperimentAndDecisions (nessuna
         // chiamata in più). "Ogni giorno feriale alle 22:10 UTC" è il cron
@@ -3087,7 +3372,7 @@
             const [experiment, equityRes, decisionsRes, budgetState, portfolioHistoryRaw, momentumRes, meanrevRes, realTrades, momentumTrades, meanrevTrades] = await Promise.all([
                 fetchJsonNoStore('data/ai_trader/experiment.json'),
                 parseJsonl('data/ai_trader/equity_history.jsonl'),
-                parseJsonl('data/ai_trader/decisions.jsonl'),
+                _diaryLoadFirst().then(() => ({ ok: !diary.failed, data: diary.rows })),
                 fetchJsonNoStore(budgetFile),
                 fetchJsonNoStore('data/ai_trader/portfolio_history.json'),
                 parseJsonl('data/ai_trader/benchmark_momentum.jsonl'),
@@ -3166,37 +3451,8 @@
             aiTraderChartCache = { history, experiment, momentumHistory: momentumRes.data, meanrevHistory: meanrevRes.data };
             renderTradeDashboards(realTrades, momentumTrades, meanrevTrades);
 
-            const decisionsList = document.getElementById('aitrader-decisions-list');
-            // Stesso meccanismo di Vendite recenti/Storico ordini (richiesto
-            // dall'utente, 2026-11, dopo averlo visto diventare una lista
-            // enorme nell'anteprima con 2 mesi di dati): niente più taglio
-            // nascosto a 30, le prime LIST_EXPAND_INITIAL e poi "Mostra altri".
-            const decisions = [...decisionsRes.data]
-                .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-            if (decisions.length === 0) {
-                decisionsList.innerHTML = paperListMessage('Nessuna decisione registrata ancora.', false);
-            } else {
-                const rows = decisions.map(d => `
-                    <details class="paper-item">
-                        <summary class="paper-item-summary">
-                            <span class="paper-item-heading">
-                                <span class="paper-item-title">${escapeHtml(d.symbol || '-')}</span>
-                                <span class="paper-item-sub">${escapeHtml(d.date || '-')} · ${escapeHtml(d.model_used || '-')}</span>
-                            </span>
-                            <span class="paper-item-headline">
-                                <span class="badge ${decisionBadgeClass(d.decision)}">${escapeHtml(d.decision || '-')}</span>
-                                <span class="chevron-icon">▼</span>
-                            </span>
-                        </summary>
-                        <div class="paper-item-detail">
-                            <div class="scanner-detail-row">
-                                <div class="paper-item-detail-desc">${escapeHtml(d.reasoning_short || '-')}</div>
-                            </div>
-                        </div>
-                    </details>
-                `);
-                decisionsList.innerHTML = _expandableRows(rows, 'decisions', _moreBtnHtml);
-            }
+            // Il Diario AI (scheda decisioni) si disegna da solo: vedi _diaryRender().
+            _diaryRender();
         }
 
         async function loadAiTraderData() {
