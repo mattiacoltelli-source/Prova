@@ -1,6 +1,54 @@
 {
   "closed": [
     {
+      "entry_date": "2026-11-03",
+      "entry_price": 338.32,
+      "exit_date": "2026-11-05",
+      "exit_price": 349.51,
+      "return_pct": 3.31,
+      "symbol": "AAPL"
+    },
+    {
+      "entry_date": "2026-11-03",
+      "entry_price": 245.63,
+      "exit_date": "2026-11-05",
+      "exit_price": 266.03,
+      "return_pct": 8.31,
+      "symbol": "AMZN"
+    },
+    {
+      "entry_date": "2026-11-01",
+      "entry_price": 65.76000213623047,
+      "exit_date": "2026-11-05",
+      "exit_price": 60.4992,
+      "return_pct": -8.0,
+      "symbol": "INTC"
+    },
+    {
+      "entry_date": "2026-11-03",
+      "entry_price": 507.12,
+      "exit_date": "2026-11-05",
+      "exit_price": 555.8,
+      "return_pct": 9.6,
+      "symbol": "MSFT"
+    },
+    {
+      "entry_date": "2026-11-01",
+      "entry_price": 184.11000061035156,
+      "exit_date": "2026-11-05",
+      "exit_price": 169.3812,
+      "return_pct": -8.0,
+      "symbol": "PLTR"
+    },
+    {
+      "entry_date": "2026-11-01",
+      "entry_price": 274.3699951171875,
+      "exit_date": "2026-11-05",
+      "exit_price": 252.4204,
+      "return_pct": -8.0,
+      "symbol": "TER"
+    },
+    {
       "entry_date": "2026-11-01",
       "entry_price": 164.38999938964844,
       "exit_date": "2026-11-03",
@@ -51,102 +99,102 @@
   ],
   "open": [
     {
-      "entry_date": "2026-11-03",
-      "entry_price": 338.32,
-      "mark_price": 338.32,
+      "entry_date": "2026-11-05",
+      "entry_price": 241.0,
+      "mark_price": 241.0,
       "return_pct": 0.0,
-      "symbol": "AAPL"
+      "symbol": "CRWD"
+    },
+    {
+      "entry_date": "2026-11-05",
+      "entry_price": 6.87,
+      "mark_price": 6.87,
+      "return_pct": 0.0,
+      "symbol": "MARA"
+    },
+    {
+      "entry_date": "2026-11-05",
+      "entry_price": 795.23,
+      "mark_price": 795.23,
+      "return_pct": 0.0,
+      "symbol": "MU"
+    },
+    {
+      "entry_date": "2026-11-05",
+      "entry_price": 200.13,
+      "mark_price": 200.13,
+      "return_pct": 0.0,
+      "symbol": "NVDA"
+    },
+    {
+      "entry_date": "2026-11-05",
+      "entry_price": 112.82,
+      "mark_price": 112.82,
+      "return_pct": 0.0,
+      "symbol": "NVT"
+    },
+    {
+      "entry_date": "2026-11-05",
+      "entry_price": 29.6,
+      "mark_price": 29.6,
+      "return_pct": 0.0,
+      "symbol": "SMCI"
     },
     {
       "entry_date": "2026-11-03",
       "entry_price": 466.84,
-      "mark_price": 466.84,
-      "return_pct": 0.0,
+      "mark_price": 488.78,
+      "return_pct": 4.7,
       "symbol": "AMD"
     },
     {
       "entry_date": "2026-11-03",
-      "entry_price": 245.63,
-      "mark_price": 245.63,
-      "return_pct": 0.0,
-      "symbol": "AMZN"
-    },
-    {
-      "entry_date": "2026-11-03",
       "entry_price": 196.79,
-      "mark_price": 196.79,
-      "return_pct": 0.0,
+      "mark_price": 191.8,
+      "return_pct": -2.54,
       "symbol": "ARM"
     },
     {
       "entry_date": "2026-11-03",
-      "entry_price": 507.12,
-      "mark_price": 507.12,
-      "return_pct": 0.0,
-      "symbol": "MSFT"
-    },
-    {
-      "entry_date": "2026-11-03",
       "entry_price": 179.67,
-      "mark_price": 179.67,
-      "return_pct": 0.0,
+      "mark_price": 169.27,
+      "return_pct": -5.79,
       "symbol": "XOM"
     },
     {
       "entry_date": "2026-11-01",
       "entry_price": 622.75,
-      "mark_price": 613.62,
-      "return_pct": -1.47,
+      "mark_price": 591.3,
+      "return_pct": -5.05,
       "symbol": "CAT"
     },
     {
       "entry_date": "2026-11-01",
       "entry_price": 143.5399932861328,
-      "mark_price": 137.83,
-      "return_pct": -3.98,
+      "mark_price": 151.5,
+      "return_pct": 5.55,
       "symbol": "COIN"
     },
     {
       "entry_date": "2026-11-01",
       "entry_price": 278.2200012207031,
-      "mark_price": 278.04,
-      "return_pct": -0.06,
+      "mark_price": 287.3,
+      "return_pct": 3.26,
       "symbol": "GOOG"
     },
     {
       "entry_date": "2026-11-01",
       "entry_price": 279.8399963378906,
-      "mark_price": 278.99,
-      "return_pct": -0.3,
+      "mark_price": 288.93,
+      "return_pct": 3.25,
       "symbol": "GOOGL"
     },
     {
       "entry_date": "2026-11-01",
-      "entry_price": 65.76000213623047,
-      "mark_price": 59.97,
-      "return_pct": -8.8,
-      "symbol": "INTC"
-    },
-    {
-      "entry_date": "2026-11-01",
       "entry_price": 30.040000915527344,
-      "mark_price": 28.17,
-      "return_pct": -6.23,
+      "mark_price": 29.54,
+      "return_pct": -1.66,
       "symbol": "IONQ"
-    },
-    {
-      "entry_date": "2026-11-01",
-      "entry_price": 184.11000061035156,
-      "mark_price": 178.34,
-      "return_pct": -3.13,
-      "symbol": "PLTR"
-    },
-    {
-      "entry_date": "2026-11-01",
-      "entry_price": 274.3699951171875,
-      "mark_price": 261.01,
-      "return_pct": -4.87,
-      "symbol": "TER"
     }
   ]
 }
