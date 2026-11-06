@@ -427,6 +427,46 @@ def decide_all() -> list[dict]:
     return decisions
 
 
+_DAY_FIELDS = ("symbol", "date", "decision", "model_used", "reasoning_short", "cost_usd", "error")
+
+
+def export_decision_days() -> list[str]:
+    """Rigenera da decisions.jsonl un file JSON per giorno
+    (decisions_by_day/AAAA-MM-GG.json) più un indice (index.json, date dalla
+    più recente). Serve al Diario AI dell'app, che scarica solo i giorni che
+    servono: una richiesta HTTP "Range" sul file unico non regge su GitHub
+    Pages (con la compressione il server applica l'intervallo al file
+    compresso e risponde 416 o dati tagliati — visto il 2026-11-06). Solo i
+    campi utili alla lettura (niente hash). Scrive un file solo se il
+    contenuto cambia. Ritorna le date scritte."""
+    records = storage.read_all(config.AI_TRADER_DECISIONS_FILE)
+    by_day: dict[str, list[dict]] = {}
+    for r in records:
+        day = r.get("date")
+        if day:
+            by_day.setdefault(day, []).append({k: r[k] for k in _DAY_FIELDS if k in r})
+    out_dir = config.AI_TRADER_DECISIONS_DAYS_DIR
+    os.makedirs(out_dir, exist_ok=True)
+    written: list[str] = []
+
+    def _write(path: str, payload) -> bool:
+        text = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
+        if os.path.exists(path):
+            with open(path, "r", encoding="utf-8") as fh:
+                if fh.read() == text:
+                    return False
+        with open(path, "w", encoding="utf-8") as fh:
+            fh.write(text)
+        return True
+
+    for day, rows in by_day.items():
+        if _write(os.path.join(out_dir, f"{day}.json"), rows):
+            written.append(day)
+    dates = sorted(by_day, reverse=True)
+    _write(os.path.join(out_dir, "index.json"), {"dates": dates, "counts": {d: len(by_day[d]) for d in dates}})
+    return sorted(written)
+
+
 def record_decision(decision: dict) -> dict:
     """Salva la decisione nella catena hash di decisions.jsonl — storico
     append-only, stesso pattern di predictions.jsonl/orders.jsonl."""

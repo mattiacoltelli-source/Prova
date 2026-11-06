@@ -415,6 +415,10 @@ def run_daily(dry_run: bool) -> None:
         decisions = ai_trader.decide_all()
         for decision in decisions:
             ai_trader.record_decision({**decision, "date": today_iso})
+        try:
+            ai_trader.export_decision_days()
+        except Exception as exc:  # noqa: BLE001 - copia per l'app, mai bloccante
+            print(f"Esportazione decisioni per giorno non riuscita (non blocca il giro): {exc}")
 
     account = paper_trading.get_account()
     buying_power = float(account["buying_power"])

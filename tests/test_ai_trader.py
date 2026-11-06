@@ -1325,3 +1325,21 @@ def test_scansione_nuova_fallita_ripiega_sul_file_di_oggi(tmp_path, monkeypatch)
         pytest.skip("la chiusura è di un altro giorno UTC: scenario non riproducibile ora")
     _write_scan(tmp_path, monkeypatch, gen)
     assert "RIVN" in ai_trader.load_scanner_results()   # _fresh_scan() -> None
+
+
+def test_export_decision_days_scrive_un_file_per_giorno_e_indice(tmp_path, monkeypatch):
+    _isolate(tmp_path, monkeypatch)
+    monkeypatch.setattr(config, "AI_TRADER_DECISIONS_DAYS_DIR", str(tmp_path / "days"))
+    for day, sym in (("2026-11-03", "AAA"), ("2026-11-03", "BBB"), ("2026-11-04", "AAA")):
+        ai_trader.record_decision({
+            "symbol": sym, "date": day, "decision": "HOLD", "model_used": "m",
+            "reasoning_short": "x", "cost_usd": 0.0,
+        })
+    written = ai_trader.export_decision_days()
+    assert written == ["2026-11-03", "2026-11-04"]
+    idx = json.loads((tmp_path / "days" / "index.json").read_text())
+    assert idx["dates"] == ["2026-11-04", "2026-11-03"] and idx["counts"]["2026-11-03"] == 2
+    day = json.loads((tmp_path / "days" / "2026-11-03.json").read_text())
+    assert [r["symbol"] for r in day] == ["AAA", "BBB"]
+    assert "record_hash" not in day[0] and "prev_hash" not in day[0]   # niente hash nella copia
+    assert ai_trader.export_decision_days() == []   # niente da riscrivere se non è cambiato nulla

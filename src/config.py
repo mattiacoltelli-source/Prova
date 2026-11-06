@@ -795,6 +795,10 @@ AI_TRADER_PRICING_PER_MILLION_TOKENS = {
 AI_TRADER_DIR = "data/ai_trader"
 AI_TRADER_EXPERIMENT_FILE = f"{AI_TRADER_DIR}/experiment.json"
 AI_TRADER_DECISIONS_FILE = f"{AI_TRADER_DIR}/decisions.jsonl"
+# Copia derivata, un file per giorno + indice, per il Diario AI dell'app (che
+# scarica solo gli ultimi giorni): rigenerata da decisions.jsonl, mai scritta
+# a mano. La catena hash resta SOLO in decisions.jsonl.
+AI_TRADER_DECISIONS_DAYS_DIR = f"{AI_TRADER_DIR}/decisions_by_day"
 # Storico append-only dell'equity nel tempo (un record per run, setup
 # incluso): account.json viene SOVRASCRITTO ad ogni run (vedi commento su
 # PAPER_ACCOUNT_FILE sopra), quindi senza questo file non ci sarebbe modo

@@ -1822,7 +1822,7 @@
                     <button type="button" class="diary-btn diary-cal__arrow" id="diary-cal-next" aria-label="Mese successivo">›</button>
                 </div>
                 <div class="diary-cal__grid" id="diary-cal-grid"></div>
-                <p class="diary-cal__hint">Si possono scegliere i giorni feriali, dall'inizio dell'esperimento all'ultimo giro.</p>
+                <p class="diary-cal__hint">Si possono scegliere i giorni in cui l'AI ha deciso.</p>
             </div>
         </div>
         <div class="asset-card" id="aitrader-diary-card" style="margin-top:16px;">
@@ -3169,95 +3169,55 @@
         }
 
 
-        // ─── Diario AI: decisioni lette a pezzi da decisions.jsonl ─────────
-        // Richiesto dall'utente (2026-11-05): niente download dell'intero file
-        // (cresce ~30 KB al giorno, ~4 MB a fine esperimento) — si scaricano
-        // solo gli ultimi giorni con una richiesta HTTP Range sulla coda del
-        // file (GitHub Pages la supporta, verificato), e i giorni più vecchi
-        // solo su richiesta (pulsante o filtro data). Il file resta l'unica
-        // fonte: nessuna copia, nessuna modifica lato trader.
-        const DIARY_CHUNK_BYTES = 90 * 1024;   // ~3 giorni di borsa (58 righe/giorno)
-        const DIARY_PAGE_SIZE = 20;
-        const DIARY_MAX_CHUNKS = 60;           // freno: ~5 MB, oltre la durata dell'esperimento
+        // ─── Diario AI: decisioni lette un giorno alla volta ───────────────
+        // Richiesto dall'utente (2026-11-05): niente download dell'intero
+        // storico (cresce ~30 KB al giorno, ~4 MB a fine esperimento). Il
+        // backend (ai_trader.export_decision_days) tiene accanto a
+        // decisions.jsonl un file per giorno (decisions_by_day/AAAA-MM-GG.json)
+        // e un indice (index.json); l'app scarica l'indice e gli ultimi
+        // giorni, gli altri solo su richiesta. Un primo tentativo con richieste
+        // HTTP "Range" sul file unico NON funzionava sul sito vero (con la
+        // compressione GitHub Pages applica l'intervallo al file compresso:
+        // risposte 416 o dati tagliati — visto il 2026-11-06, il Diario
+        // mostrava 13 decisioni). Se l'indice non c'è si ripiega sul file intero.
+        const DIARY_DAYS_DIR = 'data/ai_trader/decisions_by_day';
         const DIARY_FILE = 'data/ai_trader/decisions.jsonl';
+        const DIARY_PAGE_SIZE = 20;
+        const DIARY_DAYS_PER_LOAD = 3;
         const diary = {
-            rows: [],           // in ordine di file (cronologico)
-            startByte: null,    // byte da cui iniziano i dati caricati (inizio di una riga a inizio giorno)
-            total: null,        // dimensione totale del file (da Content-Range)
+            rows: [],            // in ordine cronologico (giorni più vecchi prima)
+            index: null,         // date disponibili, dalla più recente
+            loadedDays: new Set(),
             allLoaded: false,
             loading: false,
             failed: false,
             dec: 'ALL', range: 'LAST', date: '', q: '', limit: DIARY_PAGE_SIZE,
         };
 
-        function _diaryParseChunk(text, baseByte, dropFirstPartial) {
-            const enc = new TextEncoder();
-            const lines = [];
-            let byte = baseByte;
-            const parts = text.split('\n');
-            parts.forEach((line, i) => {
-                const lineBytes = enc.encode(line).length;
-                if (line.trim() && !(i === 0 && dropFirstPartial)) {
-                    try { lines.push({ obj: JSON.parse(line), byteStart: byte }); } catch (e) { /* riga tagliata o rovinata */ }
-                }
-                byte += lineBytes + 1;
-            });
-            return lines;
+        async function _diaryFetchDay(day) {
+            const res = await fetch(`${DIARY_DAYS_DIR}/${day}.json`, { cache: 'no-store' });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            return await res.json();
         }
 
-        // Scarica un blocco: la coda (end=null) o quello che finisce a `end`.
-        async function _diaryFetchChunk(end) {
-            let headers = {};
-            if (end === null) headers.Range = `bytes=-${DIARY_CHUNK_BYTES}`;
-            else headers.Range = `bytes=${Math.max(0, end - DIARY_CHUNK_BYTES)}-${end - 1}`;
-            const res = await fetch(DIARY_FILE, { cache: 'no-store', headers });
-            if (res.status === 404) return { lines: [], base: 0, total: 0, whole: true };
-            if (!res.ok && res.status !== 206) throw new Error('HTTP ' + res.status);
-            const text = await res.text();
-            if (res.status === 200) {
-                // Range non supportato: il server ha mandato tutto il file.
-                return { lines: _diaryParseChunk(text, 0, false), base: 0, total: new TextEncoder().encode(text).length, whole: true, full: true };
-            }
-            const m = /bytes (\d+)-(\d+)\/(\d+)/.exec(res.headers.get('Content-Range') || '');
-            const base = m ? parseInt(m[1], 10) : 0;
-            const total = m ? parseInt(m[3], 10) : null;
-            return { lines: _diaryParseChunk(text, base, base > 0), base, total, whole: base === 0 };
+        function _diaryAddRows(rows) {
+            diary.rows = diary.rows.concat(rows).sort((a, b) => (a.date || '').localeCompare(b.date || ''));
         }
 
-        // Carica un blocco in più (il più recente, o quello subito precedente).
+        // Carica fino a `count` giorni non ancora caricati (i più recenti per primi).
+        async function _diaryLoadDays(count) {
+            const todo = diary.index.filter(d => !diary.loadedDays.has(d)).slice(0, count);
+            const results = await Promise.all(todo.map(d => _diaryFetchDay(d).then(rows => ({ d, rows }))));
+            results.forEach(({ d, rows }) => { diary.loadedDays.add(d); _diaryAddRows(rows); });
+            diary.allLoaded = diary.index.every(d => diary.loadedDays.has(d));
+        }
+
+        // Pulsante "Carica giorni precedenti" (e prima apertura).
         async function _diaryLoadMore() {
             if (diary.loading || diary.allLoaded) return;
             diary.loading = true; _diaryRender();
             try {
-                const chunk = await _diaryFetchChunk(diary.startByte);   // null alla prima chiamata
-                diary.total = chunk.total ?? diary.total;
-                let lines = chunk.lines;
-                if (chunk.full) {
-                    // Il server ha mandato tutto il file (niente Range): si sostituisce.
-                    diary.allLoaded = true;
-                    diary.startByte = 0;
-                    diary.rows = lines.map(l => l.obj);
-                } else if (chunk.whole) {
-                    // Blocco che parte dall'inizio del file: righe tutte intere, si antepongono.
-                    diary.startByte = 0;
-                    diary.rows = lines.map(l => l.obj).concat(diary.rows);
-                } else {
-                    // Il primo giorno del blocco è quasi sempre tagliato a metà:
-                    // si scarta e si riparte dal giorno dopo; il blocco successivo
-                    // finirà esattamente lì, quindi nessun buco e nessun doppione.
-                    const firstDate = lines.length ? lines[0].obj.date : null;
-                    const cut = lines.findIndex(l => l.obj.date !== firstDate);
-                    if (cut === -1) {
-                        // Tutto lo stesso giorno (blocco piccolo): si tiene com'è e si prosegue indietro.
-                        diary.startByte = chunk.base;
-                        diary.rows = lines.map(l => l.obj).concat(diary.rows);
-                    } else {
-                        lines = lines.slice(cut);
-                        diary.startByte = lines[0].byteStart;
-                        diary.rows = lines.map(l => l.obj).concat(diary.rows);
-                    }
-                }
-                if (diary.startByte === 0) diary.allLoaded = true;
+                await _diaryLoadDays(DIARY_DAYS_PER_LOAD);
                 diary.failed = false;
             } catch (e) {
                 diary.failed = true;
@@ -3269,14 +3229,21 @@
             return [...new Set(diary.rows.map(r => r.date))].sort();
         }
 
-        // Carica indietro finché la data più vecchia caricata arriva a `minDate`.
-        async function _diaryLoadUntil(minDate) {
-            let guard = DIARY_MAX_CHUNKS;
-            while (!diary.allLoaded && !diary.failed && guard-- > 0) {
-                const d = _diaryDates();
-                if (d.length && d[0] <= minDate) break;
-                await _diaryLoadMore();
+        // Si assicura che i giorni da `minDate` in poi siano caricati.
+        async function _diaryLoadSince(minDate) {
+            if (!diary.index) return;
+            const need = diary.index.filter(d => d >= minDate && !diary.loadedDays.has(d));
+            if (!need.length) return;
+            diary.loading = true; _diaryRender();
+            try {
+                const results = await Promise.all(need.map(d => _diaryFetchDay(d).then(rows => ({ d, rows }))));
+                results.forEach(({ d, rows }) => { diary.loadedDays.add(d); _diaryAddRows(rows); });
+                diary.allLoaded = diary.index.every(d => diary.loadedDays.has(d));
+                diary.failed = false;
+            } catch (e) {
+                diary.failed = true;
             }
+            diary.loading = false;
         }
 
         function _diaryAddDays(dateStr, n) {
@@ -3391,13 +3358,16 @@
 
         async function _diaryNeedDataFor() {
             // Prima di mostrare un periodo/giorno più lontano di quanto caricato, si scarica quel che manca.
-            const dates = _diaryDates();
-            if (!dates.length) return;
-            const latest = dates[dates.length - 1];
-            let target = null;
-            if (diary.date) target = diary.date;
-            else if (diary.range === '7D') target = _diaryAddDays(latest, -6);
-            if (target) await _diaryLoadUntil(target);
+            if (!diary.index || !diary.index.length) return;
+            const latest = diary.index[0];
+            if (diary.date) {
+                // Un giorno solo: si scarica quel file (se è nell'indice).
+                if (diary.index.includes(diary.date)) await _diaryLoadSince(diary.date);
+            } else if (diary.range === '7D') {
+                await _diaryLoadSince(_diaryAddDays(latest, -6));
+            } else if (diary.range === 'LOADED') {
+                /* niente da scaricare: solo i giorni già caricati */
+            }
         }
 
 
@@ -3436,10 +3406,11 @@
         }
 
         function _diaryBounds() {
+            if (diary.index && diary.index.length) {
+                return { min: diary.index[diary.index.length - 1], max: diary.index[0] };
+            }
             const dates = _diaryDates();
-            const max = dates.length ? dates[dates.length - 1] : null;
-            const min = (diary.allLoaded && dates.length) ? dates[0] : (diary.minDate || (dates.length ? dates[0] : null));
-            return { min, max };
+            return { min: dates.length ? dates[0] : null, max: dates.length ? dates[dates.length - 1] : null };
         }
 
         function _diaryRenderCal() {
@@ -3456,7 +3427,7 @@
             for (let d = 1; d <= daysInMonth; d++) {
                 const iso = `${diaryCal.y}-${String(diaryCal.m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
                 const dow = (offset + d - 1) % 7;   // 5,6 = sabato, domenica
-                const ok = dow < 5 && min && max && iso >= min && iso <= max;
+                const ok = diary.index ? diary.index.includes(iso) : (dow < 5 && min && max && iso >= min && iso <= max);
                 html += `<button type="button" class="diary-cal__day${iso === diary.date ? ' active' : ''}${iso === max ? ' today' : ''}" data-date="${iso}"${ok ? '' : ' disabled'}>${d}</button>`;
             }
             document.getElementById('diary-cal-grid').innerHTML = html;
@@ -3530,8 +3501,23 @@
 
         async function _diaryLoadFirst() {
             _diaryInit();
-            diary.rows = []; diary.startByte = null; diary.allLoaded = false; diary.failed = false;
-            await _diaryLoadMore();
+            diary.rows = []; diary.index = null; diary.loadedDays = new Set();
+            diary.allLoaded = false; diary.failed = false;
+            try {
+                const res = await fetch(`${DIARY_DAYS_DIR}/index.json`, { cache: 'no-store' });
+                if (!res.ok) throw new Error('indice assente');
+                diary.index = (await res.json()).dates || [];
+                diary.loading = true;
+                await _diaryLoadDays(DIARY_DAYS_PER_LOAD);
+            } catch (e) {
+                // Indice o file giornalieri non disponibili: si ripiega sul file intero.
+                const full = await parseJsonl(DIARY_FILE);
+                diary.rows = full.data;
+                diary.index = null;
+                diary.allLoaded = true;
+                diary.failed = !full.ok;
+            }
+            diary.loading = false;
             _diaryRender();
         }
 
