@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-06T22:00:36.200847+00:00",
+  "generated_at": "2026-11-06T23:48:31.523722+00:00",
   "thresholds": {
     "volume_ratio": 2.0,
     "gap_pct": 4.0,
@@ -329,20 +329,6 @@
       "flagged": false
     },
     {
-      "symbol": "BTC-USD",
-      "name": "Bitcoin USD",
-      "currency": "USD",
-      "price": 75854.87,
-      "change_pct": 0.19,
-      "volume": 31741014016,
-      "average_volume": 26193628050,
-      "volume_ratio": 1.21,
-      "gap_pct": 0.05,
-      "recent_high": 84840.0469,
-      "breakout_pct": -10.59,
-      "flagged": false
-    },
-    {
       "symbol": "XOM",
       "name": "ExxonMobil Holdings Corporation",
       "currency": "USD",
@@ -385,17 +371,17 @@
       "flagged": false
     },
     {
-      "symbol": "ETH-USD",
-      "name": "Ethereum USD",
+      "symbol": "BTC-USD",
+      "name": "Bitcoin USD",
       "currency": "USD",
-      "price": 2239.43,
-      "change_pct": 0.58,
-      "volume": 11940663296,
-      "average_volume": 10855667821,
-      "volume_ratio": 1.1,
-      "gap_pct": 0.03,
-      "recent_high": 2522.8418,
-      "breakout_pct": -11.23,
+      "price": 75867.13,
+      "change_pct": -0.13,
+      "volume": 29453778944,
+      "average_volume": 26193628050,
+      "volume_ratio": 1.12,
+      "gap_pct": 0.05,
+      "recent_high": 84840.0469,
+      "breakout_pct": -10.58,
       "flagged": false
     },
     {
@@ -413,20 +399,6 @@
       "flagged": false
     },
     {
-      "symbol": "SOL-USD",
-      "name": "Solana USD",
-      "currency": "USD",
-      "price": 90.27,
-      "change_pct": 0.89,
-      "volume": 2725530368,
-      "average_volume": 2635099707,
-      "volume_ratio": 1.03,
-      "gap_pct": 0.03,
-      "recent_high": 109.0304,
-      "breakout_pct": -17.21,
-      "flagged": false
-    },
-    {
       "symbol": "KO",
       "name": "Coca-Cola Company (The)",
       "currency": "USD",
@@ -438,6 +410,20 @@
       "gap_pct": -2.63,
       "recent_high": 97.39,
       "breakout_pct": -1.77,
+      "flagged": false
+    },
+    {
+      "symbol": "ETH-USD",
+      "name": "Ethereum USD",
+      "currency": "USD",
+      "price": 2237.54,
+      "change_pct": 0.13,
+      "volume": 10949101568,
+      "average_volume": 10855667821,
+      "volume_ratio": 1.01,
+      "gap_pct": 0.03,
+      "recent_high": 2522.8418,
+      "breakout_pct": -11.31,
       "flagged": false
     },
     {
@@ -494,6 +480,20 @@
       "gap_pct": -1.51,
       "recent_high": 343.89,
       "breakout_pct": -6.66,
+      "flagged": false
+    },
+    {
+      "symbol": "SOL-USD",
+      "name": "Solana USD",
+      "currency": "USD",
+      "price": 90.16,
+      "change_pct": 1.06,
+      "volume": 2519865088,
+      "average_volume": 2635099707,
+      "volume_ratio": 0.96,
+      "gap_pct": 0.03,
+      "recent_high": 109.0304,
+      "breakout_pct": -17.31,
       "flagged": false
     },
     {
