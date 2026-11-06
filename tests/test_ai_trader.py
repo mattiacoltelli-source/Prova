@@ -18,6 +18,7 @@ from src import ai_trader, ai_trader_run, budget, config, paper_trading, storage
 def _isolate(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "STATE_DIR", str(tmp_path / "_state"))
     monkeypatch.setattr(config, "AI_TRADER_DECISIONS_FILE", str(tmp_path / "decisions.jsonl"))
+    monkeypatch.setattr(config, "AI_TRADER_DECISIONS_DAYS_DIR", str(tmp_path / "decisions_by_day"))
     monkeypatch.setattr(config, "AI_TRADER_EXPERIMENT_FILE", str(tmp_path / "experiment.json"))
     monkeypatch.setattr(config, "AI_TRADER_EQUITY_HISTORY_FILE", str(tmp_path / "equity_history.jsonl"))
     monkeypatch.setattr(config, "AI_TRADER_PORTFOLIO_HISTORY_FILE", str(tmp_path / "portfolio_history.json"))
