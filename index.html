@@ -3507,6 +3507,7 @@
                 const res = await fetch(`${DIARY_DAYS_DIR}/index.json`, { cache: 'no-store' });
                 if (!res.ok) throw new Error('indice assente');
                 diary.index = (await res.json()).dates || [];
+                if (!diary.index.length) throw new Error('indice vuoto');
                 diary.loading = true;
                 await _diaryLoadDays(DIARY_DAYS_PER_LOAD);
             } catch (e) {
