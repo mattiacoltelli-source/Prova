@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-06T00:33:41.025521+00:00",
+  "generated_at": "2026-11-06T01:48:41.835500+00:00",
   "thresholds": {
     "volume_ratio": 2.0,
     "gap_pct": 4.0,
@@ -220,14 +220,28 @@
       "symbol": "6481.T",
       "name": "THK CO LTD",
       "currency": "JPY",
-      "price": 4793.0,
-      "change_pct": -9.19,
-      "volume": 136800,
+      "price": 4837.0,
+      "change_pct": -8.36,
+      "volume": 646100,
       "average_volume": 1021880,
-      "volume_ratio": 0.13,
+      "volume_ratio": 0.63,
       "gap_pct": -10.16,
       "recent_high": 6905.0,
-      "breakout_pct": -30.59,
+      "breakout_pct": -29.95,
+      "flagged": true
+    },
+    {
+      "symbol": "6324.T",
+      "name": "HARMONIC DRIVE SYSTEMS",
+      "currency": "JPY",
+      "price": 4197.0,
+      "change_pct": -9.13,
+      "volume": 862900,
+      "average_volume": 1452685,
+      "volume_ratio": 0.59,
+      "gap_pct": -11.45,
+      "recent_high": 6670.0,
+      "breakout_pct": -37.08,
       "flagged": true
     },
     {
@@ -452,20 +466,6 @@
       "gap_pct": 1.29,
       "recent_high": 72.5,
       "breakout_pct": -5.13,
-      "flagged": false
-    },
-    {
-      "symbol": "6324.T",
-      "name": "HARMONIC DRIVE SYSTEMS",
-      "currency": "JPY",
-      "price": 4619.0,
-      "change_pct": 0.0,
-      "volume": 2404300,
-      "average_volume": 1452685,
-      "volume_ratio": 1.66,
-      "gap_pct": null,
-      "recent_high": 6670.0,
-      "breakout_pct": -30.75,
       "flagged": false
     },
     {
