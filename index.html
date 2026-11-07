@@ -5348,6 +5348,48 @@
         // Dopo che entrambe le griglie (Tech e Trend) hanno creato i loro
         // contenitori vuoti: una sola fetch riempie tutti gli slot.
         loadFundamentals().then(fillFundamentalsSlots);
+
+        // Ripristino dei grafici dopo che l'app è rimasta in background.
+        // Su Android il browser può liberare la memoria grafica dei canvas
+        // delle schede non visibili: al ritorno il grafico resta un riquadro
+        // bianco con la faccina triste (segnalato il 2026-11-07, grafico
+        // equity). Chart.js non si accorge del problema e non ridisegna da
+        // solo. Quando la pagina torna visibile dopo un po' (o il browser
+        // segnala il canvas ripristinato) il canvas dell'equity viene
+        // sostituito con uno nuovo e il grafico ridisegnato; gli altri
+        // grafici vengono ridimensionati/ridisegnati.
+        let _hiddenSince = 0;
+        function _freshCanvas(id) {
+            const old = document.getElementById(id);
+            if (!old) return false;
+            if (chartInstances[id]) { try { chartInstances[id].destroy(); } catch (e) { /* già distrutto */ } delete chartInstances[id]; }
+            const fresh = document.createElement('canvas');
+            fresh.id = id;
+            old.replaceWith(fresh);
+            return true;
+        }
+        function refreshChartsAfterResume() {
+            try {
+                if (aiTraderChartCache && _freshCanvas('aitrader-equity-chart')) {
+                    const c = aiTraderChartCache;
+                    renderAiTraderEquityChart(c.history, c.experiment, c.momentumHistory, c.meanrevHistory);
+                }
+            } catch (e) { console.error('Ripristino grafico equity:', e); }
+            Object.entries(chartInstances).forEach(([key, chart]) => {
+                if (key === 'aitrader-equity-chart') return;
+                try { chart.resize(); chart.update('none'); } catch (e) { /* grafico non più valido */ }
+            });
+        }
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) { _hiddenSince = Date.now(); return; }
+            // Subito dopo un cambio scheda breve non serve rifare nulla.
+            if (_hiddenSince && Date.now() - _hiddenSince > 5000) refreshChartsAfterResume();
+            _hiddenSince = 0;
+        });
+        window.addEventListener('pageshow', e => { if (e.persisted) refreshChartsAfterResume(); });
+        // Evento dei canvas 2D quando il browser ripristina il contesto perso
+        // (non risale: si ascolta in fase di cattura).
+        document.addEventListener('contextrestored', refreshChartsAfterResume, true);
     </script>
 </body>
 </html>
