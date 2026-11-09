@@ -927,12 +927,15 @@ def test_load_scanner_results_dati_vecchi_tornano_vuoto(tmp_path, monkeypatch):
     """Bug reale trovato in un code review pre-lancio, 2026-11-01: senza
     questo controllo, uno scanner bloccato da giorni/settimane (market_scanner.yml
     fallito in silenzio) veniva letto come se fosse di oggi, facendo
-    decidere l'AI su dati vecchi senza nessun segnale dell'anomalia."""
+    decidere l'AI su dati vecchi senza nessun segnale dell'anomalia.
+    Deterministico (non dipende dal giorno della settimana): la chiusura
+    dell'ultima seduta è fissata a ieri, il file è di 3 giorni fa."""
     _isolate(tmp_path, monkeypatch)
-    yesterday = dt.date.today() - dt.timedelta(days=1)
+    now = dt.datetime.now(dt.timezone.utc)
+    monkeypatch.setattr(ai_trader, "last_session_close_utc", lambda n: now - dt.timedelta(days=1))
     scanner_file = tmp_path / "scanner_vecchio.json"
     scanner_file.write_text(json.dumps({
-        "generated_at": dt.datetime.combine(yesterday, dt.time(12, 0), tzinfo=dt.timezone.utc).isoformat(),
+        "generated_at": (now - dt.timedelta(days=3)).isoformat(),
         "results": [{"symbol": "RIVN", "price": 10}],
     }))
     monkeypatch.setattr(config, "SCANNER_FILE", str(scanner_file))
@@ -1344,3 +1347,38 @@ def test_export_decision_days_scrive_un_file_per_giorno_e_indice(tmp_path, monke
     assert [r["symbol"] for r in day] == ["AAA", "BBB"]
     assert "record_hash" not in day[0] and "prev_hash" not in day[0]   # niente hash nella copia
     assert ai_trader.export_decision_days() == []   # niente da riscrivere se non è cambiato nulla
+
+
+# ─── Giro programmato partito dopo la mezzanotte UTC (2026-11-07) ──────────
+
+def _run_daily_check_day(monkeypatch, event_name):
+    import types
+    seen = []
+    class FakeDate(dt.date):
+        @classmethod
+        def today(cls):
+            return dt.date(2026, 11, 7)   # sabato (data UTC al momento del giro)
+    class FakeDT(dt.datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return dt.datetime(2026, 11, 7, 1, 50, tzinfo=dt.timezone.utc)
+    fake_dt = types.SimpleNamespace(date=FakeDate, datetime=FakeDT, timedelta=dt.timedelta, timezone=dt.timezone, time=dt.time)
+    monkeypatch.setattr(ai_trader_run, "dt", fake_dt)
+    monkeypatch.setattr(ai_trader_run, "load_experiment", lambda: {"status": "running", "end_date": "2027-05-02", "start_date": "2026-11-01"})
+    monkeypatch.setattr(ai_trader_run, "_is_us_market_day", lambda d: seen.append(d) or False)
+    if event_name:
+        monkeypatch.setenv("GITHUB_EVENT_NAME", event_name)
+    else:
+        monkeypatch.delenv("GITHUB_EVENT_NAME", raising=False)
+    ai_trader_run.run_daily(dry_run=False)
+    return seen
+
+
+def test_giro_programmato_dopo_mezzanotte_usa_il_giorno_prima(monkeypatch):
+    seen = _run_daily_check_day(monkeypatch, "schedule")
+    assert seen == [dt.date(2026, 11, 6)]   # venerdì, non sabato
+
+
+def test_giro_manuale_dopo_mezzanotte_usa_la_data_di_oggi(monkeypatch):
+    seen = _run_daily_check_day(monkeypatch, "workflow_dispatch")
+    assert seen == [dt.date(2026, 11, 7)]

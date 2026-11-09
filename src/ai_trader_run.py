@@ -351,8 +351,18 @@ def run_daily(dry_run: bool) -> None:
     # pagati (budget mensile già strettissimo, $3.50) su un mercato fermo
     # da giorni, e gli ordini eventuali finivano rifiutati da Alpaca o
     # restavano "pending_new" indefinitamente.
-    if not _is_us_market_day(today):
-        print(f"{today.isoformat()} non è un giorno di mercato USA (weekend o festività): nessuna azione.")
+    # Giorno di mercato a cui appartiene questo giro: GitHub fa partire il
+    # cron delle 22:10 UTC con ore di ritardo, spesso oltre la mezzanotte
+    # UTC. Il giro del venerdì sera partito sabato alle 01:50 UTC (2026-11-07)
+    # veniva scartato come "weekend" e nessun ordine/decisione per il lunedì
+    # veniva fatto. Un giro PROGRAMMATO che parte prima delle 12:00 UTC è il
+    # giro della sera prima: il controllo weekend/festività usa quel giorno.
+    # (La data usata per etichettare decisioni e file resta quella di oggi.)
+    check_day = today
+    if os.environ.get("GITHUB_EVENT_NAME") == "schedule" and dt.datetime.now(dt.timezone.utc).hour < 12:
+        check_day = today - dt.timedelta(days=1)
+    if not _is_us_market_day(check_day):
+        print(f"{check_day.isoformat()} non è un giorno di mercato USA (weekend o festività): nessuna azione.")
         return
 
     end_date = dt.date.fromisoformat(experiment["end_date"])
