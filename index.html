@@ -1660,7 +1660,7 @@
                 selezionabile. Il paniere viene rifatto ogni sera, con al massimo 14 titoli a peso uguale.<br><br>
 
                 <strong>Regole di rischio uguali per tutte e tre:</strong> stop-loss a &minus;8% e
-                take-profit a +16% sul prezzo d'acquisto (in AI reale sono ordini veri su Alpaca, in
+                take-profit a +16% sul prezzo d'acquisto (in AI reale sono ordini veri su Alpaca per gli acquisti ad azioni intere, fatti dal 10 novembre; per le posizioni più vecchie, comprate a importo, Alpaca protegge solo la parte intera delle azioni e il resto è controllato una volta al giorno — la scheda rischio dice quante sono protette; in
                 Momentum e Mean Reversion sono simulati sul minimo e massimo della seduta); al massimo
                 14 posizioni; al massimo il 35% del patrimonio investito, il resto resta in contanti.
                 Le tre strategie non si influenzano: se una perde tutto, le altre continuano.
@@ -1736,6 +1736,10 @@
             </div>
             <div class="risk-row">
                 <div class="risk-row__top"><span>Take profit per posizione</span><span id="aitrader-risk-takeprofit-val">—</span></div>
+            </div>
+            <div class="risk-row" id="aitrader-risk-protection-row" style="display:none;">
+                <div class="risk-row__top"><span>Protezione attiva su Alpaca</span><span id="aitrader-risk-protection-val">—</span></div>
+                <p id="aitrader-risk-protection-note" style="font-size:var(--text-xs);color:var(--text-dim);margin:6px 0 0;"></p>
             </div>
             <div class="risk-row">
                 <div class="risk-row__top"><span>Giorni rimasti</span><span class="stat-value accent" id="aitrader-stat-days" style="font-size:var(--text-xs);">—</span></div>
@@ -3132,6 +3136,7 @@
         // ridisegnare card rischio + grafico equity a ogni cambio di switch,
         // senza rifare le chiamate di rete).
         let aiTraderAccountCache = null;
+        let aiTraderProtectionCache = null;
         let aiTraderOpenCounts = { real: 0, momentum: 0, meanrev: 0 };
         let aiTraderChartCache = null;
 
@@ -4058,6 +4063,29 @@
                 `${AI_TRADER_STOP_LOSS_PCT_FRONTEND.toFixed(1)}%` + (strategy === 'real' ? '' : ' (simulato)');
             document.getElementById('aitrader-risk-takeprofit-val').innerText =
                 `+${AI_TRADER_TAKE_PROFIT_PCT_FRONTEND.toFixed(1)}%` + (strategy === 'real' ? '' : ' (simulato)');
+
+            // Quale protezione è DAVVERO attiva (solo AI reale): scritto dal
+            // trader in data/_state/protection_status.json a ogni giro. Fino al
+            // 2026-11-10 la scheda mostrava i due livelli come se fossero ordini
+            // attivi su Alpaca, che invece li rifiutava sulle quote frazionarie.
+            const protRow = document.getElementById('aitrader-risk-protection-row');
+            const prot = aiTraderProtectionCache && aiTraderProtectionCache.positions;
+            if (strategy !== 'real' || !prot || Object.keys(prot).length === 0) {
+                protRow.style.display = 'none';
+            } else {
+                const levels = Object.values(prot).map(p => p.level);
+                const full = levels.filter(l => l === 'alpaca').length;
+                const part = levels.filter(l => l === 'parziale').length;
+                const night = levels.filter(l => l === 'notturna').length;
+                protRow.style.display = '';
+                document.getElementById('aitrader-risk-protection-val').innerText = `${full} di ${levels.length} posizioni`;
+                const bits = [];
+                if (part) bits.push(`${part} protette solo per la parte intera delle azioni`);
+                if (night) bits.push(`${night} controllate solo una volta al giorno, nel giro notturno`);
+                document.getElementById('aitrader-risk-protection-note').innerText = bits.length
+                    ? `Le altre: ${bits.join('; ')}. Stato al ${aiTraderProtectionCache.date}.`
+                    : `Stop-loss e take-profit sono ordini attivi su Alpaca per tutte. Stato al ${aiTraderProtectionCache.date}.`;
+            }
         }
 
         const AITRADER_STRATEGY_LABELS = { real: 'AI reale', momentum: 'Momentum', meanrev: 'Mean Reversion' };
@@ -4144,10 +4172,12 @@
         // si è spostato qui invece di sparire). Chiamata da
         // loadAiTraderData(), non lazy: la tab è quella di default.
         async function loadAiTraderPositionsAndOrders() {
-            const [account, ordersRes] = await Promise.all([
+            const [account, ordersRes, protection] = await Promise.all([
                 fetchPaperAccount(),
                 parseJsonl('data/paper/orders.jsonl'),
+                fetchJsonNoStore('data/_state/protection_status.json'),
             ]);
+            aiTraderProtectionCache = protection;
             // Letto dalla card "Esposizione & rischio" (vedi _renderAiTraderRiskCard):
             // cash/equity del vero conto Alpaca, nessuna chiamata in più.
             // account.positions non viene più disegnato qui: duplicava "Posizioni"
