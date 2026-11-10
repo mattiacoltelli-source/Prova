@@ -1,6 +1,86 @@
 {
   "closed": [
     {
+      "entry_date": "2026-11-06",
+      "entry_price": 344.17,
+      "exit_date": "2026-11-10",
+      "exit_price": 350.69,
+      "return_pct": 1.89,
+      "symbol": "AAPL"
+    },
+    {
+      "entry_date": "2026-11-06",
+      "entry_price": 291.53,
+      "exit_date": "2026-11-10",
+      "exit_price": 319.48,
+      "return_pct": 9.59,
+      "symbol": "AVGO"
+    },
+    {
+      "entry_date": "2026-11-01",
+      "entry_price": 143.5399932861328,
+      "exit_date": "2026-11-10",
+      "exit_price": 132.0568,
+      "return_pct": -8.0,
+      "symbol": "COIN"
+    },
+    {
+      "entry_date": "2026-11-06",
+      "entry_price": 215.78,
+      "exit_date": "2026-11-10",
+      "exit_price": 229.0,
+      "return_pct": 6.13,
+      "symbol": "HON"
+    },
+    {
+      "entry_date": "2026-11-06",
+      "entry_price": 52.25,
+      "exit_date": "2026-11-10",
+      "exit_price": 59.37,
+      "return_pct": 13.63,
+      "symbol": "INTC"
+    },
+    {
+      "entry_date": "2026-11-06",
+      "entry_price": 1364.73,
+      "exit_date": "2026-11-10",
+      "exit_price": 1411.95,
+      "return_pct": 3.46,
+      "symbol": "LLY"
+    },
+    {
+      "entry_date": "2026-11-06",
+      "entry_price": 605.08,
+      "exit_date": "2026-11-10",
+      "exit_price": 641.37,
+      "return_pct": 6.0,
+      "symbol": "META"
+    },
+    {
+      "entry_date": "2026-11-06",
+      "entry_price": 3.2,
+      "exit_date": "2026-11-10",
+      "exit_price": 3.41,
+      "return_pct": 6.56,
+      "symbol": "NIO"
+    },
+    {
+      "entry_date": "2026-11-06",
+      "entry_price": 123.62,
+      "exit_date": "2026-11-10",
+      "exit_price": 142.07,
+      "return_pct": 14.92,
+      "symbol": "SPCX"
+    },
+    {
+      "entry_date": "2026-11-06",
+      "entry_price": 212.74,
+      "exit_date": "2026-11-10",
+      "exit_price": 246.7784,
+      "return_pct": 16.0,
+      "symbol": "TER"
+    },
+    {
       "entry_date": "2026-11-03",
       "entry_price": 466.84,
       "exit_date": "2026-11-06",
@@ -203,102 +283,102 @@
   ],
   "open": [
     {
-      "entry_date": "2026-11-06",
-      "entry_price": 344.17,
-      "mark_price": 344.17,
+      "entry_date": "2026-11-10",
+      "entry_price": 186.3,
+      "mark_price": 186.3,
       "return_pct": 0.0,
-      "symbol": "AAPL"
+      "symbol": "ARM"
     },
     {
-      "entry_date": "2026-11-06",
-      "entry_price": 291.53,
-      "mark_price": 291.53,
+      "entry_date": "2026-11-10",
+      "entry_price": 598.88,
+      "mark_price": 598.88,
       "return_pct": 0.0,
-      "symbol": "AVGO"
+      "symbol": "CAT"
     },
     {
-      "entry_date": "2026-11-06",
-      "entry_price": 215.78,
-      "mark_price": 215.78,
+      "entry_date": "2026-11-10",
+      "entry_price": 228.58,
+      "mark_price": 228.58,
       "return_pct": 0.0,
-      "symbol": "HON"
+      "symbol": "CRWD"
     },
     {
-      "entry_date": "2026-11-06",
-      "entry_price": 52.25,
-      "mark_price": 52.25,
+      "entry_date": "2026-11-10",
+      "entry_price": 733.15,
+      "mark_price": 733.15,
       "return_pct": 0.0,
-      "symbol": "INTC"
+      "symbol": "MU"
     },
     {
-      "entry_date": "2026-11-06",
-      "entry_price": 1364.73,
-      "mark_price": 1364.73,
+      "entry_date": "2026-11-10",
+      "entry_price": 178.67,
+      "mark_price": 178.67,
       "return_pct": 0.0,
-      "symbol": "LLY"
+      "symbol": "NVDA"
     },
     {
-      "entry_date": "2026-11-06",
-      "entry_price": 605.08,
-      "mark_price": 605.08,
+      "entry_date": "2026-11-10",
+      "entry_price": 114.44,
+      "mark_price": 114.44,
       "return_pct": 0.0,
-      "symbol": "META"
+      "symbol": "NVT"
+    },
+    {
+      "entry_date": "2026-11-10",
+      "entry_price": 227.52,
+      "mark_price": 227.52,
+      "return_pct": 0.0,
+      "symbol": "PGR"
+    },
+    {
+      "entry_date": "2026-11-10",
+      "entry_price": 196.31,
+      "mark_price": 196.31,
+      "return_pct": 0.0,
+      "symbol": "RTX"
+    },
+    {
+      "entry_date": "2026-11-10",
+      "entry_price": 125.66,
+      "mark_price": 125.66,
+      "return_pct": 0.0,
+      "symbol": "WMT"
+    },
+    {
+      "entry_date": "2026-11-10",
+      "entry_price": 164.73,
+      "mark_price": 164.73,
+      "return_pct": 0.0,
+      "symbol": "XOM"
     },
     {
       "entry_date": "2026-11-06",
       "entry_price": 129.3,
-      "mark_price": 129.3,
-      "return_pct": 0.0,
+      "mark_price": 125.59,
+      "return_pct": -2.87,
       "symbol": "MSTR"
     },
     {
       "entry_date": "2026-11-06",
-      "entry_price": 3.2,
-      "mark_price": 3.2,
-      "return_pct": 0.0,
-      "symbol": "NIO"
-    },
-    {
-      "entry_date": "2026-11-06",
       "entry_price": 154.99,
-      "mark_price": 154.99,
-      "return_pct": 0.0,
+      "mark_price": 169.2,
+      "return_pct": 9.17,
       "symbol": "PLTR"
     },
     {
       "entry_date": "2026-11-06",
-      "entry_price": 123.62,
-      "mark_price": 123.62,
-      "return_pct": 0.0,
-      "symbol": "SPCX"
-    },
-    {
-      "entry_date": "2026-11-06",
-      "entry_price": 212.74,
-      "mark_price": 212.74,
-      "return_pct": 0.0,
-      "symbol": "TER"
-    },
-    {
-      "entry_date": "2026-11-06",
       "entry_price": 343.69,
-      "mark_price": 343.69,
-      "return_pct": 0.0,
+      "mark_price": 378.05,
+      "return_pct": 10.0,
       "symbol": "TSLA"
     },
     {
       "entry_date": "2026-11-06",
       "entry_price": 395.72,
-      "mark_price": 395.72,
-      "return_pct": 0.0,
+      "mark_price": 397.62,
+      "return_pct": 0.48,
       "symbol": "UNH"
-    },
-    {
-      "entry_date": "2026-11-01",
-      "entry_price": 143.5399932861328,
-      "mark_price": 136.82,
-      "return_pct": -4.68,
-      "symbol": "COIN"
     }
   ]
 }
