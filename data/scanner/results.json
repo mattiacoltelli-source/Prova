@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-09T23:34:12.572772+00:00",
+  "generated_at": "2026-11-10T00:39:33.614024+00:00",
   "thresholds": {
     "volume_ratio": 2.0,
     "gap_pct": 4.0,
@@ -60,6 +60,34 @@
       "gap_pct": 1.2,
       "recent_high": 17.12,
       "breakout_pct": 3.15,
+      "flagged": true
+    },
+    {
+      "symbol": "6481.T",
+      "name": "THK CO LTD",
+      "currency": "JPY",
+      "price": 5422.0,
+      "change_pct": 6.21,
+      "volume": 191500,
+      "average_volume": 1035853,
+      "volume_ratio": 0.18,
+      "gap_pct": 5.88,
+      "recent_high": 6805.0,
+      "breakout_pct": -20.32,
+      "flagged": true
+    },
+    {
+      "symbol": "6324.T",
+      "name": "HARMONIC DRIVE SYSTEMS",
+      "currency": "JPY",
+      "price": 4767.0,
+      "change_pct": 8.41,
+      "volume": 204100,
+      "average_volume": 1576426,
+      "volume_ratio": 0.13,
+      "gap_pct": 7.96,
+      "recent_high": 6050.0,
+      "breakout_pct": -21.21,
       "flagged": true
     },
     {
@@ -130,20 +158,6 @@
       "gap_pct": 0.84,
       "recent_high": 1453.0,
       "breakout_pct": -2.83,
-      "flagged": false
-    },
-    {
-      "symbol": "ETH-USD",
-      "name": "Ethereum USD",
-      "currency": "USD",
-      "price": 2128.49,
-      "change_pct": 0.16,
-      "volume": 13853770752,
-      "average_volume": 10890373690,
-      "volume_ratio": 1.27,
-      "gap_pct": 0.16,
-      "recent_high": 2522.8418,
-      "breakout_pct": -15.63,
       "flagged": false
     },
     {
@@ -231,20 +245,6 @@
       "flagged": false
     },
     {
-      "symbol": "BTC-USD",
-      "name": "Bitcoin USD",
-      "currency": "USD",
-      "price": 75086.04,
-      "change_pct": 0.44,
-      "volume": 28116791296,
-      "average_volume": 26177279497,
-      "volume_ratio": 1.07,
-      "gap_pct": 0.18,
-      "recent_high": 84840.0469,
-      "breakout_pct": -11.5,
-      "flagged": false
-    },
-    {
       "symbol": "WMT",
       "name": "Walmart Inc.",
       "currency": "USD",
@@ -312,20 +312,6 @@
       "gap_pct": 1.33,
       "recent_high": 72.5,
       "breakout_pct": -1.83,
-      "flagged": false
-    },
-    {
-      "symbol": "SOL-USD",
-      "name": "Solana USD",
-      "currency": "USD",
-      "price": 86.46,
-      "change_pct": 0.03,
-      "volume": 2658856960,
-      "average_volume": 2606680117,
-      "volume_ratio": 1.02,
-      "gap_pct": 0.08,
-      "recent_high": 109.0304,
-      "breakout_pct": -20.7,
       "flagged": false
     },
     {
@@ -424,20 +410,6 @@
       "gap_pct": 0.75,
       "recent_high": 355.38,
       "breakout_pct": -1.32,
-      "flagged": false
-    },
-    {
-      "symbol": "6481.T",
-      "name": "THK CO LTD",
-      "currency": "JPY",
-      "price": 5105.0,
-      "change_pct": 3.03,
-      "volume": 1019400,
-      "average_volume": 1060295,
-      "volume_ratio": 0.96,
-      "gap_pct": 1.41,
-      "recent_high": 6805.0,
-      "breakout_pct": -24.98,
       "flagged": false
     },
     {
@@ -592,20 +564,6 @@
       "gap_pct": 2.48,
       "recent_high": 355.25,
       "breakout_pct": -19.49,
-      "flagged": false
-    },
-    {
-      "symbol": "6324.T",
-      "name": "HARMONIC DRIVE SYSTEMS",
-      "currency": "JPY",
-      "price": 4397.0,
-      "change_pct": 3.1,
-      "volume": 1347600,
-      "average_volume": 1547132,
-      "volume_ratio": 0.87,
-      "gap_pct": 2.88,
-      "recent_high": 6230.0,
-      "breakout_pct": -29.42,
       "flagged": false
     },
     {
@@ -889,5 +847,18 @@
       "flagged": false
     }
   ],
-  "errors": []
+  "errors": [
+    {
+      "symbol": "BTC-USD",
+      "error": "Campi essenziali mancanti per BTC-USD"
+    },
+    {
+      "symbol": "ETH-USD",
+      "error": "Campi essenziali mancanti per ETH-USD"
+    },
+    {
+      "symbol": "SOL-USD",
+      "error": "Campi essenziali mancanti per SOL-USD"
+    }
+  ]
 }
