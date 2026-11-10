@@ -548,19 +548,33 @@ equal-weight tra i titoli scelti ("troppo rischioso" secondo l'utente):
 ora investono al massimo il 35%, stesso equal-weight ma diviso su quella
 quota, il resto resta in contanti.
 
-**Sicurezza**: due reti indipendenti. Ogni BUY piazza SUBITO una coppia
-**OCO nativa su Alpaca** (stop-loss a `AI_TRADER_STOP_LOSS_PCT`, -8%, e
-take-profit a `AI_TRADER_TAKE_PROFIT_PCT`, +16% — rapporto rischio/rendimento
-2:1), che sorveglia la posizione 24 ore su 24 — non solo quando gira il
-nostro run quotidiano, e quando uno dei due prezzi scatta l'altro si annulla
-da solo. In più, il controllo python di `AI_TRADER_STOP_LOSS_PCT` resta come
-rete di sicurezza indipendente dal giudizio AI del giorno sul solo lato
-stop-loss (nel caso raro in cui la coppia nativa non sia stata piazzata o
-sia stata rifiutata; il take-profit non ha un equivalente python). Quando
-una posizione si chiude da un'altra parte (giudizio AI, stop python, o la
-chiusura manuale di `setup`), l'eventuale coppia nativa ancora aperta viene
-annullata prima — altrimenti resterebbe un ordine orfano che punta ad azioni
-già vendute.
+**Sicurezza** (rivista il 2026-11-10): Alpaca rifiuta gli ordini di
+protezione (bracket/OCO) su quantità frazionarie, quindi le coppie native
+piazzate sugli acquisti "a importo" venivano tutte respinte (errore 422) e
+le posizioni restavano coperte solo dal controllo notturno. Ora:
+
+- **Acquisti in azioni intere**: ogni BUY calcola il numero intero di azioni
+  più vicino all'importo previsto (`_whole_share_qty`, prezzo dallo scanner)
+  e parte come ordine **bracket** (`paper_trading.place_bracket_buy`) con
+  stop-loss a `AI_TRADER_STOP_LOSS_PCT` (-8%) e take-profit a
+  `AI_TRADER_TAKE_PROFIT_PCT` (+16%), validi fino a revoca (gtc): Alpaca
+  sorveglia la posizione 24 ore su 24. Se il prezzo non è noto o una sola
+  azione costa più di 1,5 volte l'importo previsto si torna all'ordine a
+  importo (frazionario).
+- **Posizioni frazionarie già aperte**: la coppia OCO nativa viene piazzata
+  sulla sola parte intera (`_attach_native_exit`); la parte frazionaria, o
+  l'intera posizione se è sotto 1 azione, resta al controllo notturno.
+- **Controllo notturno** (`_check_stop_losses`): a ogni giro vende ciò che è
+  sotto lo stop-loss **o sopra il take-profit** — prima copriva solo lo stop.
+- **Stato reale della protezione**: a fine giro `_write_protection_status`
+  scrive `data/_state/protection_status.json` (per titolo: `alpaca`,
+  `parziale` o `notturna`), che la scheda Rischio dell'app mostra come
+  "Protezione attiva su Alpaca: X di N posizioni".
+
+Quando una posizione si chiude da un'altra parte (giudizio AI, controllo
+notturno, o la chiusura manuale di `setup`), gli ordini nativi ancora aperti
+vengono annullati prima — altrimenti resterebbe un ordine orfano che punta
+ad azioni già vendute.
 
 **Salute delle fonti dati/API** (`src/data_health.py`): richiesto
 dall'utente il 2026-11-02, prima per i soli prezzi — "se i dati di Yahoo

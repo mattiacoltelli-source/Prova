@@ -19,6 +19,10 @@ def _isolate(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "STATE_DIR", str(tmp_path / "_state"))
     monkeypatch.setattr(config, "AI_TRADER_DECISIONS_FILE", str(tmp_path / "decisions.jsonl"))
     monkeypatch.setattr(config, "AI_TRADER_DECISIONS_DAYS_DIR", str(tmp_path / "decisions_by_day"))
+    # Nessun prezzo di riferimento di default: i test storici di run_daily
+    # esercitano l'acquisto a importo; quelli ad azioni intere scrivono il file.
+    monkeypatch.setattr(config, "SCANNER_FILE", str(tmp_path / "scanner_assente.json"))
+    monkeypatch.setattr(ai_trader_run.time, "sleep", lambda s: None)
     monkeypatch.setattr(config, "AI_TRADER_EXPERIMENT_FILE", str(tmp_path / "experiment.json"))
     monkeypatch.setattr(config, "AI_TRADER_EQUITY_HISTORY_FILE", str(tmp_path / "equity_history.jsonl"))
     monkeypatch.setattr(config, "AI_TRADER_PORTFOLIO_HISTORY_FILE", str(tmp_path / "portfolio_history.json"))
@@ -575,11 +579,12 @@ def test_cancel_resting_orders_errore_non_bloccante(tmp_path, monkeypatch):
 def test_sell_to_close_annulla_ordini_aperti_prima_di_vendere(tmp_path, monkeypatch):
     _isolate(tmp_path, monkeypatch)
     order_resp = {"id": "ord-sell", "symbol": "GME", "status": "accepted"}
-    with patch("src.ai_trader_run.paper_trading.get_open_orders", return_value=[{"id": "ord-stop-vecchio"}]) as mock_get_open, \
+    # Prima lettura: l'ordine c'è; seconda (dopo l'annullamento): sparito.
+    with patch("src.ai_trader_run.paper_trading.get_open_orders", side_effect=[[{"id": "ord-stop-vecchio"}], []]) as mock_get_open, \
          patch("src.ai_trader_run.paper_trading.cancel_order") as mock_cancel, \
          patch("src.ai_trader_run.paper_trading.place_order", return_value=order_resp) as mock_place:
         ai_trader_run._sell_to_close({"symbol": "GME", "qty": "3"})
-    mock_get_open.assert_called_once_with(symbol="GME")
+    assert mock_get_open.call_count == 2   # controllo + attesa che l'annullamento sia effettivo
     mock_cancel.assert_called_once_with("ord-stop-vecchio")
     mock_place.assert_called_once_with(symbol="GME", side="sell", qty=3.0, time_in_force="day")
 
@@ -632,7 +637,7 @@ def test_attach_native_exit_piazza_oco_con_stop_e_take_profit_corretti(tmp_path,
          patch("src.ai_trader_run.paper_trading.place_oco_exit_order", return_value=order_resp) as mock_place:
         ai_trader_run._attach_native_exit("RIVN")
     mock_place.assert_called_once_with(
-        symbol="RIVN", qty=100.0, stop_price=9.2, take_profit_price=11.6
+        symbol="RIVN", qty=100.0, stop_price=9.2, take_profit_price=11.6, time_in_force="gtc"
     )
 
 
@@ -712,7 +717,8 @@ def test_daily_buy_piazza_anche_stop_e_take_profit_nativi(tmp_path, monkeypatch)
     buy_call = mock_place.call_args_list[0]
     assert buy_call.kwargs == {"symbol": "RIVN", "side": "buy", "notional": config.ai_trader_position_notional(100000.0)}
     mock_oco.assert_called_once_with(
-        symbol="RIVN", qty=500.0, stop_price=round(14.0 * 0.92, 2), take_profit_price=round(14.0 * 1.16, 2)
+        symbol="RIVN", qty=500.0, stop_price=round(14.0 * 0.92, 2), take_profit_price=round(14.0 * 1.16, 2),
+        time_in_force="gtc",
     )
 
 
@@ -1382,3 +1388,90 @@ def test_giro_programmato_dopo_mezzanotte_usa_il_giorno_prima(monkeypatch):
 def test_giro_manuale_dopo_mezzanotte_usa_la_data_di_oggi(monkeypatch):
     seen = _run_daily_check_day(monkeypatch, "workflow_dispatch")
     assert seen == [dt.date(2026, 11, 7)]
+
+
+# ─── Azioni intere + protezioni native (2026-11-10) ─────────────────────────
+
+def test_whole_share_qty():
+    assert ai_trader_run._whole_share_qty(2500.0, 100.0) == 25
+    assert ai_trader_run._whole_share_qty(2500.0, 1400.0) == 2      # 2800 $, entro 1,5x
+    assert ai_trader_run._whole_share_qty(2500.0, 2000.0) == 1
+    assert ai_trader_run._whole_share_qty(2500.0, 4000.0) == 0      # 1 azione > 1,5x l'importo
+    assert ai_trader_run._whole_share_qty(2500.0, None) == 0
+    assert ai_trader_run._whole_share_qty(2500.0, 0) == 0
+
+
+def test_attach_native_exit_protegge_solo_la_parte_intera(tmp_path, monkeypatch):
+    _isolate(tmp_path, monkeypatch)
+    position = {"symbol": "KO", "qty": "26.57", "avg_entry_price": "94.08"}
+    with patch("src.ai_trader_run.paper_trading.get_positions", return_value=[position]), \
+         patch("src.ai_trader_run.paper_trading.place_oco_exit_order", return_value={"id": "o"}) as mock_place:
+        ai_trader_run._attach_native_exit("KO")
+    assert mock_place.call_args.kwargs["qty"] == 26.0
+    assert mock_place.call_args.kwargs["time_in_force"] == "gtc"
+
+
+def test_attach_native_exit_meno_di_una_azione_non_piazza_nulla(tmp_path, monkeypatch):
+    _isolate(tmp_path, monkeypatch)
+    position = {"symbol": "LLY", "qty": "0.61", "avg_entry_price": "1410.0"}
+    with patch("src.ai_trader_run.paper_trading.get_positions", return_value=[position]), \
+         patch("src.ai_trader_run.paper_trading.place_oco_exit_order") as mock_place:
+        ai_trader_run._attach_native_exit("LLY")
+    mock_place.assert_not_called()
+
+
+def test_check_stop_losses_vende_anche_al_take_profit(tmp_path, monkeypatch):
+    _isolate(tmp_path, monkeypatch)
+    monkeypatch.setattr(config, "AI_TRADER_STOP_LOSS_PCT", -8.0)
+    monkeypatch.setattr(config, "AI_TRADER_TAKE_PROFIT_PCT", 16.0)
+    positions = [
+        {"symbol": "UP", "qty": "5", "unrealized_plpc": "0.17"},
+        {"symbol": "MID", "qty": "5", "unrealized_plpc": "0.10"},
+        {"symbol": "DOWN", "qty": "5", "unrealized_plpc": "-0.09"},
+    ]
+    with patch("src.ai_trader_run.paper_trading.get_open_orders", return_value=[]), \
+         patch("src.ai_trader_run.paper_trading.place_order", return_value={"id": "x", "status": "accepted"}):
+        sold = ai_trader_run._check_stop_losses(positions)
+    assert sold == ["UP", "DOWN"]
+
+
+def test_daily_buy_con_prezzo_noto_usa_bracket_ad_azioni_intere(tmp_path, monkeypatch):
+    _isolate(tmp_path, monkeypatch)
+    scan = tmp_path / "scan.json"
+    scan.write_text(json.dumps({"generated_at": "x", "results": [{"symbol": "RIVN", "price": 14.0}]}))
+    monkeypatch.setattr(config, "SCANNER_FILE", str(scan))
+    monkeypatch.setattr(ai_trader_run, "load_experiment", lambda: {"status": "running", "start_date": "2026-11-01", "end_date": "2027-05-02", "start_equity_usd": 100000.0})
+    decisions = [{"symbol": "RIVN", "decision": "BUY", "model_used": "m", "reasoning_short": "x", "cost_usd": 0.0}]
+    account = {"equity": "100000", "buying_power": "200000", "cash": "100000"}
+    with patch("src.ai_trader_run.ai_trader.decide_all", return_value=decisions), \
+         patch("src.ai_trader_run.paper_trading.get_account", return_value=account), \
+         patch("src.ai_trader_run.paper_trading.get_positions", return_value=[]), \
+         patch("src.ai_trader_run.paper_trading.get_open_orders", return_value=[]), \
+         patch("src.ai_trader_run.paper_trading.snapshot_account"), \
+         patch("src.ai_trader_run._save_portfolio_history_snapshot"), \
+         patch("src.ai_trader_run.paper_trading.place_order") as mock_plain, \
+         patch("src.ai_trader_run.paper_trading.place_oco_exit_order") as mock_oco, \
+         patch("src.ai_trader_run.paper_trading.place_bracket_buy", return_value={"id": "b1", "symbol": "RIVN", "status": "accepted"}) as mock_bracket:
+        ai_trader_run.run_daily(dry_run=False)
+    # 2500 / 14 = 178,6 -> 179 azioni; stop 12,88 e take-profit 16,24 sul prezzo di riferimento
+    mock_bracket.assert_called_once_with(symbol="RIVN", qty=179, stop_price=12.88, take_profit_price=16.24)
+    mock_plain.assert_not_called()
+    mock_oco.assert_not_called()
+
+
+def test_write_protection_status_classifica_le_posizioni(tmp_path, monkeypatch):
+    _isolate(tmp_path, monkeypatch)
+    positions = [
+        {"symbol": "FULL", "qty": "10"},
+        {"symbol": "PART", "qty": "9.37"},
+        {"symbol": "NONE", "qty": "0.6"},
+    ]
+    orders = [
+        {"symbol": "FULL", "side": "sell", "qty": "10"}, {"symbol": "FULL", "side": "sell", "qty": "10"},
+        {"symbol": "PART", "side": "sell", "qty": "9"},
+        {"symbol": "NONE", "side": "buy", "qty": "5"},
+    ]
+    with patch("src.ai_trader_run.paper_trading.get_open_orders", return_value=orders):
+        ai_trader_run._write_protection_status(positions)
+    st = json.loads((tmp_path / "_state" / "protection_status.json").read_text())["positions"]
+    assert [st[s]["level"] for s in ("FULL", "PART", "NONE")] == ["alpaca", "parziale", "notturna"]

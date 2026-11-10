@@ -54,8 +54,10 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
+import math
 import os
 import sys
+import time
 
 from . import ai_trader, benchmark, budget, config, data_health, paper_trading, storage, trade_history
 
@@ -71,8 +73,18 @@ def _cancel_resting_orders(symbol: str) -> None:
     (Alpaca lo rifiuta da
     solo, non manda un ordine fantasma)."""
     try:
-        for order in paper_trading.get_open_orders(symbol=symbol):
+        orders = paper_trading.get_open_orders(symbol=symbol)
+        for order in orders:
             paper_trading.cancel_order(order["id"])
+        # L'annullamento su Alpaca non è istantaneo: finché l'ordine risulta
+        # aperto le azioni restano "impegnate" e la vendita che segue verrebbe
+        # rifiutata per quantità non disponibile. Si aspetta (al massimo ~5 s)
+        # che spariscano.
+        if orders:
+            for _ in range(10):
+                if not paper_trading.get_open_orders(symbol=symbol):
+                    break
+                time.sleep(0.5)
     except paper_trading.AlpacaError as exc:
         print(f"Impossibile annullare gli ordini aperti su {symbol} (non bloccante): {exc}")
 
@@ -98,48 +110,104 @@ def _sell_to_close(position: dict) -> dict:
     return paper_trading.record_order(order)
 
 
-def _attach_native_exit(symbol: str) -> None:
-    """Protegge/chiude subito la posizione appena aperta con una coppia OCO
-    nativa su Alpaca (stop-loss + take-profit): scatta 24 ore su 24, non
-    solo quando gira il nostro run quotidiano — a differenza del controllo
-    python in _check_stop_losses, che resta comunque come rete di sicurezza
-    in più sul solo stop-loss (se per qualche motivo questo ordine non
-    venisse piazzato o venisse rifiutato, il controllo giornaliero lo
-    cattura comunque al giro successivo; il take-profit non ha un
-    equivalente in _check_stop_losses, vive solo qui).
+def _reference_prices() -> dict[str, float]:
+    """Ultimo prezzo noto per simbolo, dallo Scanner (già rifatto dopo la
+    chiusura da ai_trader.load_scanner_results): serve a trasformare
+    l'importo per posizione in un numero intero di azioni. {} se il file
+    non c'è o non si legge: l'acquisto ripiega sull'ordine a importo."""
+    try:
+        with open(config.SCANNER_FILE, "r", encoding="utf-8") as fh:
+            rows = json.load(fh).get("results", [])
+        return {r["symbol"]: float(r["price"]) for r in rows if r.get("price")}
+    except Exception:  # noqa: BLE001 - solo un aiuto al dimensionamento, mai fatale
+        return {}
 
-    Richiede la quantità REALE comprata: il BUY in run_daily usa 'notional'
-    (importo in dollari, non quote), quindi la quantità esatta si conosce
-    solo a fill avvenuto — da qui la rilettura delle posizioni invece di
-    calcolarla da soli."""
+
+def _whole_share_qty(notional: float, price: float | None) -> int:
+    """Numero intero di azioni più vicino all'importo per posizione (minimo
+    1). 0 = "non si può fare con azioni intere": prezzo sconosciuto, oppure
+    una sola azione costerebbe oltre una volta e mezza l'importo previsto."""
+    if not price or price <= 0:
+        return 0
+    qty = max(1, round(notional / price))
+    if qty * price > notional * 1.5:
+        return 0
+    return int(qty)
+
+
+def _exit_levels(entry_price: float) -> tuple[float, float]:
+    stop_price = round(entry_price * (1 + config.AI_TRADER_STOP_LOSS_PCT / 100), 2)
+    take_profit_price = round(entry_price * (1 + config.AI_TRADER_TAKE_PROFIT_PCT / 100), 2)
+    return stop_price, take_profit_price
+
+
+def _attach_native_exit(symbol: str) -> None:
+    """Mette su Alpaca la coppia stop-loss + take-profit (OCO, valida finché
+    non scatta) su una posizione già aperta che ne è priva.
+
+    Alpaca accetta ordini OCO solo per quantità INTERE: su tutte le
+    posizioni comprate a importo (quote frazionarie) ogni protezione veniva
+    rifiutata — "fractional orders must have order_class=simple", scoperto
+    rileggendo i registri il 2026-11-10: nessuna protezione nativa era mai
+    esistita. Qui si protegge la parte intera della posizione (es. 9 azioni
+    su 9,37); la frazione che resta, e le posizioni sotto 1 azione, sono
+    coperte dal controllo notturno (_check_stop_losses, che ora vale anche
+    per il take-profit). I nuovi acquisti nascono già interi e protetti
+    (paper_trading.place_bracket_buy in run_daily)."""
     positions = paper_trading.get_positions()
     position = next((p for p in positions if p["symbol"] == symbol), None)
     if position is None:
         print(f"Stop/take-profit non piazzati per {symbol}: l'ordine non risulta ancora eseguito in questo run.")
         return
-    qty = abs(float(position["qty"]))
-    entry_price = float(position["avg_entry_price"])
-    stop_price = round(entry_price * (1 + config.AI_TRADER_STOP_LOSS_PCT / 100), 2)
-    take_profit_price = round(entry_price * (1 + config.AI_TRADER_TAKE_PROFIT_PCT / 100), 2)
+    whole_qty = math.floor(abs(float(position["qty"])) + 1e-9)
+    if whole_qty < 1:
+        print(f"Stop/take-profit nativi non possibili per {symbol} (meno di 1 azione): resta il controllo notturno.")
+        return
+    stop_price, take_profit_price = _exit_levels(float(position["avg_entry_price"]))
     try:
         order = paper_trading.place_oco_exit_order(
-            symbol=symbol, qty=qty, stop_price=stop_price, take_profit_price=take_profit_price
+            symbol=symbol, qty=float(whole_qty), stop_price=stop_price,
+            take_profit_price=take_profit_price, time_in_force="gtc",
         )
         paper_trading.record_order(order)
+        print(f"Protezione nativa piazzata per {symbol}: {whole_qty} azioni, stop {stop_price}, take-profit {take_profit_price}.")
     except paper_trading.AlpacaError as exc:
         print(f"Stop/take-profit non piazzati per {symbol} (resta protetto dal controllo giornaliero): {exc}")
 
 
+def _write_protection_status(positions: list[dict]) -> None:
+    """Per ogni posizione: quante azioni sono coperte da un ordine di uscita
+    aperto su Alpaca. Letto dall'app (scheda rischio) per dire la verità su
+    quale protezione è attiva: "alpaca" (tutta la posizione), "parziale"
+    (solo la parte intera), "notturna" (solo il controllo una volta al
+    giorno). Mai bloccante."""
+    try:
+        covered: dict[str, float] = {}
+        for order in paper_trading.get_open_orders():
+            if order.get("side") != "sell":
+                continue
+            qty = float(order.get("qty") or 0)
+            sym = order.get("symbol")
+            covered[sym] = max(covered.get(sym, 0.0), qty)
+        status = {}
+        for p in positions:
+            qty = abs(float(p["qty"]))
+            cov = min(covered.get(p["symbol"], 0.0), qty)
+            level = "alpaca" if cov >= qty - 1e-6 else ("parziale" if cov > 0 else "notturna")
+            status[p["symbol"]] = {"qty": round(qty, 6), "protected_qty": round(cov, 6), "level": level}
+        os.makedirs(config.STATE_DIR, exist_ok=True)
+        with open(os.path.join(config.STATE_DIR, "protection_status.json"), "w", encoding="utf-8") as fh:
+            json.dump({"date": dt.date.today().isoformat(), "positions": status}, fh, ensure_ascii=False)
+    except Exception as exc:  # noqa: BLE001 - informativo per l'app, mai bloccante
+        print(f"Stato protezioni non aggiornato (non bloccante): {exc}")
+
+
 def _renew_missing_native_exits(symbols: set[str]) -> None:
-    """Ricrea la coppia OCO stop/take-profit sulle posizioni già aperte
-    prima di oggi che ne sono rimaste senza. L'OCO è "day" (Alpaca non
-    supporta GTC sugli ordini frazionari, e i BUY a importo producono
-    quasi sempre quote frazionarie): scade alla chiusura della prima
-    sessione in cui è attiva, quindi senza questo rinnovo quotidiano la
-    protezione sparirebbe dopo un giorno. Bug segnalato da una revisione
-    esterna e verificato sulla documentazione Alpaca, 2026-11-02. Solo
-    posizioni preesistenti: quelle appena comprate oggi hanno già la loro
-    coppia, ricrearla la duplicherebbe."""
+    """Mette la coppia stop/take-profit sulle posizioni già aperte prima di
+    oggi che non hanno nessun ordine di uscita aperto su Alpaca (posizioni
+    comprate a importo prima del 2026-11-10, o una protezione annullata).
+    Gli ordini sono "gtc": una volta piazzati restano, quindi di norma qui
+    non c'è nulla da fare."""
     for symbol in sorted(symbols):
         try:
             if paper_trading.get_open_orders(symbol=symbol):
@@ -300,9 +368,9 @@ def run_setup(dry_run: bool) -> None:
 
 
 def _check_stop_losses(positions: list[dict]) -> list[str]:
-    """Vende subito ogni posizione sotto AI_TRADER_STOP_LOSS_PCT, prima e
-    indipendentemente dal giudizio AI del giorno. Ritorna i simboli
-    venduti.
+    """Vende subito ogni posizione sotto AI_TRADER_STOP_LOSS_PCT o sopra
+    AI_TRADER_TAKE_PROFIT_PCT, prima e indipendentemente dal giudizio AI
+    del giorno. Ritorna i simboli venduti.
 
     Una posizione alla volta, mai fatale per le altre (stesso principio di
     market_scanner.scan()): senza questo try/except, un solo ordine di
@@ -315,12 +383,17 @@ def _check_stop_losses(positions: list[dict]) -> list[str]:
         plpc = position.get("unrealized_plpc")
         if plpc is None:
             continue
-        if float(plpc) * 100 <= config.AI_TRADER_STOP_LOSS_PCT:
+        pct = float(plpc) * 100
+        # Take-profit incluso dal 2026-11-10: prima viveva solo nell'ordine
+        # nativo, che Alpaca rifiutava sulle quote frazionarie.
+        if pct <= config.AI_TRADER_STOP_LOSS_PCT or pct >= config.AI_TRADER_TAKE_PROFIT_PCT:
+            kind = "Stop-loss" if pct <= config.AI_TRADER_STOP_LOSS_PCT else "Take-profit"
             try:
                 _sell_to_close(position)
                 sold.append(position["symbol"])
+                print(f"{kind} notturno: venduto {position['symbol']} a {pct:.1f}% dal prezzo d'ingresso.")
             except Exception as exc:  # noqa: BLE001 - una posizione alla volta, mai fatale
-                print(f"Stop-loss non eseguito per {position.get('symbol')} (continuo con le altre posizioni): {exc}")
+                print(f"{kind} non eseguito per {position.get('symbol')} (continuo con le altre posizioni): {exc}")
     return sold
 
 
@@ -457,6 +530,7 @@ def run_daily(dry_run: bool) -> None:
     # con i singoli titoli).
     attempted_orders = 0
     failed_orders: list[str] = []
+    reference_prices = _reference_prices()
     for decision in decisions:
         symbol = decision["symbol"]
         action = decision["decision"]
@@ -470,20 +544,35 @@ def run_daily(dry_run: bool) -> None:
             elif action == "BUY" and symbol not in open_symbols:
                 if len(open_symbols) >= config.AI_TRADER_MAX_POSITIONS:
                     continue
-                if buying_power < position_notional:
+                # Azioni intere quando si può (prezzo noto dallo Scanner):
+                # solo così Alpaca accetta stop-loss e take-profit nativi,
+                # agganciati all'acquisto stesso. Altrimenti si ripiega
+                # sull'ordine a importo (quote frazionarie), protetto solo
+                # dal controllo notturno finché non ha almeno 1 azione intera.
+                price = reference_prices.get(symbol)
+                qty = _whole_share_qty(position_notional, price)
+                cost = qty * price if qty else position_notional
+                if buying_power < cost:
                     continue
-                if deployed_usd + position_notional > max_deployed_usd:
+                if deployed_usd + cost > max_deployed_usd:
                     continue
                 attempted_orders += 1
-                order = paper_trading.place_order(
-                    symbol=symbol, side="buy", notional=position_notional
-                )
-                paper_trading.record_order(order)
-                _attach_native_exit(symbol)
+                if qty:
+                    stop_price, take_profit_price = _exit_levels(price)
+                    order = paper_trading.place_bracket_buy(
+                        symbol=symbol, qty=qty, stop_price=stop_price, take_profit_price=take_profit_price
+                    )
+                    paper_trading.record_order(order)
+                else:
+                    order = paper_trading.place_order(
+                        symbol=symbol, side="buy", notional=position_notional
+                    )
+                    paper_trading.record_order(order)
+                    _attach_native_exit(symbol)
                 open_symbols.add(symbol)
-                buying_power -= position_notional
-                deployed_usd += position_notional
-                print(f"BUY {symbol} — {decision['reasoning_short']}")
+                buying_power -= cost
+                deployed_usd += cost
+                print(f"BUY {symbol} ({qty or 'a importo'} az.) — {decision['reasoning_short']}")
         except Exception as exc:  # noqa: BLE001 - un titolo alla volta, mai fatale
             failed_orders.append(symbol)
             print(f"Ordine non eseguito per {symbol} (continuo con gli altri titoli): {exc}")
@@ -498,6 +587,7 @@ def run_daily(dry_run: bool) -> None:
     account = paper_trading.get_account()
     positions = paper_trading.get_positions()
     paper_trading.snapshot_account(account, positions)
+    _write_protection_status(positions)
     _record_equity(today.isoformat(), float(account["equity"]))
     _save_portfolio_history_snapshot(experiment["start_date"])
     _update_benchmarks(today, experiment)

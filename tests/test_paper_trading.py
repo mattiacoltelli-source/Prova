@@ -444,3 +444,23 @@ def test_get_activities_errore_http_solleva_alpaca_error(monkeypatch):
     with patch("src.paper_trading.requests.get", return_value=FakeResponse(500, text="boom")):
         with pytest.raises(paper_trading.AlpacaError, match="boom"):
             paper_trading.get_activities(after="2026-10-31")
+
+
+def test_place_bracket_buy_manda_bracket_con_qty_intera(monkeypatch):
+    monkeypatch.setenv("ALPACA_API_KEY", "k"); monkeypatch.setenv("ALPACA_SECRET_KEY", "s")
+    sent = {}
+    class R:
+        ok = True
+        def json(self): return {"id": "b"}
+    def fake_post(url, headers, json, timeout):
+        sent.update(json); return R()
+    monkeypatch.setattr(paper_trading.requests, "post", fake_post)
+    paper_trading.place_bracket_buy("ko", qty=27, stop_price=86.55, take_profit_price=109.13)
+    assert sent == {"symbol": "KO", "side": "buy", "qty": "27", "type": "market", "time_in_force": "gtc",
+                    "order_class": "bracket", "take_profit": {"limit_price": "109.13"}, "stop_loss": {"stop_price": "86.55"}}
+
+
+def test_place_bracket_buy_rifiuta_qty_frazionaria():
+    import pytest
+    with pytest.raises(ValueError):
+        paper_trading.place_bracket_buy("KO", qty=2.5, stop_price=1, take_profit_price=2)

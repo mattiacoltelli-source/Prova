@@ -146,6 +146,41 @@ def place_oco_exit_order(
     return resp.json()
 
 
+def place_bracket_buy(
+    symbol: str,
+    qty: int,
+    stop_price: float,
+    take_profit_price: float,
+    time_in_force: str = "gtc",
+) -> dict:
+    """Acquisto a mercato di un numero INTERO di azioni con stop-loss e
+    take-profit già agganciati ("bracket" nativo Alpaca): le due uscite si
+    attivano da sole appena l'acquisto è eseguito e restano valide finché
+    una non scatta (gtc), senza rinnovi. Solo quantità intere: Alpaca
+    rifiuta qualunque ordine non "simple" su quote frazionarie
+    ("fractional orders must have order_class=simple", visto dal vivo il
+    2026-11-10 su tutte le protezioni OCO delle posizioni comprate a
+    importo)."""
+    if int(qty) != qty or qty < 1:
+        raise ValueError(f"qty deve essere un intero >= 1 per un ordine bracket, non {qty!r}")
+    payload = {
+        "symbol": symbol.upper(),
+        "side": "buy",
+        "qty": str(int(qty)),
+        "type": "market",
+        "time_in_force": time_in_force,
+        "order_class": "bracket",
+        "take_profit": {"limit_price": str(take_profit_price)},
+        "stop_loss": {"stop_price": str(stop_price)},
+    }
+    resp = requests.post(
+        f"{ALPACA_PAPER_BASE_URL}/v2/orders", headers=_headers(), json=payload, timeout=TIMEOUT
+    )
+    if not resp.ok:
+        raise AlpacaError(f"POST /v2/orders (bracket) fallita ({resp.status_code}): {resp.text}")
+    return resp.json()
+
+
 def get_open_orders(symbol: str | None = None) -> list[dict]:
     """Ordini ancora aperti (status=open), opzionalmente filtrati per
     simbolo — serve ad ai_trader_run.py per annullare uno stop nativo
