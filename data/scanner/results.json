@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-11T00:14:08.609339+00:00",
+  "generated_at": "2026-11-11T01:29:05.095147+00:00",
   "thresholds": {
     "volume_ratio": 2.0,
     "gap_pct": 4.0,
@@ -119,20 +119,6 @@
       "flagged": false
     },
     {
-      "symbol": "6481.T",
-      "name": "THK CO LTD",
-      "currency": "JPY",
-      "price": 5325.0,
-      "change_pct": 4.31,
-      "volume": 1500000,
-      "average_volume": 1059060,
-      "volume_ratio": 1.42,
-      "gap_pct": null,
-      "recent_high": 6805.0,
-      "breakout_pct": -21.75,
-      "flagged": false
-    },
-    {
       "symbol": "NIO",
       "name": "NIO Inc.",
       "currency": "USD",
@@ -242,20 +228,6 @@
       "gap_pct": 0.32,
       "recent_high": 241.02,
       "breakout_pct": -3.85,
-      "flagged": false
-    },
-    {
-      "symbol": "6324.T",
-      "name": "HARMONIC DRIVE SYSTEMS",
-      "currency": "JPY",
-      "price": 4846.0,
-      "change_pct": 10.21,
-      "volume": 1474800,
-      "average_volume": 1571345,
-      "volume_ratio": 0.94,
-      "gap_pct": null,
-      "recent_high": 6050.0,
-      "breakout_pct": -19.9,
       "flagged": false
     },
     {
@@ -844,6 +816,34 @@
       "gap_pct": -0.52,
       "recent_high": 60.08,
       "breakout_pct": -0.9,
+      "flagged": false
+    },
+    {
+      "symbol": "6481.T",
+      "name": "THK CO LTD",
+      "currency": "JPY",
+      "price": 5473.0,
+      "change_pct": 2.78,
+      "volume": 302500,
+      "average_volume": 1059060,
+      "volume_ratio": 0.29,
+      "gap_pct": 0.68,
+      "recent_high": 6805.0,
+      "breakout_pct": -19.57,
+      "flagged": false
+    },
+    {
+      "symbol": "6324.T",
+      "name": "HARMONIC DRIVE SYSTEMS",
+      "currency": "JPY",
+      "price": 4968.0,
+      "change_pct": 2.52,
+      "volume": 408300,
+      "average_volume": 1571345,
+      "volume_ratio": 0.26,
+      "gap_pct": -0.91,
+      "recent_high": 6050.0,
+      "breakout_pct": -17.88,
       "flagged": false
     }
   ],
