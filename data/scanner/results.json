@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-12T01:40:35.392613+00:00",
+  "generated_at": "2026-11-12T02:31:20.133703+00:00",
   "thresholds": {
     "volume_ratio": 2.0,
     "gap_pct": 4.0,
@@ -217,6 +217,20 @@
       "flagged": false
     },
     {
+      "symbol": "6324.T",
+      "name": "HARMONIC DRIVE SYSTEMS",
+      "currency": "JPY",
+      "price": 5080.0,
+      "change_pct": 1.74,
+      "volume": 1933700,
+      "average_volume": 1574765,
+      "volume_ratio": 1.23,
+      "gap_pct": 3.06,
+      "recent_high": 5980.0,
+      "breakout_pct": -15.05,
+      "flagged": false
+    },
+    {
       "symbol": "UPST",
       "name": "Upstart Holdings, Inc.",
       "currency": "USD",
@@ -242,20 +256,6 @@
       "gap_pct": -1.33,
       "recent_high": 4.2,
       "breakout_pct": -12.62,
-      "flagged": false
-    },
-    {
-      "symbol": "6324.T",
-      "name": "HARMONIC DRIVE SYSTEMS",
-      "currency": "JPY",
-      "price": 4980.0,
-      "change_pct": -0.26,
-      "volume": 1780200,
-      "average_volume": 1574765,
-      "volume_ratio": 1.13,
-      "gap_pct": 3.06,
-      "recent_high": 5980.0,
-      "breakout_pct": -16.72,
       "flagged": false
     },
     {
@@ -791,6 +791,20 @@
       "flagged": false
     },
     {
+      "symbol": "6481.T",
+      "name": "THK CO LTD",
+      "currency": "JPY",
+      "price": 5657.0,
+      "change_pct": 1.4,
+      "volume": 518300,
+      "average_volume": 1066020,
+      "volume_ratio": 0.49,
+      "gap_pct": 0.73,
+      "recent_high": 6768.0,
+      "breakout_pct": -16.42,
+      "flagged": false
+    },
+    {
       "symbol": "GME",
       "name": "GameStop Corporation",
       "currency": "USD",
@@ -830,20 +844,6 @@
       "gap_pct": 2.26,
       "recent_high": 1.59,
       "breakout_pct": -14.78,
-      "flagged": false
-    },
-    {
-      "symbol": "6481.T",
-      "name": "THK CO LTD",
-      "currency": "JPY",
-      "price": 5606.0,
-      "change_pct": 0.48,
-      "volume": 407500,
-      "average_volume": 1066020,
-      "volume_ratio": 0.38,
-      "gap_pct": 0.73,
-      "recent_high": 6768.0,
-      "breakout_pct": -17.17,
       "flagged": false
     }
   ],
