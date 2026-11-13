@@ -1,1 +1,1 @@
-{"date": "2026-11-12", "total": 63, "failed_count": 0, "failed_symbols": [], "failure_rate": 0.0, "alert": false}
+{"date": "2026-11-13", "total": 63, "failed_count": 3, "failed_symbols": ["BTC-USD", "ETH-USD", "SOL-USD"], "failure_rate": 0.0476, "alert": false}
