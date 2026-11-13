@@ -1,6 +1,12 @@
 [
   {
     "asset": "AAPL",
+    "horizon": "1d",
+    "id": "9c8d7437-2d3d-492c-8b59-b23a9940c854",
+    "target_at": "2026-11-13T00:00:00+00:00"
+  },
+  {
+    "asset": "AAPL",
     "horizon": "1m",
     "id": "3ee69c20-fb5f-47f0-b721-2fac18053720",
     "target_at": "2026-11-22T00:00:00+00:00"
@@ -46,6 +52,12 @@
     "horizon": "7d",
     "id": "47ffdf84-fa2f-4252-8713-3c30bb36fb98",
     "target_at": "2026-11-17T00:00:00+00:00"
+  },
+  {
+    "asset": "AMD",
+    "horizon": "1d",
+    "id": "43759535-89d9-4eb6-a725-407b76d7b82c",
+    "target_at": "2026-11-13T00:00:00+00:00"
   },
   {
     "asset": "AMD",
@@ -97,6 +109,12 @@
   },
   {
     "asset": "MU",
+    "horizon": "1d",
+    "id": "995975ef-4c45-4426-b54e-7e2e2ab8ecef",
+    "target_at": "2026-11-13T00:00:00+00:00"
+  },
+  {
+    "asset": "MU",
     "horizon": "1m",
     "id": "24c73bbe-f18e-431b-8e26-22f48c14ccaa",
     "target_at": "2026-11-13T00:00:00+00:00"
@@ -142,6 +160,12 @@
     "horizon": "7d",
     "id": "cc72fb1d-8ab9-47ad-9083-58733388a751",
     "target_at": "2026-11-18T00:00:00+00:00"
+  },
+  {
+    "asset": "NVDA",
+    "horizon": "1d",
+    "id": "b7a26378-a721-448d-ad9a-fc9a1385b3cf",
+    "target_at": "2026-11-13T00:00:00+00:00"
   },
   {
     "asset": "NVDA",
