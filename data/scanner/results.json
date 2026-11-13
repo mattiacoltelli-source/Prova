@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-13T00:41:13.616732+00:00",
+  "generated_at": "2026-11-13T02:08:23.708442+00:00",
   "thresholds": {
     "volume_ratio": 2.0,
     "gap_pct": 4.0,
@@ -203,6 +203,20 @@
       "flagged": true
     },
     {
+      "symbol": "6324.T",
+      "name": "HARMONIC DRIVE SYSTEMS",
+      "currency": "JPY",
+      "price": 5006.0,
+      "change_pct": 4.62,
+      "volume": 1026000,
+      "average_volume": 1700770,
+      "volume_ratio": 0.6,
+      "gap_pct": 4.97,
+      "recent_high": 5630.0,
+      "breakout_pct": -11.08,
+      "flagged": true
+    },
+    {
       "symbol": "TER",
       "name": "Teradyne, Inc.",
       "currency": "USD",
@@ -228,20 +242,6 @@
       "gap_pct": -4.54,
       "recent_high": 96.87,
       "breakout_pct": -36.82,
-      "flagged": true
-    },
-    {
-      "symbol": "6324.T",
-      "name": "HARMONIC DRIVE SYSTEMS",
-      "currency": "JPY",
-      "price": 4965.0,
-      "change_pct": 3.76,
-      "volume": 378400,
-      "average_volume": 1700770,
-      "volume_ratio": 0.22,
-      "gap_pct": 4.97,
-      "recent_high": 5630.0,
-      "breakout_pct": -11.81,
       "flagged": true
     },
     {
@@ -836,14 +836,14 @@
       "symbol": "6481.T",
       "name": "THK CO LTD",
       "currency": "JPY",
-      "price": 5625.0,
-      "change_pct": 2.52,
-      "volume": 145200,
+      "price": 5587.0,
+      "change_pct": 1.82,
+      "volume": 300900,
       "average_volume": 1087925,
-      "volume_ratio": 0.13,
+      "volume_ratio": 0.28,
       "gap_pct": 3.13,
       "recent_high": 6410.0,
-      "breakout_pct": -12.25,
+      "breakout_pct": -12.84,
       "flagged": false
     }
   ],
