@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-17T02:37:16.534452+00:00",
+  "generated_at": "2026-11-17T04:10:52.638727+00:00",
   "thresholds": {
     "volume_ratio": 2.0,
     "gap_pct": 4.0,
@@ -427,6 +427,20 @@
       "flagged": false
     },
     {
+      "symbol": "6481.T",
+      "name": "THK CO LTD",
+      "currency": "JPY",
+      "price": 4475.0,
+      "change_pct": -4.46,
+      "volume": 1178800,
+      "average_volume": 1238430,
+      "volume_ratio": 0.95,
+      "gap_pct": -2.01,
+      "recent_high": 6240.0,
+      "breakout_pct": -28.29,
+      "flagged": false
+    },
+    {
       "symbol": "SPCX",
       "name": "Space Exploration Technologies ",
       "currency": "USD",
@@ -679,20 +693,6 @@
       "flagged": false
     },
     {
-      "symbol": "6481.T",
-      "name": "THK CO LTD",
-      "currency": "JPY",
-      "price": 4467.0,
-      "change_pct": -4.63,
-      "volume": 934000,
-      "average_volume": 1238430,
-      "volume_ratio": 0.75,
-      "gap_pct": -2.01,
-      "recent_high": 6240.0,
-      "breakout_pct": -28.41,
-      "flagged": false
-    },
-    {
       "symbol": "PGR",
       "name": "Progressive Corporation (The)",
       "currency": "USD",
@@ -819,6 +819,20 @@
       "flagged": false
     },
     {
+      "symbol": "6324.T",
+      "name": "HARMONIC DRIVE SYSTEMS",
+      "currency": "JPY",
+      "price": 4224.0,
+      "change_pct": -4.78,
+      "volume": 877700,
+      "average_volume": 1726760,
+      "volume_ratio": 0.51,
+      "gap_pct": -2.95,
+      "recent_high": 5630.0,
+      "breakout_pct": -24.97,
+      "flagged": false
+    },
+    {
       "symbol": "META",
       "name": "Meta Platforms, Inc.",
       "currency": "USD",
@@ -830,20 +844,6 @@
       "gap_pct": -0.26,
       "recent_high": 713.22,
       "breakout_pct": -12.17,
-      "flagged": false
-    },
-    {
-      "symbol": "6324.T",
-      "name": "HARMONIC DRIVE SYSTEMS",
-      "currency": "JPY",
-      "price": 4189.0,
-      "change_pct": -5.57,
-      "volume": 702100,
-      "average_volume": 1726760,
-      "volume_ratio": 0.41,
-      "gap_pct": -2.95,
-      "recent_high": 5630.0,
-      "breakout_pct": -25.6,
       "flagged": false
     }
   ],
