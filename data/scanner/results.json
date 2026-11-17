@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-17T22:37:49.109016+00:00",
+  "generated_at": "2026-11-17T23:49:21.276906+00:00",
   "thresholds": {
     "volume_ratio": 2.0,
     "gap_pct": 4.0,
@@ -164,14 +164,14 @@
       "symbol": "BTC-USD",
       "name": "Bitcoin USD",
       "currency": "USD",
-      "price": 64698.73,
-      "change_pct": -0.85,
-      "volume": 34481422336,
+      "price": 64890.24,
+      "change_pct": 0.11,
+      "volume": 34604789760,
       "average_volume": 29526599973,
       "volume_ratio": 1.17,
       "gap_pct": -0.04,
       "recent_high": 81889.9453,
-      "breakout_pct": -20.99,
+      "breakout_pct": -20.76,
       "flagged": false
     },
     {
@@ -186,6 +186,20 @@
       "gap_pct": -0.76,
       "recent_high": 533.39,
       "breakout_pct": -3.43,
+      "flagged": false
+    },
+    {
+      "symbol": "SOL-USD",
+      "name": "Solana USD",
+      "currency": "USD",
+      "price": 74.98,
+      "change_pct": 4.85,
+      "volume": 3303884800,
+      "average_volume": 2983864772,
+      "volume_ratio": 1.11,
+      "gap_pct": -0.0,
+      "recent_high": 103.5009,
+      "breakout_pct": -27.56,
       "flagged": false
     },
     {
@@ -217,17 +231,17 @@
       "flagged": false
     },
     {
-      "symbol": "SOL-USD",
-      "name": "Solana USD",
+      "symbol": "ETH-USD",
+      "name": "Ethereum USD",
       "currency": "USD",
-      "price": 73.85,
-      "change_pct": 3.07,
-      "volume": 3200204288,
-      "average_volume": 2983864772,
-      "volume_ratio": 1.07,
-      "gap_pct": -0.0,
-      "recent_high": 103.5009,
-      "breakout_pct": -28.65,
+      "price": 1822.73,
+      "change_pct": 0.21,
+      "volume": 12877981696,
+      "average_volume": 12199262036,
+      "volume_ratio": 1.06,
+      "gap_pct": -0.01,
+      "recent_high": 2446.0479,
+      "breakout_pct": -25.48,
       "flagged": false
     },
     {
@@ -270,20 +284,6 @@
       "gap_pct": 1.0,
       "recent_high": 990.0,
       "breakout_pct": -28.04,
-      "flagged": false
-    },
-    {
-      "symbol": "ETH-USD",
-      "name": "Ethereum USD",
-      "currency": "USD",
-      "price": 1809.15,
-      "change_pct": -0.84,
-      "volume": 12592672768,
-      "average_volume": 12199262036,
-      "volume_ratio": 1.03,
-      "gap_pct": -0.01,
-      "recent_high": 2446.0479,
-      "breakout_pct": -26.04,
       "flagged": false
     },
     {
