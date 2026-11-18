@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-18T22:19:39.621287+00:00",
+  "generated_at": "2026-11-18T23:21:09.507319+00:00",
   "thresholds": {
     "volume_ratio": 2.0,
     "gap_pct": 4.0,
@@ -290,14 +290,14 @@
       "symbol": "BTC-USD",
       "name": "Bitcoin USD",
       "currency": "USD",
-      "price": 62355.55,
-      "change_pct": -3.56,
-      "volume": 29548947456,
+      "price": 62506.04,
+      "change_pct": -3.65,
+      "volume": 29624797184,
       "average_volume": 30028747528,
-      "volume_ratio": 0.98,
+      "volume_ratio": 0.99,
       "gap_pct": -0.03,
       "recent_high": 81889.9453,
-      "breakout_pct": -23.85,
+      "breakout_pct": -23.67,
       "flagged": false
     },
     {
@@ -444,14 +444,14 @@
       "symbol": "ETH-USD",
       "name": "Ethereum USD",
       "currency": "USD",
-      "price": 1762.64,
-      "change_pct": -2.74,
-      "volume": 10570449920,
+      "price": 1765.39,
+      "change_pct": -3.15,
+      "volume": 10526393344,
       "average_volume": 12369685417,
       "volume_ratio": 0.85,
       "gap_pct": -0.02,
       "recent_high": 2446.0479,
-      "breakout_pct": -27.94,
+      "breakout_pct": -27.83,
       "flagged": false
     },
     {
@@ -511,20 +511,6 @@
       "flagged": false
     },
     {
-      "symbol": "SOL-USD",
-      "name": "Solana USD",
-      "currency": "USD",
-      "price": 72.86,
-      "change_pct": -1.54,
-      "volume": 2407318016,
-      "average_volume": 3017469528,
-      "volume_ratio": 0.8,
-      "gap_pct": -0.0,
-      "recent_high": 102.8656,
-      "breakout_pct": -29.17,
-      "flagged": false
-    },
-    {
       "symbol": "MSFT",
       "name": "Microsoft Corporation",
       "currency": "USD",
@@ -564,6 +550,20 @@
       "gap_pct": 1.05,
       "recent_high": 333.8,
       "breakout_pct": -16.36,
+      "flagged": false
+    },
+    {
+      "symbol": "SOL-USD",
+      "name": "Solana USD",
+      "currency": "USD",
+      "price": 72.98,
+      "change_pct": -2.82,
+      "volume": 2335921664,
+      "average_volume": 3017469528,
+      "volume_ratio": 0.77,
+      "gap_pct": -0.0,
+      "recent_high": 102.8656,
+      "breakout_pct": -29.05,
       "flagged": false
     },
     {
