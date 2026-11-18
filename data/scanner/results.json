@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-18T01:52:33.919002+00:00",
+  "generated_at": "2026-11-18T03:08:31.902131+00:00",
   "thresholds": {
     "volume_ratio": 2.0,
     "gap_pct": 4.0,
@@ -71,7 +71,7 @@
       "volume": 82313767,
       "average_volume": 51661210,
       "volume_ratio": 1.59,
-      "gap_pct": -2.1,
+      "gap_pct": -0.93,
       "recent_high": 1.59,
       "breakout_pct": -33.96,
       "flagged": false
@@ -85,7 +85,7 @@
       "volume": 17566800,
       "average_volume": 11856520,
       "volume_ratio": 1.48,
-      "gap_pct": -2.13,
+      "gap_pct": -2.12,
       "recent_high": 43.24,
       "breakout_pct": -5.87,
       "flagged": false
@@ -99,7 +99,7 @@
       "volume": 23364780,
       "average_volume": 17702850,
       "volume_ratio": 1.32,
-      "gap_pct": -0.35,
+      "gap_pct": -0.24,
       "recent_high": 155.69,
       "breakout_pct": -38.02,
       "flagged": false
@@ -183,7 +183,7 @@
       "volume": 9128573,
       "average_volume": 8473470,
       "volume_ratio": 1.08,
-      "gap_pct": -1.76,
+      "gap_pct": -1.33,
       "recent_high": 180.6,
       "breakout_pct": -36.31,
       "flagged": false
@@ -253,7 +253,7 @@
       "volume": 10558647,
       "average_volume": 10404920,
       "volume_ratio": 1.01,
-      "gap_pct": -0.51,
+      "gap_pct": -0.37,
       "recent_high": 60.87,
       "breakout_pct": -4.53,
       "flagged": false
@@ -267,7 +267,7 @@
       "volume": 27250041,
       "average_volume": 26850970,
       "volume_ratio": 1.01,
-      "gap_pct": -0.77,
+      "gap_pct": -0.66,
       "recent_high": 559.15,
       "breakout_pct": -9.46,
       "flagged": false
@@ -281,7 +281,7 @@
       "volume": 48576600,
       "average_volume": 48339840,
       "volume_ratio": 1.0,
-      "gap_pct": 1.06,
+      "gap_pct": 1.24,
       "recent_high": 37.45,
       "breakout_pct": -35.54,
       "flagged": false
@@ -309,7 +309,7 @@
       "volume": 34975206,
       "average_volume": 35538635,
       "volume_ratio": 0.98,
-      "gap_pct": 1.45,
+      "gap_pct": 1.55,
       "recent_high": 594.0,
       "breakout_pct": -15.25,
       "flagged": false
@@ -351,7 +351,7 @@
       "volume": 51094264,
       "average_volume": 56054570,
       "volume_ratio": 0.91,
-      "gap_pct": -0.13,
+      "gap_pct": -0.1,
       "recent_high": 17.74,
       "breakout_pct": -19.5,
       "flagged": false
@@ -379,7 +379,7 @@
       "volume": 19483025,
       "average_volume": 21893495,
       "volume_ratio": 0.89,
-      "gap_pct": -0.63,
+      "gap_pct": -0.71,
       "recent_high": 131.82,
       "breakout_pct": -3.26,
       "flagged": false
@@ -393,7 +393,7 @@
       "volume": 7730064,
       "average_volume": 9040055,
       "volume_ratio": 0.86,
-      "gap_pct": 0.35,
+      "gap_pct": 0.45,
       "recent_high": 272.29,
       "breakout_pct": -19.36,
       "flagged": false
@@ -491,7 +491,7 @@
       "volume": 10927993,
       "average_volume": 13422375,
       "volume_ratio": 0.81,
-      "gap_pct": -0.78,
+      "gap_pct": -0.77,
       "recent_high": 90.04,
       "breakout_pct": -6.24,
       "flagged": false
@@ -547,7 +547,7 @@
       "volume": 87396571,
       "average_volume": 114844820,
       "volume_ratio": 0.76,
-      "gap_pct": 0.89,
+      "gap_pct": 0.87,
       "recent_high": 166.18,
       "breakout_pct": -14.73,
       "flagged": false
@@ -575,7 +575,7 @@
       "volume": 36248936,
       "average_volume": 47993280,
       "volume_ratio": 0.76,
-      "gap_pct": 0.04,
+      "gap_pct": 0.01,
       "recent_high": 360.83,
       "breakout_pct": -2.47,
       "flagged": false
@@ -589,7 +589,7 @@
       "volume": 37098176,
       "average_volume": 49630755,
       "volume_ratio": 0.75,
-      "gap_pct": -0.16,
+      "gap_pct": -0.08,
       "recent_high": 275.34,
       "breakout_pct": -6.34,
       "flagged": false
@@ -659,7 +659,7 @@
       "volume": 19474788,
       "average_volume": 27200200,
       "volume_ratio": 0.72,
-      "gap_pct": -0.17,
+      "gap_pct": -0.08,
       "recent_high": 341.0,
       "breakout_pct": -18.59,
       "flagged": false
@@ -673,7 +673,7 @@
       "volume": 3469726,
       "average_volume": 4864310,
       "volume_ratio": 0.71,
-      "gap_pct": -0.24,
+      "gap_pct": -0.48,
       "recent_high": 197.87,
       "breakout_pct": -8.56,
       "flagged": false
@@ -687,7 +687,7 @@
       "volume": 17268837,
       "average_volume": 24302055,
       "volume_ratio": 0.71,
-      "gap_pct": -0.26,
+      "gap_pct": -0.15,
       "recent_high": 202.63,
       "breakout_pct": -22.74,
       "flagged": false
@@ -715,7 +715,7 @@
       "volume": 101775438,
       "average_volume": 145592350,
       "volume_ratio": 0.7,
-      "gap_pct": -0.57,
+      "gap_pct": -0.54,
       "recent_high": 95.68,
       "breakout_pct": -42.34,
       "flagged": false
@@ -785,9 +785,23 @@
       "volume": 17707398,
       "average_volume": 27973150,
       "volume_ratio": 0.63,
-      "gap_pct": -0.76,
+      "gap_pct": -1.06,
       "recent_high": 19.13,
       "breakout_pct": -10.87,
+      "flagged": false
+    },
+    {
+      "symbol": "6481.T",
+      "name": "THK CO LTD",
+      "currency": "JPY",
+      "price": 4418.0,
+      "change_pct": -2.08,
+      "volume": 774500,
+      "average_volume": 1311115,
+      "volume_ratio": 0.59,
+      "gap_pct": 2.22,
+      "recent_high": 6240.0,
+      "breakout_pct": -29.2,
       "flagged": false
     },
     {
@@ -799,7 +813,7 @@
       "volume": 21953771,
       "average_volume": 39001340,
       "volume_ratio": 0.56,
-      "gap_pct": 0.67,
+      "gap_pct": 0.65,
       "recent_high": 414.23,
       "breakout_pct": -8.24,
       "flagged": false
@@ -813,37 +827,23 @@
       "volume": 12795966,
       "average_volume": 23526980,
       "volume_ratio": 0.54,
-      "gap_pct": -0.32,
+      "gap_pct": -0.35,
       "recent_high": 713.22,
       "breakout_pct": -13.23,
-      "flagged": false
-    },
-    {
-      "symbol": "6481.T",
-      "name": "THK CO LTD",
-      "currency": "JPY",
-      "price": 4468.0,
-      "change_pct": -0.97,
-      "volume": 534600,
-      "average_volume": 1311115,
-      "volume_ratio": 0.41,
-      "gap_pct": 2.22,
-      "recent_high": 6240.0,
-      "breakout_pct": -28.4,
       "flagged": false
     },
     {
       "symbol": "6324.T",
       "name": "HARMONIC DRIVE SYSTEMS",
       "currency": "JPY",
-      "price": 4115.0,
-      "change_pct": -2.56,
-      "volume": 436600,
+      "price": 4027.0,
+      "change_pct": -4.64,
+      "volume": 697800,
       "average_volume": 1746030,
-      "volume_ratio": 0.25,
+      "volume_ratio": 0.4,
       "gap_pct": 3.32,
       "recent_high": 5630.0,
-      "breakout_pct": -26.91,
+      "breakout_pct": -28.47,
       "flagged": false
     }
   ],
