@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-20T01:26:27.660676+00:00",
+  "generated_at": "2026-11-20T02:36:30.210983+00:00",
   "thresholds": {
     "volume_ratio": 2.0,
     "gap_pct": 4.0,
@@ -57,7 +57,7 @@
       "volume": 48554440,
       "average_volume": 42147460,
       "volume_ratio": 1.15,
-      "gap_pct": 4.14,
+      "gap_pct": 4.2,
       "recent_high": 331.43,
       "breakout_pct": -17.73,
       "flagged": true
@@ -85,7 +85,7 @@
       "volume": 34838782,
       "average_volume": 31715435,
       "volume_ratio": 1.1,
-      "gap_pct": 4.99,
+      "gap_pct": 4.97,
       "recent_high": 990.0,
       "breakout_pct": -30.26,
       "flagged": true
@@ -127,9 +127,23 @@
       "volume": 132524988,
       "average_volume": 146909805,
       "volume_ratio": 0.9,
-      "gap_pct": 5.27,
+      "gap_pct": 5.18,
       "recent_high": 95.68,
       "breakout_pct": -41.76,
+      "flagged": true
+    },
+    {
+      "symbol": "6324.T",
+      "name": "HARMONIC DRIVE SYSTEMS",
+      "currency": "JPY",
+      "price": 3732.0,
+      "change_pct": -9.9,
+      "volume": 1139200,
+      "average_volume": 1753225,
+      "volume_ratio": 0.65,
+      "gap_pct": -5.0,
+      "recent_high": 5630.0,
+      "breakout_pct": -33.71,
       "flagged": true
     },
     {
@@ -147,31 +161,31 @@
       "flagged": true
     },
     {
-      "symbol": "6324.T",
-      "name": "HARMONIC DRIVE SYSTEMS",
-      "currency": "JPY",
-      "price": 3835.0,
-      "change_pct": -7.41,
-      "volume": 728300,
-      "average_volume": 1753225,
-      "volume_ratio": 0.42,
-      "gap_pct": -5.0,
-      "recent_high": 5630.0,
-      "breakout_pct": -31.88,
+      "symbol": "TER",
+      "name": "Teradyne, Inc.",
+      "currency": "USD",
+      "price": 227.43,
+      "change_pct": -3.31,
+      "volume": 2816109,
+      "average_volume": 4475740,
+      "volume_ratio": 0.63,
+      "gap_pct": 4.44,
+      "recent_high": 328.83,
+      "breakout_pct": -30.84,
       "flagged": true
     },
     {
       "symbol": "6481.T",
       "name": "THK CO LTD",
       "currency": "JPY",
-      "price": 4252.0,
-      "change_pct": -5.91,
-      "volume": 426400,
+      "price": 4202.0,
+      "change_pct": -7.01,
+      "volume": 617100,
       "average_volume": 1388525,
-      "volume_ratio": 0.31,
+      "volume_ratio": 0.44,
       "gap_pct": -4.12,
       "recent_high": 6000.0,
-      "breakout_pct": -29.13,
+      "breakout_pct": -29.97,
       "flagged": true
     },
     {
@@ -183,7 +197,7 @@
       "volume": 70838807,
       "average_volume": 37395520,
       "volume_ratio": 1.89,
-      "gap_pct": 2.52,
+      "gap_pct": 2.27,
       "recent_high": 594.0,
       "breakout_pct": -17.64,
       "flagged": false
@@ -211,7 +225,7 @@
       "volume": 31544343,
       "average_volume": 22294885,
       "volume_ratio": 1.41,
-      "gap_pct": -2.91,
+      "gap_pct": -2.92,
       "recent_high": 131.82,
       "breakout_pct": -4.38,
       "flagged": false
@@ -239,7 +253,7 @@
       "volume": 23625161,
       "average_volume": 18128070,
       "volume_ratio": 1.3,
-      "gap_pct": 3.09,
+      "gap_pct": 3.1,
       "recent_high": 152.21,
       "breakout_pct": -43.41,
       "flagged": false
@@ -253,7 +267,7 @@
       "volume": 16506351,
       "average_volume": 12766325,
       "volume_ratio": 1.29,
-      "gap_pct": -0.19,
+      "gap_pct": -0.18,
       "recent_high": 43.24,
       "breakout_pct": -10.11,
       "flagged": false
@@ -393,7 +407,7 @@
       "volume": 60130758,
       "average_volume": 54369000,
       "volume_ratio": 1.11,
-      "gap_pct": 3.7,
+      "gap_pct": 2.78,
       "recent_high": 1.59,
       "breakout_pct": -35.22,
       "flagged": false
@@ -463,7 +477,7 @@
       "volume": 52082830,
       "average_volume": 50322395,
       "volume_ratio": 1.03,
-      "gap_pct": 1.81,
+      "gap_pct": 1.8,
       "recent_high": 275.34,
       "breakout_pct": -6.53,
       "flagged": false
@@ -561,7 +575,7 @@
       "volume": 37841037,
       "average_volume": 40558115,
       "volume_ratio": 0.93,
-      "gap_pct": 0.38,
+      "gap_pct": 0.17,
       "recent_high": 67.82,
       "breakout_pct": -13.8,
       "flagged": false
@@ -729,7 +743,7 @@
       "volume": 35852359,
       "average_volume": 45975770,
       "volume_ratio": 0.78,
-      "gap_pct": 3.79,
+      "gap_pct": 3.82,
       "recent_high": 36.4,
       "breakout_pct": -34.51,
       "flagged": false
@@ -743,7 +757,7 @@
       "volume": 11288338,
       "average_volume": 14606125,
       "volume_ratio": 0.77,
-      "gap_pct": 0.46,
+      "gap_pct": 0.47,
       "recent_high": 188.5,
       "breakout_pct": -15.69,
       "flagged": false
@@ -757,7 +771,7 @@
       "volume": 2187614,
       "average_volume": 2906685,
       "volume_ratio": 0.75,
-      "gap_pct": 0.18,
+      "gap_pct": 0.32,
       "recent_high": 232.58,
       "breakout_pct": -6.34,
       "flagged": false
@@ -830,20 +844,6 @@
       "gap_pct": 1.4,
       "recent_high": 681.07,
       "breakout_pct": -12.46,
-      "flagged": false
-    },
-    {
-      "symbol": "TER",
-      "name": "Teradyne, Inc.",
-      "currency": "USD",
-      "price": 227.43,
-      "change_pct": -3.31,
-      "volume": 2816109,
-      "average_volume": 4475740,
-      "volume_ratio": 0.63,
-      "gap_pct": 3.37,
-      "recent_high": 328.83,
-      "breakout_pct": -30.84,
       "flagged": false
     }
   ],
