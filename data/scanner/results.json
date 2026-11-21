@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-21T00:57:30.444151+00:00",
+  "generated_at": "2026-11-21T02:50:34.462841+00:00",
   "thresholds": {
     "volume_ratio": 2.0,
     "gap_pct": 4.0,
@@ -15,7 +15,7 @@
       "volume": 174025855,
       "average_volume": 55151315,
       "volume_ratio": 3.16,
-      "gap_pct": -1.46,
+      "gap_pct": -0.97,
       "recent_high": 1.59,
       "breakout_pct": -39.87,
       "flagged": true
@@ -29,7 +29,7 @@
       "volume": 626274281,
       "average_volume": 259982135,
       "volume_ratio": 2.41,
-      "gap_pct": -1.65,
+      "gap_pct": -1.69,
       "recent_high": 219.99,
       "breakout_pct": -42.94,
       "flagged": true
@@ -43,7 +43,7 @@
       "volume": 59550482,
       "average_volume": 28188130,
       "volume_ratio": 2.11,
-      "gap_pct": -1.23,
+      "gap_pct": -1.05,
       "recent_high": 369.82,
       "breakout_pct": -17.69,
       "flagged": true
@@ -85,7 +85,7 @@
       "volume": 10621247,
       "average_volume": 5852560,
       "volume_ratio": 1.81,
-      "gap_pct": -4.13,
+      "gap_pct": -4.57,
       "recent_high": 237.88,
       "breakout_pct": -36.02,
       "flagged": true
@@ -155,7 +155,7 @@
       "volume": 35771089,
       "average_volume": 18298785,
       "volume_ratio": 1.95,
-      "gap_pct": 0.37,
+      "gap_pct": 0.21,
       "recent_high": 152.21,
       "breakout_pct": -48.89,
       "flagged": false
@@ -169,7 +169,7 @@
       "volume": 42631719,
       "average_volume": 22492080,
       "volume_ratio": 1.9,
-      "gap_pct": 0.99,
+      "gap_pct": 0.97,
       "recent_high": 131.82,
       "breakout_pct": -2.94,
       "flagged": false
@@ -183,7 +183,7 @@
       "volume": 59087700,
       "average_volume": 31876710,
       "volume_ratio": 1.85,
-      "gap_pct": -3.59,
+      "gap_pct": -3.62,
       "recent_high": 990.0,
       "breakout_pct": -39.95,
       "flagged": false
@@ -197,7 +197,7 @@
       "volume": 69985844,
       "average_volume": 39578185,
       "volume_ratio": 1.77,
-      "gap_pct": -3.53,
+      "gap_pct": -3.57,
       "recent_high": 594.0,
       "breakout_pct": -28.55,
       "flagged": false
@@ -225,7 +225,7 @@
       "volume": 80450240,
       "average_volume": 47701275,
       "volume_ratio": 1.69,
-      "gap_pct": 0.98,
+      "gap_pct": 1.05,
       "recent_high": 360.83,
       "breakout_pct": -5.06,
       "flagged": false
@@ -239,7 +239,7 @@
       "volume": 47123194,
       "average_volume": 28331510,
       "volume_ratio": 1.66,
-      "gap_pct": -0.97,
+      "gap_pct": -0.92,
       "recent_high": 559.15,
       "breakout_pct": -13.35,
       "flagged": false
@@ -267,7 +267,7 @@
       "volume": 14109932,
       "average_volume": 8823690,
       "volume_ratio": 1.6,
-      "gap_pct": -1.7,
+      "gap_pct": -1.83,
       "recent_high": 169.84,
       "breakout_pct": -39.96,
       "flagged": false
@@ -323,7 +323,7 @@
       "volume": 74106823,
       "average_volume": 50537590,
       "volume_ratio": 1.47,
-      "gap_pct": -1.54,
+      "gap_pct": -1.51,
       "recent_high": 275.34,
       "breakout_pct": -10.36,
       "flagged": false
@@ -379,7 +379,7 @@
       "volume": 207749593,
       "average_volume": 146900855,
       "volume_ratio": 1.41,
-      "gap_pct": -2.62,
+      "gap_pct": -2.53,
       "recent_high": 95.68,
       "breakout_pct": -46.4,
       "flagged": false
@@ -463,7 +463,7 @@
       "volume": 31995436,
       "average_volume": 24079405,
       "volume_ratio": 1.33,
-      "gap_pct": -0.57,
+      "gap_pct": -0.55,
       "recent_high": 41.1,
       "breakout_pct": -19.9,
       "flagged": false
@@ -477,7 +477,7 @@
       "volume": 57297123,
       "average_volume": 43245980,
       "volume_ratio": 1.32,
-      "gap_pct": 0.62,
+      "gap_pct": 0.67,
       "recent_high": 326.41,
       "breakout_pct": -18.72,
       "flagged": false
@@ -505,7 +505,7 @@
       "volume": 75711108,
       "average_volume": 57645920,
       "volume_ratio": 1.31,
-      "gap_pct": -2.22,
+      "gap_pct": -2.29,
       "recent_high": 17.74,
       "breakout_pct": -29.65,
       "flagged": false
@@ -547,7 +547,7 @@
       "volume": 45986617,
       "average_volume": 36156465,
       "volume_ratio": 1.27,
-      "gap_pct": -1.12,
+      "gap_pct": -1.06,
       "recent_high": 414.23,
       "breakout_pct": -16.51,
       "flagged": false
@@ -589,7 +589,7 @@
       "volume": 25589154,
       "average_volume": 21123730,
       "volume_ratio": 1.21,
-      "gap_pct": -2.23,
+      "gap_pct": -2.06,
       "recent_high": 648.45,
       "breakout_pct": -13.51,
       "flagged": false
@@ -603,7 +603,7 @@
       "volume": 3341069,
       "average_volume": 2760170,
       "volume_ratio": 1.21,
-      "gap_pct": -0.22,
+      "gap_pct": -0.34,
       "recent_high": 232.58,
       "breakout_pct": -8.57,
       "flagged": false
@@ -645,7 +645,7 @@
       "volume": 8407291,
       "average_volume": 7147665,
       "volume_ratio": 1.18,
-      "gap_pct": 0.32,
+      "gap_pct": 0.33,
       "recent_high": 442.23,
       "breakout_pct": -9.13,
       "flagged": false
@@ -813,7 +813,7 @@
       "volume": 5255356,
       "average_volume": 5012090,
       "volume_ratio": 1.05,
-      "gap_pct": 0.52,
+      "gap_pct": 0.53,
       "recent_high": 197.87,
       "breakout_pct": -13.9,
       "flagged": false
