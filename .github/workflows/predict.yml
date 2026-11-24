@@ -2,25 +2,16 @@ name: Genera previsioni
 
 on:
   schedule:
-    # Un solo slot di previsione al giorno (src/config.py: PREDICTION_SLOTS_ET
-    # = 7:00 ET, prima dell'apertura). Finestra 11-14 UTC copre lo slot dovuto
-    # (11:00 UTC in EDT, 12:00 UTC in EST) più il margine di recupero di 145
-    # minuti (SLOT_CATCHUP_MINUTES) in entrambi i regimi di ora legale/solare
-    # statunitense — volutamente corta, non oltre l'apertura delle 9:30 ET
-    # (13:30 UTC in EDT, 14:30 UTC in EST): dopo l'apertura il prezzo non è
-    # più quello congelato su cui si basa il calcolo di target_at (vedi
-    # predict_run.py: _target_anchor_date()).
-    #
-    # Tick sfalsati di 20 minuti (:05, :25, :45) invece di uno solo: il
-    # 2026-09-02 nessuno dei tick di un singolo cron è scattato per l'intera
-    # giornata (bug/rallentamento della piattaforma GitHub Actions, non del
-    # codice) e la previsione è dovuta partire a mano. predict_run.py è già
-    # idempotente per il giorno (_done_slots): un tick che trova lo slot già
-    # fatto (o non ancora dovuto, o la finestra già chiusa) esce subito
-    # gratis ("Nessuno slot dovuto"), quindi più tentativi non hanno
-    # controindicazioni — solo più occasioni indipendenti perché GitHub
-    # riesca a farne partire almeno uno entro la finestra.
-    - cron: "5,25,45 11-14 * * 1-5"
+    # GitHub ha consegnato i trigger di novembre con ore di ritardo.
+    # Due trigger anticipati danno una possibilità di recupero quando la
+    # coda è lunga. Se arrivano in anticipo, find_due_slot esce subito.
+    - cron: "17 5 * * 1-5"
+    - cron: "37 7 * * 1-5"
+    # Trigger distinti nell'orario normale. Il codice applica la finestra
+    # delle 7:00 ET e verifica lo stato dello slot prima di generare.
+    - cron: "5 11-14 * * 1-5"
+    - cron: "25 11-14 * * 1-5"
+    - cron: "45 11-14 * * 1-5"
   # Default pensati per "Run workflow" senza toccare nulla, quando serve
   # recuperare a mano uno slot scadere (link nel pannello info della
   # dashboard): dry_run=false (altrimenti non scrive nulla) e force=true
