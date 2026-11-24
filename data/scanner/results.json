@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-24T04:26:50.859292+00:00",
+  "generated_at": "2026-11-24T05:30:58.987961+00:00",
   "thresholds": {
     "volume_ratio": 2.0,
     "gap_pct": 4.0,
@@ -469,6 +469,20 @@
       "flagged": true
     },
     {
+      "symbol": "6324.T",
+      "name": "HARMONIC DRIVE SYSTEMS",
+      "currency": "JPY",
+      "price": 4221.0,
+      "change_pct": 13.41,
+      "volume": 1353100,
+      "average_volume": 1769137,
+      "volume_ratio": 0.76,
+      "gap_pct": 9.4,
+      "recent_high": 5630.0,
+      "breakout_pct": -25.03,
+      "flagged": true
+    },
+    {
       "symbol": "LCID",
       "name": "Lucid Group, Inc.",
       "currency": "USD",
@@ -483,31 +497,17 @@
       "flagged": true
     },
     {
-      "symbol": "6324.T",
-      "name": "HARMONIC DRIVE SYSTEMS",
-      "currency": "JPY",
-      "price": 4206.0,
-      "change_pct": 13.0,
-      "volume": 1179800,
-      "average_volume": 1769137,
-      "volume_ratio": 0.67,
-      "gap_pct": 9.4,
-      "recent_high": 5630.0,
-      "breakout_pct": -25.29,
-      "flagged": true
-    },
-    {
       "symbol": "6481.T",
       "name": "THK CO LTD",
       "currency": "JPY",
-      "price": 4531.0,
-      "change_pct": 6.64,
-      "volume": 662600,
+      "price": 4514.0,
+      "change_pct": 6.24,
+      "volume": 765000,
       "average_volume": 1421605,
-      "volume_ratio": 0.47,
+      "volume_ratio": 0.54,
       "gap_pct": 4.8,
       "recent_high": 5975.0,
-      "breakout_pct": -24.17,
+      "breakout_pct": -24.45,
       "flagged": true
     },
     {
