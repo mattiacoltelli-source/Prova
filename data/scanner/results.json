@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-24T23:37:46.424781+00:00",
+  "generated_at": "2026-11-25T01:21:33.078079+00:00",
   "thresholds": {
     "volume_ratio": 2.0,
     "gap_pct": 4.0,
@@ -32,20 +32,6 @@
       "gap_pct": -6.25,
       "recent_high": 594.0,
       "breakout_pct": -30.43,
-      "flagged": true
-    },
-    {
-      "symbol": "6324.T",
-      "name": "HARMONIC DRIVE SYSTEMS",
-      "currency": "JPY",
-      "price": 4216.0,
-      "change_pct": 13.27,
-      "volume": 1842200,
-      "average_volume": 1769137,
-      "volume_ratio": 1.04,
-      "gap_pct": 9.4,
-      "recent_high": 5630.0,
-      "breakout_pct": -25.12,
       "flagged": true
     },
     {
@@ -91,20 +77,6 @@
       "flagged": true
     },
     {
-      "symbol": "6481.T",
-      "name": "THK CO LTD",
-      "currency": "JPY",
-      "price": 4517.0,
-      "change_pct": 6.31,
-      "volume": 1290200,
-      "average_volume": 1421605,
-      "volume_ratio": 0.91,
-      "gap_pct": 4.8,
-      "recent_high": 5975.0,
-      "breakout_pct": -24.4,
-      "flagged": true
-    },
-    {
       "symbol": "ARM",
       "name": "Arm Holdings plc",
       "currency": "USD",
@@ -144,6 +116,34 @@
       "gap_pct": 0.75,
       "recent_high": 47.15,
       "breakout_pct": 0.02,
+      "flagged": true
+    },
+    {
+      "symbol": "6481.T",
+      "name": "THK CO LTD",
+      "currency": "JPY",
+      "price": 4202.0,
+      "change_pct": -6.97,
+      "volume": 449500,
+      "average_volume": 1415035,
+      "volume_ratio": 0.32,
+      "gap_pct": -6.2,
+      "recent_high": 5975.0,
+      "breakout_pct": -29.67,
+      "flagged": true
+    },
+    {
+      "symbol": "6324.T",
+      "name": "HARMONIC DRIVE SYSTEMS",
+      "currency": "JPY",
+      "price": 3767.0,
+      "change_pct": -10.65,
+      "volume": 553900,
+      "average_volume": 1772790,
+      "volume_ratio": 0.31,
+      "gap_pct": -9.99,
+      "recent_high": 5630.0,
+      "breakout_pct": -33.09,
       "flagged": true
     },
     {
@@ -371,20 +371,6 @@
       "flagged": false
     },
     {
-      "symbol": "BTC-USD",
-      "name": "Bitcoin USD",
-      "currency": "USD",
-      "price": 59771.11,
-      "change_pct": -2.32,
-      "volume": 32751855616,
-      "average_volume": 34842643169,
-      "volume_ratio": 0.94,
-      "gap_pct": 0.0,
-      "recent_high": 81079.7891,
-      "breakout_pct": -26.28,
-      "flagged": false
-    },
-    {
       "symbol": "PG",
       "name": "Procter & Gamble Company (The)",
       "currency": "USD",
@@ -438,34 +424,6 @@
       "gap_pct": 0.52,
       "recent_high": 241.02,
       "breakout_pct": -2.22,
-      "flagged": false
-    },
-    {
-      "symbol": "ETH-USD",
-      "name": "Ethereum USD",
-      "currency": "USD",
-      "price": 1677.57,
-      "change_pct": -1.8,
-      "volume": 11417693184,
-      "average_volume": 13332580419,
-      "volume_ratio": 0.86,
-      "gap_pct": -0.0,
-      "recent_high": 2446.0479,
-      "breakout_pct": -31.42,
-      "flagged": false
-    },
-    {
-      "symbol": "SOL-USD",
-      "name": "Solana USD",
-      "currency": "USD",
-      "price": 69.77,
-      "change_pct": -3.0,
-      "volume": 2601729536,
-      "average_volume": 3050467821,
-      "volume_ratio": 0.85,
-      "gap_pct": -0.0,
-      "recent_high": 97.6954,
-      "breakout_pct": -28.58,
       "flagged": false
     },
     {
@@ -889,5 +847,18 @@
       "flagged": false
     }
   ],
-  "errors": []
+  "errors": [
+    {
+      "symbol": "BTC-USD",
+      "error": "Campi essenziali mancanti per BTC-USD"
+    },
+    {
+      "symbol": "ETH-USD",
+      "error": "Campi essenziali mancanti per ETH-USD"
+    },
+    {
+      "symbol": "SOL-USD",
+      "error": "Campi essenziali mancanti per SOL-USD"
+    }
+  ]
 }
