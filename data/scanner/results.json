@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-25T01:21:33.078079+00:00",
+  "generated_at": "2026-11-25T03:10:19.314815+00:00",
   "thresholds": {
     "volume_ratio": 2.0,
     "gap_pct": 4.0,
@@ -43,23 +43,9 @@
       "volume": 23256041,
       "average_volume": 24142155,
       "volume_ratio": 0.96,
-      "gap_pct": 0.24,
+      "gap_pct": 0.28,
       "recent_high": 131.82,
       "breakout_pct": 0.37,
-      "flagged": true
-    },
-    {
-      "symbol": "AVGO",
-      "name": "Broadcom Inc.",
-      "currency": "USD",
-      "price": 301.08,
-      "change_pct": -3.98,
-      "volume": 30133180,
-      "average_volume": 31520820,
-      "volume_ratio": 0.96,
-      "gap_pct": -4.04,
-      "recent_high": 369.82,
-      "breakout_pct": -18.59,
       "flagged": true
     },
     {
@@ -85,23 +71,9 @@
       "volume": 5606991,
       "average_volume": 6432190,
       "volume_ratio": 0.87,
-      "gap_pct": -4.23,
+      "gap_pct": -4.29,
       "recent_high": 237.88,
       "breakout_pct": -32.08,
-      "flagged": true
-    },
-    {
-      "symbol": "INTC",
-      "name": "Intel Corporation",
-      "currency": "USD",
-      "price": 54.8,
-      "change_pct": -8.15,
-      "volume": 131883108,
-      "average_volume": 157058050,
-      "volume_ratio": 0.84,
-      "gap_pct": -4.0,
-      "recent_high": 95.68,
-      "breakout_pct": -42.73,
       "flagged": true
     },
     {
@@ -122,28 +94,28 @@
       "symbol": "6481.T",
       "name": "THK CO LTD",
       "currency": "JPY",
-      "price": 4202.0,
-      "change_pct": -6.97,
-      "volume": 449500,
+      "price": 4167.0,
+      "change_pct": -7.75,
+      "volume": 769600,
       "average_volume": 1415035,
-      "volume_ratio": 0.32,
+      "volume_ratio": 0.54,
       "gap_pct": -6.2,
       "recent_high": 5975.0,
-      "breakout_pct": -29.67,
+      "breakout_pct": -30.26,
       "flagged": true
     },
     {
       "symbol": "6324.T",
       "name": "HARMONIC DRIVE SYSTEMS",
       "currency": "JPY",
-      "price": 3767.0,
-      "change_pct": -10.65,
-      "volume": 553900,
+      "price": 3752.0,
+      "change_pct": -11.01,
+      "volume": 926100,
       "average_volume": 1772790,
-      "volume_ratio": 0.31,
+      "volume_ratio": 0.52,
       "gap_pct": -9.99,
       "recent_high": 5630.0,
-      "breakout_pct": -33.09,
+      "breakout_pct": -33.36,
       "flagged": true
     },
     {
@@ -169,7 +141,7 @@
       "volume": 95396252,
       "average_volume": 64526835,
       "volume_ratio": 1.48,
-      "gap_pct": -2.53,
+      "gap_pct": -1.01,
       "recent_high": 1.59,
       "breakout_pct": -41.42,
       "flagged": false
@@ -197,7 +169,7 @@
       "volume": 382058256,
       "average_volume": 322231765,
       "volume_ratio": 1.19,
-      "gap_pct": -3.63,
+      "gap_pct": -3.6,
       "recent_high": 219.99,
       "breakout_pct": -29.37,
       "flagged": false
@@ -211,7 +183,7 @@
       "volume": 23533645,
       "average_volume": 19723745,
       "volume_ratio": 1.19,
-      "gap_pct": -2.45,
+      "gap_pct": -2.56,
       "recent_high": 146.07,
       "breakout_pct": -46.91,
       "flagged": false
@@ -239,7 +211,7 @@
       "volume": 53225333,
       "average_volume": 45068235,
       "volume_ratio": 1.18,
-      "gap_pct": -2.53,
+      "gap_pct": -2.33,
       "recent_high": 3.44,
       "breakout_pct": -25.0,
       "flagged": false
@@ -253,7 +225,7 @@
       "volume": 3185821,
       "average_volume": 2780320,
       "volume_ratio": 1.15,
-      "gap_pct": -0.8,
+      "gap_pct": -0.79,
       "recent_high": 232.58,
       "breakout_pct": -3.34,
       "flagged": false
@@ -267,7 +239,7 @@
       "volume": 45091126,
       "average_volume": 40915745,
       "volume_ratio": 1.1,
-      "gap_pct": -1.97,
+      "gap_pct": -2.15,
       "recent_high": 7.95,
       "breakout_pct": -31.95,
       "flagged": false
@@ -281,7 +253,7 @@
       "volume": 2450017,
       "average_volume": 2253790,
       "volume_ratio": 1.09,
-      "gap_pct": -0.28,
+      "gap_pct": -0.29,
       "recent_high": 533.39,
       "breakout_pct": -3.1,
       "flagged": false
@@ -323,7 +295,7 @@
       "volume": 36880572,
       "average_volume": 35407185,
       "volume_ratio": 1.04,
-      "gap_pct": -0.55,
+      "gap_pct": -0.54,
       "recent_high": 53.03,
       "breakout_pct": -8.43,
       "flagged": false
@@ -354,6 +326,20 @@
       "gap_pct": -0.09,
       "recent_high": 60.08,
       "breakout_pct": -0.88,
+      "flagged": false
+    },
+    {
+      "symbol": "AVGO",
+      "name": "Broadcom Inc.",
+      "currency": "USD",
+      "price": 301.08,
+      "change_pct": -3.98,
+      "volume": 30133180,
+      "average_volume": 31520820,
+      "volume_ratio": 0.96,
+      "gap_pct": -3.91,
+      "recent_high": 369.82,
+      "breakout_pct": -18.59,
       "flagged": false
     },
     {
@@ -393,7 +379,7 @@
       "volume": 35954579,
       "average_volume": 40886290,
       "volume_ratio": 0.88,
-      "gap_pct": -0.36,
+      "gap_pct": -0.38,
       "recent_high": 67.49,
       "breakout_pct": -12.77,
       "flagged": false
@@ -466,6 +452,20 @@
       "gap_pct": -2.68,
       "recent_high": 4.2,
       "breakout_pct": -37.14,
+      "flagged": false
+    },
+    {
+      "symbol": "INTC",
+      "name": "Intel Corporation",
+      "currency": "USD",
+      "price": 54.8,
+      "change_pct": -8.15,
+      "volume": 131883108,
+      "average_volume": 157058050,
+      "volume_ratio": 0.84,
+      "gap_pct": -3.96,
+      "recent_high": 95.68,
+      "breakout_pct": -42.73,
       "flagged": false
     },
     {
@@ -547,7 +547,7 @@
       "volume": 40235897,
       "average_volume": 50551170,
       "volume_ratio": 0.8,
-      "gap_pct": -0.28,
+      "gap_pct": -0.29,
       "recent_high": 360.83,
       "breakout_pct": -1.87,
       "flagged": false
@@ -561,7 +561,7 @@
       "volume": 20560024,
       "average_volume": 25756220,
       "volume_ratio": 0.8,
-      "gap_pct": -0.98,
+      "gap_pct": -1.09,
       "recent_high": 201.83,
       "breakout_pct": -20.14,
       "flagged": false
@@ -589,7 +589,7 @@
       "volume": 23411727,
       "average_volume": 30124350,
       "volume_ratio": 0.78,
-      "gap_pct": -0.3,
+      "gap_pct": -0.17,
       "recent_high": 323.13,
       "breakout_pct": -14.41,
       "flagged": false
@@ -603,7 +603,7 @@
       "volume": 28208872,
       "average_volume": 36431315,
       "volume_ratio": 0.77,
-      "gap_pct": -0.41,
+      "gap_pct": -0.44,
       "recent_high": 414.23,
       "breakout_pct": -7.13,
       "flagged": false
@@ -645,7 +645,7 @@
       "volume": 7193892,
       "average_volume": 9437775,
       "volume_ratio": 0.76,
-      "gap_pct": -1.19,
+      "gap_pct": -1.45,
       "recent_high": 163.6,
       "breakout_pct": -37.44,
       "flagged": false
@@ -659,7 +659,7 @@
       "volume": 44987984,
       "average_volume": 59978675,
       "volume_ratio": 0.75,
-      "gap_pct": -1.18,
+      "gap_pct": -1.15,
       "recent_high": 17.74,
       "breakout_pct": -27.51,
       "flagged": false
@@ -687,7 +687,7 @@
       "volume": 22448885,
       "average_volume": 30577105,
       "volume_ratio": 0.73,
-      "gap_pct": -0.42,
+      "gap_pct": -0.48,
       "recent_high": 559.15,
       "breakout_pct": -11.27,
       "flagged": false
@@ -701,7 +701,7 @@
       "volume": 33470372,
       "average_volume": 46303220,
       "volume_ratio": 0.72,
-      "gap_pct": -0.25,
+      "gap_pct": -0.18,
       "recent_high": 326.41,
       "breakout_pct": -14.51,
       "flagged": false
@@ -729,7 +729,7 @@
       "volume": 9168111,
       "average_volume": 13627660,
       "volume_ratio": 0.67,
-      "gap_pct": 0.68,
+      "gap_pct": 0.69,
       "recent_high": 43.24,
       "breakout_pct": -6.78,
       "flagged": false
@@ -771,7 +771,7 @@
       "volume": 33796817,
       "average_volume": 54006320,
       "volume_ratio": 0.63,
-      "gap_pct": -1.12,
+      "gap_pct": -1.21,
       "recent_high": 275.34,
       "breakout_pct": -8.37,
       "flagged": false
@@ -785,7 +785,7 @@
       "volume": 7734213,
       "average_volume": 12978840,
       "volume_ratio": 0.6,
-      "gap_pct": -0.22,
+      "gap_pct": -0.21,
       "recent_high": 90.04,
       "breakout_pct": -6.06,
       "flagged": false
@@ -813,7 +813,7 @@
       "volume": 17653585,
       "average_volume": 30488285,
       "volume_ratio": 0.58,
-      "gap_pct": -2.52,
+      "gap_pct": -1.75,
       "recent_high": 19.79,
       "breakout_pct": -17.43,
       "flagged": false
