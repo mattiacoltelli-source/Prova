@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-26T03:46:55.899482+00:00",
+  "generated_at": "2026-11-26T23:16:47.438017+00:00",
   "thresholds": {
     "volume_ratio": 2.0,
     "gap_pct": 4.0,
@@ -382,6 +382,20 @@
       "gap_pct": -1.53,
       "recent_high": 67.49,
       "breakout_pct": -11.97,
+      "flagged": false
+    },
+    {
+      "symbol": "6324.T",
+      "name": "HARMONIC DRIVE SYSTEMS",
+      "currency": "JPY",
+      "price": 3663.0,
+      "change_pct": -0.06,
+      "volume": 1990700,
+      "average_volume": 1805135,
+      "volume_ratio": 1.1,
+      "gap_pct": 1.66,
+      "recent_high": 5630.0,
+      "breakout_pct": -34.94,
       "flagged": false
     },
     {
@@ -791,6 +805,20 @@
       "flagged": false
     },
     {
+      "symbol": "6481.T",
+      "name": "THK CO LTD",
+      "currency": "JPY",
+      "price": 4254.0,
+      "change_pct": 1.58,
+      "volume": 1036800,
+      "average_volume": 1458335,
+      "volume_ratio": 0.71,
+      "gap_pct": 1.67,
+      "recent_high": 5975.0,
+      "breakout_pct": -28.8,
+      "flagged": false
+    },
+    {
       "symbol": "NEE",
       "name": "NextEra Energy, Inc.",
       "currency": "USD",
@@ -819,46 +847,47 @@
       "flagged": false
     },
     {
-      "symbol": "6324.T",
-      "name": "HARMONIC DRIVE SYSTEMS",
-      "currency": "JPY",
-      "price": 3713.0,
-      "change_pct": 1.31,
-      "volume": 1084300,
-      "average_volume": 1805135,
-      "volume_ratio": 0.6,
-      "gap_pct": 1.66,
-      "recent_high": 5630.0,
-      "breakout_pct": -34.05,
-      "flagged": false
-    },
-    {
-      "symbol": "6481.T",
-      "name": "THK CO LTD",
-      "currency": "JPY",
-      "price": 4276.0,
-      "change_pct": 2.1,
-      "volume": 412900,
-      "average_volume": 1458335,
-      "volume_ratio": 0.28,
-      "gap_pct": 1.67,
-      "recent_high": 5975.0,
-      "breakout_pct": -28.44,
-      "flagged": false
-    }
-  ],
-  "errors": [
-    {
       "symbol": "BTC-USD",
-      "error": "Campi essenziali mancanti per BTC-USD"
+      "name": "Bitcoin USD",
+      "currency": "USD",
+      "price": 60411.48,
+      "change_pct": 0.05,
+      "volume": 22011832320,
+      "average_volume": 34044237998,
+      "volume_ratio": 0.65,
+      "gap_pct": 0.0,
+      "recent_high": 76291.0625,
+      "breakout_pct": -20.81,
+      "flagged": false
     },
     {
       "symbol": "ETH-USD",
-      "error": "Campi essenziali mancanti per ETH-USD"
+      "name": "Ethereum USD",
+      "currency": "USD",
+      "price": 1686.16,
+      "change_pct": -0.25,
+      "volume": 7623282176,
+      "average_volume": 12762779621,
+      "volume_ratio": 0.6,
+      "gap_pct": -0.0,
+      "recent_high": 2250.0164,
+      "breakout_pct": -25.06,
+      "flagged": false
     },
     {
       "symbol": "SOL-USD",
-      "error": "Campi essenziali mancanti per SOL-USD"
+      "name": "Solana USD",
+      "currency": "USD",
+      "price": 70.91,
+      "change_pct": 0.75,
+      "volume": 1682315776,
+      "average_volume": 2892881775,
+      "volume_ratio": 0.58,
+      "gap_pct": 0.0,
+      "recent_high": 91.3417,
+      "breakout_pct": -22.37,
+      "flagged": false
     }
-  ]
+  ],
+  "errors": []
 }
