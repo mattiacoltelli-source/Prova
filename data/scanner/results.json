@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-28T02:09:55.804275+00:00",
+  "generated_at": "2026-11-28T03:31:39.457034+00:00",
   "thresholds": {
     "volume_ratio": 2.0,
     "gap_pct": 4.0,
@@ -15,7 +15,7 @@
       "volume": 16508755,
       "average_volume": 21275550,
       "volume_ratio": 0.78,
-      "gap_pct": 5.76,
+      "gap_pct": 5.63,
       "recent_high": 146.07,
       "breakout_pct": -44.12,
       "flagged": true
@@ -29,7 +29,7 @@
       "volume": 26904909,
       "average_volume": 37052800,
       "volume_ratio": 0.73,
-      "gap_pct": 4.83,
+      "gap_pct": 4.8,
       "recent_high": 971.01,
       "breakout_pct": -33.37,
       "flagged": true
@@ -71,7 +71,7 @@
       "volume": 2643231,
       "average_volume": 4524765,
       "volume_ratio": 0.58,
-      "gap_pct": 4.64,
+      "gap_pct": 4.63,
       "recent_high": 304.78,
       "breakout_pct": -26.85,
       "flagged": true
@@ -85,7 +85,7 @@
       "volume": 7932683,
       "average_volume": 14001735,
       "volume_ratio": 0.57,
-      "gap_pct": 5.08,
+      "gap_pct": 5.47,
       "recent_high": 4.2,
       "breakout_pct": -38.1,
       "flagged": true
@@ -113,7 +113,7 @@
       "volume": 5162494,
       "average_volume": 9716700,
       "volume_ratio": 0.53,
-      "gap_pct": 4.55,
+      "gap_pct": 4.64,
       "recent_high": 163.6,
       "breakout_pct": -34.57,
       "flagged": true
@@ -211,7 +211,7 @@
       "volume": 26634592,
       "average_volume": 35570150,
       "volume_ratio": 0.75,
-      "gap_pct": 2.94,
+      "gap_pct": 2.95,
       "recent_high": 414.23,
       "breakout_pct": -3.44,
       "flagged": false
@@ -225,7 +225,7 @@
       "volume": 1632044,
       "average_volume": 2301735,
       "volume_ratio": 0.71,
-      "gap_pct": 0.17,
+      "gap_pct": 0.08,
       "recent_high": 533.39,
       "breakout_pct": -0.15,
       "flagged": false
@@ -253,7 +253,7 @@
       "volume": 11143475,
       "average_volume": 18298415,
       "volume_ratio": 0.61,
-      "gap_pct": 2.94,
+      "gap_pct": 3.03,
       "recent_high": 648.45,
       "breakout_pct": -3.01,
       "flagged": false
@@ -267,7 +267,7 @@
       "volume": 15054529,
       "average_volume": 25829255,
       "volume_ratio": 0.58,
-      "gap_pct": 3.77,
+      "gap_pct": 3.85,
       "recent_high": 198.51,
       "breakout_pct": -13.27,
       "flagged": false
@@ -309,7 +309,7 @@
       "volume": 21680653,
       "average_volume": 40441335,
       "volume_ratio": 0.54,
-      "gap_pct": 1.06,
+      "gap_pct": 0.96,
       "recent_high": 67.49,
       "breakout_pct": -9.72,
       "flagged": false
@@ -337,7 +337,7 @@
       "volume": 17091992,
       "average_volume": 32387520,
       "volume_ratio": 0.53,
-      "gap_pct": 1.85,
+      "gap_pct": 1.45,
       "recent_high": 369.82,
       "breakout_pct": -15.54,
       "flagged": false
@@ -365,7 +365,7 @@
       "volume": 185759641,
       "average_volume": 350980045,
       "volume_ratio": 0.53,
-      "gap_pct": 1.77,
+      "gap_pct": 1.74,
       "recent_high": 215.33,
       "breakout_pct": -30.11,
       "flagged": false
@@ -407,7 +407,7 @@
       "volume": 22623041,
       "average_volume": 45476510,
       "volume_ratio": 0.5,
-      "gap_pct": 2.22,
+      "gap_pct": 2.21,
       "recent_high": 304.97,
       "breakout_pct": -9.84,
       "flagged": false
@@ -449,7 +449,7 @@
       "volume": 51364369,
       "average_volume": 106096120,
       "volume_ratio": 0.48,
-      "gap_pct": 2.95,
+      "gap_pct": 2.94,
       "recent_high": 147.6,
       "breakout_pct": -9.49,
       "flagged": false
@@ -477,7 +477,7 @@
       "volume": 22329180,
       "average_volume": 47114220,
       "volume_ratio": 0.47,
-      "gap_pct": 3.38,
+      "gap_pct": 3.51,
       "recent_high": 594.0,
       "breakout_pct": -28.53,
       "flagged": false
@@ -505,7 +505,7 @@
       "volume": 76574098,
       "average_volume": 161499555,
       "volume_ratio": 0.47,
-      "gap_pct": 3.68,
+      "gap_pct": 3.82,
       "recent_high": 93.5,
       "breakout_pct": -38.61,
       "flagged": false
@@ -547,7 +547,7 @@
       "volume": 15181376,
       "average_volume": 33963400,
       "volume_ratio": 0.45,
-      "gap_pct": 2.31,
+      "gap_pct": 2.35,
       "recent_high": 14.31,
       "breakout_pct": -14.88,
       "flagged": false
@@ -561,7 +561,7 @@
       "volume": 10879721,
       "average_volume": 24997355,
       "volume_ratio": 0.44,
-      "gap_pct": -0.06,
+      "gap_pct": -0.05,
       "recent_high": 133.19,
       "breakout_pct": -0.05,
       "flagged": false
@@ -575,7 +575,7 @@
       "volume": 22683910,
       "average_volume": 51544020,
       "volume_ratio": 0.44,
-      "gap_pct": 0.8,
+      "gap_pct": 0.74,
       "recent_high": 360.83,
       "breakout_pct": -0.63,
       "flagged": false
@@ -589,7 +589,7 @@
       "volume": 21711540,
       "average_volume": 49550545,
       "volume_ratio": 0.44,
-      "gap_pct": 3.59,
+      "gap_pct": 3.56,
       "recent_high": 35.85,
       "breakout_pct": -33.72,
       "flagged": false
@@ -603,7 +603,7 @@
       "volume": 31427276,
       "average_volume": 71180015,
       "volume_ratio": 0.44,
-      "gap_pct": 3.27,
+      "gap_pct": 2.8,
       "recent_high": 1.59,
       "breakout_pct": -27.36,
       "flagged": false
@@ -659,7 +659,7 @@
       "volume": 22876251,
       "average_volume": 52838555,
       "volume_ratio": 0.43,
-      "gap_pct": 3.6,
+      "gap_pct": 3.67,
       "recent_high": 17.74,
       "breakout_pct": -24.63,
       "flagged": false
@@ -715,7 +715,7 @@
       "volume": 12489428,
       "average_volume": 30663980,
       "volume_ratio": 0.41,
-      "gap_pct": 1.95,
+      "gap_pct": 2.01,
       "recent_high": 559.15,
       "breakout_pct": -11.86,
       "flagged": false
@@ -799,7 +799,7 @@
       "volume": 4234566,
       "average_volume": 13005300,
       "volume_ratio": 0.33,
-      "gap_pct": -1.27,
+      "gap_pct": -1.26,
       "recent_high": 90.04,
       "breakout_pct": -5.65,
       "flagged": false
@@ -827,7 +827,7 @@
       "volume": 1756391,
       "average_volume": 5655100,
       "volume_ratio": 0.31,
-      "gap_pct": 2.84,
+      "gap_pct": 2.93,
       "recent_high": 24.9,
       "breakout_pct": -29.4,
       "flagged": false
